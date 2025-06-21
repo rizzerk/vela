@@ -904,7 +904,7 @@
             }
         });
 
-        fetch('includes/navbar/navbarOUT.html')
+        fetch('navbarOUT.html')
             .then(response => response.text())
             .then(data => {
                 document.getElementById('navbar-container').innerHTML = data;

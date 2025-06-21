@@ -61,6 +61,7 @@
             background: url('images/landing-page.png');
             background-size: cover;
             background-position: center;
+            border-radius: 24px;
         }
 
         .hero-content {
@@ -904,7 +905,7 @@
             }
         });
 
-        fetch('includes/navbar/navbarOUT.html')
+        fetch('navbarOUT.html')
             .then(response => response.text())
             .then(data => {
                 document.getElementById('navbar-container').innerHTML = data;
