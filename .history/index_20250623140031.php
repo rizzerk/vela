@@ -5,53 +5,43 @@ require_once 'connection.php';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
-    $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
+    $email = $conn->real_escape_string($_POST['email']);
+    $password = $_POST['password'];
     
-    if (!$conn) {
-        $error = "Database connection failed";
-    } else {
-        try {
-            $stmt = $conn->prepare("SELECT user_id, name, email, password, role FROM USERS WHERE email = ?");
-            if (!$stmt) {
-                $error = "Database prepare failed: " . $conn->error;
+    try {
+        $stmt = $conn->prepare("SELECT user_id, name, email, password, role FROM USERS WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows == 1) {
+            $user = $result->fetch_assoc();
+            
+            if (password_verify($password, $user['password'])) {
+                $_SESSION['user_id'] = $user['user_id'];
+                $_SESSION['name'] = $user['name'];
+                $_SESSION['email'] = $user['email'];
+                $_SESSION['role'] = $user['role'];
+                $_SESSION['loggedin'] = true;
+                
+                $update_stmt = $conn->prepare("UPDATE USERS SET last_login = NOW() WHERE user_id = ?");
+                $update_stmt->bind_param("i", $user['user_id']);
+                $update_stmt->execute();
+                $update_stmt->close();
+                
+                header("Location: " . ($user['role'] == 'tenant' ? 'TENANT/dashboard.php' : 'LANDLORD/dashboard.php'));
+                exit();
             } else {
-                $stmt->bind_param("s", $email);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                
-                if ($result->num_rows == 1) {
-                    $user = $result->fetch_assoc();
-                    
-                    if (password_verify($password, $user['password'])) {
-                        $_SESSION['user_id'] = $user['user_id'];
-                        $_SESSION['name'] = $user['name'];
-                        $_SESSION['email'] = $user['email'];
-                        $_SESSION['role'] = $user['role'];
-                        $_SESSION['loggedin'] = true;
-                        
-                        try {
-                            $update_stmt = $conn->prepare("UPDATE USERS SET last_login = NOW() WHERE user_id = ?");
-                            $update_stmt->bind_param("i", $user['user_id']);
-                            $update_stmt->execute();
-                            $update_stmt->close();
-                        } catch (Exception $update_e) {
-                        }
-                        
-                        header("Location: " . ($user['role'] == 'tenant' ? 'TENANT/dashboard.php' : 'LANDLORD/dashboard.php'));
-                        exit();
-                    } else {
-                        $error = "Invalid email or password";
-                    }
-                } else {
-                    $error = "Invalid email or password";
-                }
-                
-                $stmt->close();
+                $error = "Invalid email or password";
             }
-        } catch (Exception $e) {
-            $error = "Database error: " . $e->getMessage();
+        } else {
+            $error = "Invalid email or password";
         }
+        
+        $stmt->close();
+    } catch (Exception $e) {
+        error_log("Login error: " . $e->getMessage());
+        $error = "A system error occurred. Please try again.";
     }
 }
 ?>
@@ -728,7 +718,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
     </style>
 </head>
 <body>
-    <?php include "includes/navbar/navbarOUT.html" ?>
+    <?php include "includes/navbar/navbarOUT.html"
     <!-- Hero Section -->
     <section class="hero" id="home">
         <div class="hero-content">
@@ -976,6 +966,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                 alert('Please enter both email and password');
             }
         });
+
+        fetch('includes/navbar/navbarOUT.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('navbar-container').innerHTML = data;
+                
+                setTimeout(() => {
+                    const navLinksArray = document.querySelectorAll('.nav-link');
+                    const sections = document.querySelectorAll('section');
+
+                    function updateActiveNav() {
+                        let current = '';
+                        sections.forEach(section => {
+                            const sectionTop = section.offsetTop;
+                            if (window.scrollY >= (sectionTop - 200)) {
+                                current = section.getAttribute('id');
+                            }
+                        });
+
+                        navLinksArray.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === '#' + current) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+
+                    window.addEventListener('scroll', updateActiveNav);
+                    updateActiveNav();
+                }, 100);
+            });
 
         document.querySelectorAll('.faq-question').forEach(question => {
             question.addEventListener('click', function() {

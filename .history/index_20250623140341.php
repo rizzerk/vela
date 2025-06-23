@@ -8,6 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
     $email = trim($_POST['email']);
     $password = trim($_POST['password']);
     
+    // Check if connection exists
     if (!$conn) {
         $error = "Database connection failed";
     } else {
@@ -30,12 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                         $_SESSION['role'] = $user['role'];
                         $_SESSION['loggedin'] = true;
                         
+                        // Try to update last login (optional)
                         try {
                             $update_stmt = $conn->prepare("UPDATE USERS SET last_login = NOW() WHERE user_id = ?");
                             $update_stmt->bind_param("i", $user['user_id']);
                             $update_stmt->execute();
                             $update_stmt->close();
                         } catch (Exception $update_e) {
+                            // Ignore update errors, continue with login
                         }
                         
                         header("Location: " . ($user['role'] == 'tenant' ? 'TENANT/dashboard.php' : 'LANDLORD/dashboard.php'));
