@@ -29,7 +29,6 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             color: #000000;
             line-height: 1.7;
             min-height: 100vh;
-            padding-top: 80px;
         }
 
 
@@ -47,7 +46,7 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             margin-bottom: 0.8rem;
             letter-spacing: -0.02em;
             text-align: center;
-            margin-top: 2rem;
+            margin-top: 5rem;
             padding: 2rem;
         }
 
@@ -163,8 +162,8 @@ $userName = $_SESSION['name'] ?? 'Tenant';
     </style>
 </head>
 <body>
-    <?php include '../includes/navbar/tenant-navbar.php'?>
-    <h1 class="welcome-title">Welcome back, <?php echo htmlspecialchars($userName); ?>!</h1>
+    <?php include 'tenant-navbar.php'?>
+    <h1 class="welcome-title">Welcome back, <?php echo htmlspecialchars($userName); ?>!<h1>
 
     <div class="content-wrapper">
         <div class="notice-section">

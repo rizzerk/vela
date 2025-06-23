@@ -393,42 +393,67 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             background: #f8fafc;
         }
 
-        .contact-info {
-            text-align: center;
+        .landlord-info {
+            max-width: 800px;
+            margin: 0 auto;
             background: #ffffff;
-            padding: 3rem 2rem;
             border-radius: 16px;
+            padding: 3rem;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
             border: 1px solid #deecfb;
-            max-width: 600px;
-            margin: 0 auto;
         }
 
-        .contact-info h3 {
+        .landlord-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .landlord-header h3 {
             color: #1666ba;
-            margin-bottom: 2rem;
-            font-size: 1.8rem;
-            font-weight: 600;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
         }
 
-        .contact-details {
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
+        .landlord-title {
+            color: #666;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
             gap: 2rem;
         }
 
-        .contact-item {
+        .contact-method {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            color: #000000;
-            font-size: 1.1rem;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #1666ba;
         }
 
-        .contact-item i {
+        .contact-method i {
             color: #1666ba;
-            font-size: 1.2rem;
+            font-size: 1.5rem;
+            width: 24px;
+        }
+
+        .contact-method-info h4 {
+            color: #1666ba;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        .contact-method-info p {
+            color: #333;
+            font-size: 1.1rem;
+            font-weight: 500;
         }
 
         .notifications {
@@ -546,9 +571,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             .features-grid {
                 grid-template-columns: 1fr;
             }
-            .contact-details {
-                flex-direction: column;
-                align-items: center;
+            .contact-grid {
+                grid-template-columns: 1fr;
+            }
+            .landlord-info {
+                padding: 2rem;
             }
         }
     </style>
@@ -724,20 +751,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         </div>
     </section>
 
-    <!-- Contact Section -->
-    <section class="contact" id="contact">
-        <h2 class="section-title">Contact Information</h2>
-        <p class="section-subtitle">Get in touch with our property management team</p>
-        <h3 style="text-align: center; color: #1666ba; margin: 2rem 0;">Maria Rose Cinco - Property Manager</h3>
-        <p style="text-align: center; margin: 1rem 0;"><i class="fas fa-phone" style="color: #1666ba; margin-right: 0.5rem;"></i>+63 912 345 6789</p>
-        <p style="text-align: center; margin: 1rem 0;"><i class="fas fa-envelope" style="color: #1666ba; margin-right: 0.5rem;"></i>maria.cinco@vela.com</p>
-        <p style="text-align: center; margin: 1rem 0;"><i class="fas fa-map-marker-alt" style="color: #1666ba; margin-right: 0.5rem;"></i>Manila, Philippines</p>
-    </section>
-
     <!-- FAQs Section -->
     <section class="faqs" id="faqs">
         <div class="container">
-            <h2 class="section-title" style="color: #ffffff;">Frequently Asked Questions</h2>
+            <h2 class="section-title">Frequently Asked Questions</h2>
             <p class="section-subtitle">Find answers to common questions about our rental management platform</p>
             <div class="faq-container">
                 <div class="faq-item">
@@ -772,38 +789,80 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
 
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>What are the rental requirements?</h3>
+                        <h3>Can I view my lease details online?</h3>
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Tenants need to provide valid ID, proof of income, and security deposit. Employment verification and references may also be required depending on the property.</p>
+                        <p>Yes! Your dashboard provides complete access to your lease information, including start and end dates, rental amount, and renewal options.</p>
                     </div>
                 </div>
 
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>Are utilities included in the rent?</h3>
+                        <h3>How do landlords manage multiple properties?</h3>
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Utility inclusions vary by property. Some units include water and electricity, while others require separate utility accounts. Check individual property listings for specific details.</p>
+                        <p>The landlord dashboard allows you to add, edit, and manage multiple properties from one central location. You can track tenants, payments, and maintenance requests for all your properties.</p>
                     </div>
                 </div>
 
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>Can I schedule a property viewing?</h3>
+                        <h3>Is my personal information secure?</h3>
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Yes! Contact Maria Rose Cinco directly to schedule property viewings.</p>
+                        <p>Absolutely. We use industry-standard encryption and security measures to protect all user data. Your personal and financial information is kept completely confidential.</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-
+    <!-- Contact Section -->
+    <section class="contact" id="contact">
+        <div class="container">
+            <h2 class="section-title">Property Management Contact</h2>
+            <p class="section-subtitle">Connect directly with our property management team for inquiries and assistance</p>
+            <div class="landlord-info">
+                <div class="landlord-header">
+                    <h3>Maria Santos</h3>
+                    <p class="landlord-title">Senior Property Manager</p>
+                </div>
+                <div class="contact-grid">
+                    <div class="contact-method">
+                        <i class="fas fa-phone"></i>
+                        <div class="contact-method-info">
+                            <h4>Phone</h4>
+                            <p>+63 912 345 6789</p>
+                        </div>
+                    </div>
+                    <div class="contact-method">
+                        <i class="fas fa-mobile-alt"></i>
+                        <div class="contact-method-info">
+                            <h4>Mobile</h4>
+                            <p>+63 917 123 4567</p>
+                        </div>
+                    </div>
+                    <div class="contact-method">
+                        <i class="fas fa-envelope"></i>
+                        <div class="contact-method-info">
+                            <h4>Email</h4>
+                            <p>maria.santos@vela.com</p>
+                        </div>
+                    </div>
+                    <div class="contact-method">
+                        <i class="fas fa-building"></i>
+                        <div class="contact-method-info">
+                            <h4>Office</h4>
+                            <p>VELA Property Management</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <script>
         function toggleFaq(element) {

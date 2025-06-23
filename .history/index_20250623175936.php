@@ -772,31 +772,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
 
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>What are the rental requirements?</h3>
+                        <h3>Can I view my lease details online?</h3>
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Tenants need to provide valid ID, proof of income, and security deposit. Employment verification and references may also be required depending on the property.</p>
+                        <p>Yes! Your dashboard provides complete access to your lease information, including start and end dates, rental amount, and renewal options.</p>
                     </div>
                 </div>
 
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>Are utilities included in the rent?</h3>
+                        <h3>How do landlords manage multiple properties?</h3>
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Utility inclusions vary by property. Some units include water and electricity, while others require separate utility accounts. Check individual property listings for specific details.</p>
+                        <p>The landlord dashboard allows you to add, edit, and manage multiple properties from one central location. You can track tenants, payments, and maintenance requests for all your properties.</p>
                     </div>
                 </div>
 
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>Can I schedule a property viewing?</h3>
+                        <h3>Is my personal information secure?</h3>
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Yes! Contact Maria Rose Cinco directly to schedule property viewings.</p>
+                        <p>Absolutely. We use industry-standard encryption and security measures to protect all user data. Your personal and financial information is kept completely confidential.</p>
                     </div>
                 </div>
             </div>

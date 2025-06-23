@@ -29,15 +29,30 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             color: #000000;
             line-height: 1.7;
             min-height: 100vh;
-            padding-top: 80px;
         }
 
 
 
-        .content-wrapper {
+        .notice-section {
+            max-width: 1200px;
+            margin: 0 auto 4rem auto;
+            padding: 2rem;
+        }
+
+        .dashboard-grid {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 0 2rem;
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 4rem;
+            background: #ffffff;
+            padding: 3rem 2rem;
+            box-shadow: 0 4px 20px rgba(22, 102, 186, 0.08);
+            border-bottom: 1px solid rgba(222, 236, 251, 0.5);
+            margin-top: 5rem;
         }
 
         .welcome-title {
@@ -46,23 +61,26 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             font-weight: 800;
             margin-bottom: 0.8rem;
             letter-spacing: -0.02em;
-            text-align: center;
-            margin-top: 2rem;
-            padding: 2rem;
         }
 
-        .notice-section {
+        .welcome-subtitle {
+            font-size: 1.2rem;
+            color: #000000;
+            opacity: 0.6;
+            font-weight: 400;
+        }
+
+        .notice-section .notice-card {
             background: linear-gradient(135deg, #1666ba 0%, #368ce7 100%);
             border-radius: 20px;
             padding: 2.5rem;
-            margin-bottom: 4rem;
             color: #ffffff;
             position: relative;
             overflow: hidden;
             box-shadow: 0 8px 32px rgba(22, 102, 186, 0.2);
         }
 
-        .notice-section::before {
+        .notice-card::before {
             content: '';
             position: absolute;
             top: 0;
@@ -92,7 +110,7 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             opacity: 0.95;
         }
 
-        .dashboard-grid {
+        .dashboard-grid .grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 2rem;
@@ -143,7 +161,7 @@ $userName = $_SESSION['name'] ?? 'Tenant';
         }
 
         @media (max-width: 768px) {
-            .content-wrapper {
+            .notice-section, .dashboard-grid {
                 padding: 1rem;
             }
             
@@ -151,23 +169,27 @@ $userName = $_SESSION['name'] ?? 'Tenant';
                 font-size: 2rem;
             }
             
-            .dashboard-grid {
+            .dashboard-grid .grid {
                 grid-template-columns: 1fr;
                 gap: 1.5rem;
             }
             
-            .notice-section {
+            .notice-card {
                 padding: 1.5rem;
             }
         }
     </style>
 </head>
 <body>
-    <?php include '../includes/navbar/tenant-navbar.php'?>
-    <h1 class="welcome-title">Welcome back, <?php echo htmlspecialchars($userName); ?>!</h1>
+    <div id="tenant-navbar-container"></div>
 
-    <div class="content-wrapper">
-        <div class="notice-section">
+    <div class="welcome-section">
+        <h1 class="welcome-title">Welcome back, <?php echo htmlspecialchars($userName); ?>!</h1>
+        <p class="welcome-subtitle">Manage your rental experience from your personalized dashboard</p>
+    </div>
+
+    <div class="notice-section">
+        <div class="notice-card">
             <div class="notice-content">
                 <h2 class="notice-title">
                     <i class="fas fa-bell"></i>
@@ -179,8 +201,10 @@ $userName = $_SESSION['name'] ?? 'Tenant';
                 </p>
             </div>
         </div>
+    </div>
 
-        <div class="dashboard-grid">
+    <div class="dashboard-grid">
+        <div class="grid">
             <div class="dashboard-card" onclick="viewDues()">
                 <div class="card-icon">
                     <i class="fas fa-file-invoice-dollar"></i>
@@ -228,6 +252,26 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             window.location.href = 'payment-history.php';
         }
 
+        // Load tenant navbar
+        fetch('../includes/navbar/tenant-navbar.php')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Navbar not found');
+                }
+                return response.text();
+            })
+            .then(data => {
+                document.getElementById('tenant-navbar-container').innerHTML = data;
+            })
+            .catch(error => {
+                console.log('Navbar loading failed:', error);
+                // Fallback: create a simple navbar if the file doesn't exist
+                document.getElementById('tenant-navbar-container').innerHTML = `
+                    <nav style="background: #1666ba; padding: 1rem; position: fixed; top: 0; left: 0; right: 0; z-index: 1000;">
+                        <div style="color: white; font-weight: bold; font-size: 1.2rem;">VELA - Tenant Dashboard</div>
+                    </nav>
+                `;
+            });
     </script>
 </body>
 </html>

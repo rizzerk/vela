@@ -796,7 +796,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Yes! Contact Maria Rose Cinco directly to schedule property viewings.</p>
+                        <p>Yes! Contact Maria Rose Cinco directly to schedule property viewings. Virtual tours may also be available for select properties.</p>
                     </div>
                 </div>
             </div>

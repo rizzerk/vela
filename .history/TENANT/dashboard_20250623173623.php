@@ -29,7 +29,6 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             color: #000000;
             line-height: 1.7;
             min-height: 100vh;
-            padding-top: 80px;
         }
 
 
@@ -47,7 +46,7 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             margin-bottom: 0.8rem;
             letter-spacing: -0.02em;
             text-align: center;
-            margin-top: 2rem;
+            margin-top: 5rem;
             padding: 2rem;
         }
 
@@ -163,8 +162,8 @@ $userName = $_SESSION['name'] ?? 'Tenant';
     </style>
 </head>
 <body>
-    <?php include '../includes/navbar/tenant-navbar.php'?>
-    <h1 class="welcome-title">Welcome back, <?php echo htmlspecialchars($userName); ?>!</h1>
+
+    <h1 class="welcome-title">Welcome back, <?php echo htmlspecialchars($userName); ?>!<h1>
 
     <div class="content-wrapper">
         <div class="notice-section">
@@ -228,6 +227,26 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             window.location.href = 'payment-history.php';
         }
 
+        // Load tenant navbar
+        fetch('../includes/navbar/tenant-navbar.php')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Navbar not found');
+                }
+                return response.text();
+            })
+            .then(data => {
+                document.getElementById('tenant-navbar-container').innerHTML = data;
+            })
+            .catch(error => {
+                console.log('Navbar loading failed:', error);
+                // Fallback: create a simple navbar if the file doesn't exist
+                document.getElementById('tenant-navbar-container').innerHTML = `
+                    <nav style="background: #1666ba; padding: 1rem; position: fixed; top: 0; left: 0; right: 0; z-index: 1000;">
+                        <div style="color: white; font-weight: bold; font-size: 1.2rem;">VELA - Tenant Dashboard</div>
+                    </nav>
+                `;
+            });
     </script>
 </body>
 </html>

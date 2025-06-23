@@ -163,7 +163,7 @@ $userName = $_SESSION['name'] ?? 'Tenant';
     </style>
 </head>
 <body>
-    <?php include '../includes/navbar/tenant-navbar.php'?>
+    <?php include 'tenant-navbar.php'?>
     <h1 class="welcome-title">Welcome back, <?php echo htmlspecialchars($userName); ?>!</h1>
 
     <div class="content-wrapper">

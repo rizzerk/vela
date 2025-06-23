@@ -458,31 +458,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             font-size: 1.2rem;
             line-height: 1.6;
             opacity: 0.95;
-            margin-bottom: 2rem;
-        }
-
-        .notify-btn {
-            background: #ffffff;
-            color: #1666ba;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
-        }
-
-        .notify-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.4);
         }
 
         .faqs {
             padding: 8rem 2rem;
-            background: linear-gradient(135deg, #1666ba 0%, #368ce7 100%);
-            color: #ffffff;
+            background: #f8fafc;
         }
 
         .faq-container {
@@ -491,11 +471,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         }
 
         .faq-item {
-            background: rgba(255, 255, 255, 0.1);
+            background: #ffffff;
             border-radius: 16px;
             margin-bottom: 1.5rem;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid #deecfb;
             overflow: hidden;
         }
 
@@ -505,33 +485,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: transparent;
+            background: #ffffff;
             transition: all 0.3s ease;
         }
 
         .faq-question:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: #f8fafc;
         }
 
         .faq-question h3 {
-            color: #ffffff;
+            color: #1666ba;
             font-size: 1.2rem;
             font-weight: 600;
             margin: 0;
         }
 
         .faq-icon {
-            color: #ffffff;
+            color: #368ce7;
             font-size: 1.2rem;
             transition: transform 0.3s ease;
         }
 
         .faq-answer {
             padding: 0 2rem 2rem 2rem;
-            color: #ffffff;
+            color: #000000;
             line-height: 1.6;
             display: none;
-            opacity: 0.9;
         }
 
         .faq-item.active .faq-answer {
@@ -607,17 +586,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                     <h3>Maintenance Requests</h3>
                     <p>Easy submission and tracking of maintenance issues</p>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Notifications Section -->
-    <section class="notifications" id="notifications">
-        <div class="container">
-            <div class="notification-card">
-                <h3><i class="fas fa-bell"></i> Stay Updated on New Vacancies</h3>
-                <p>Be the first to know when new properties become available. Get instant notifications about vacancy openings that match your preferences and budget.</p>
-                <button class="notify-btn" onclick="registerForNotifications()">Register for Vacancy Notifications</button>
             </div>
         </div>
     </section>
@@ -724,20 +692,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         </div>
     </section>
 
-    <!-- Contact Section -->
-    <section class="contact" id="contact">
-        <h2 class="section-title">Contact Information</h2>
-        <p class="section-subtitle">Get in touch with our property management team</p>
-        <h3 style="text-align: center; color: #1666ba; margin: 2rem 0;">Maria Rose Cinco - Property Manager</h3>
-        <p style="text-align: center; margin: 1rem 0;"><i class="fas fa-phone" style="color: #1666ba; margin-right: 0.5rem;"></i>+63 912 345 6789</p>
-        <p style="text-align: center; margin: 1rem 0;"><i class="fas fa-envelope" style="color: #1666ba; margin-right: 0.5rem;"></i>maria.cinco@vela.com</p>
-        <p style="text-align: center; margin: 1rem 0;"><i class="fas fa-map-marker-alt" style="color: #1666ba; margin-right: 0.5rem;"></i>Manila, Philippines</p>
-    </section>
-
     <!-- FAQs Section -->
     <section class="faqs" id="faqs">
         <div class="container">
-            <h2 class="section-title" style="color: #ffffff;">Frequently Asked Questions</h2>
+            <h2 class="section-title">Frequently Asked Questions</h2>
             <p class="section-subtitle">Find answers to common questions about our rental management platform</p>
             <div class="faq-container">
                 <div class="faq-item">
@@ -772,38 +730,71 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
 
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>What are the rental requirements?</h3>
+                        <h3>Can I view my lease details online?</h3>
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Tenants need to provide valid ID, proof of income, and security deposit. Employment verification and references may also be required depending on the property.</p>
+                        <p>Yes! Your dashboard provides complete access to your lease information, including start and end dates, rental amount, and renewal options.</p>
                     </div>
                 </div>
 
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>Are utilities included in the rent?</h3>
+                        <h3>How do landlords manage multiple properties?</h3>
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Utility inclusions vary by property. Some units include water and electricity, while others require separate utility accounts. Check individual property listings for specific details.</p>
+                        <p>The landlord dashboard allows you to add, edit, and manage multiple properties from one central location. You can track tenants, payments, and maintenance requests for all your properties.</p>
                     </div>
                 </div>
 
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>Can I schedule a property viewing?</h3>
+                        <h3>Is my personal information secure?</h3>
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Yes! Contact Maria Rose Cinco directly to schedule property viewings.</p>
+                        <p>Absolutely. We use industry-standard encryption and security measures to protect all user data. Your personal and financial information is kept completely confidential.</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
+    <!-- Notifications Section -->
+    <section class="notifications" id="notifications">
+        <div class="container">
+            <div class="notification-card">
+                <h3><i class="fas fa-bell"></i> Stay Updated</h3>
+                <p>Get instant notifications about rent reminders, maintenance updates, and important announcements. Never miss a payment deadline or property update again.</p>
+            </div>
+        </div>
+    </section>
 
+    <!-- Contact Section -->
+    <section class="contact" id="contact">
+        <div class="container">
+            <h2 class="section-title">Get In Touch</h2>
+            <p class="section-subtitle">Have questions? We're here to help you find your perfect home</p>
+            <div class="contact-info">
+                <h3>Contact Information</h3>
+                <div class="contact-details">
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <span>+63 912 345 6789</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>info@vela.com</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Manila, Philippines</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <script>
         function toggleFaq(element) {
@@ -819,12 +810,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             if (!isActive) {
                 faqItem.classList.add('active');
             }
-        }
-
-        function registerForNotifications() {
-            alert('Redirecting to notification registration...');
-            // You can redirect to a registration page or open a modal
-            // window.location.href = 'notification-signup.php';
         }
     </script>
 </body>

@@ -29,15 +29,24 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             color: #000000;
             line-height: 1.7;
             min-height: 100vh;
-            padding-top: 80px;
         }
 
 
 
-        .content-wrapper {
+        .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 8rem 2rem 2rem;
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 4rem;
+            background: #ffffff;
+            padding: 3rem 2rem;
+            box-shadow: 0 4px 20px rgba(22, 102, 186, 0.08);
+            border-bottom: 1px solid rgba(222, 236, 251, 0.5);
+            margin-top: 5rem;
         }
 
         .welcome-title {
@@ -46,9 +55,13 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             font-weight: 800;
             margin-bottom: 0.8rem;
             letter-spacing: -0.02em;
-            text-align: center;
-            margin-top: 2rem;
-            padding: 2rem;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.2rem;
+            color: #000000;
+            opacity: 0.6;
+            font-weight: 400;
         }
 
         .notice-section {
@@ -143,8 +156,8 @@ $userName = $_SESSION['name'] ?? 'Tenant';
         }
 
         @media (max-width: 768px) {
-            .content-wrapper {
-                padding: 1rem;
+            .container {
+                padding: 6rem 1rem 2rem;
             }
             
             .welcome-title {
@@ -163,10 +176,15 @@ $userName = $_SESSION['name'] ?? 'Tenant';
     </style>
 </head>
 <body>
-    <?php include '../includes/navbar/tenant-navbar.php'?>
-    <h1 class="welcome-title">Welcome back, <?php echo htmlspecialchars($userName); ?>!</h1>
+    <div id="tenant-navbar-container"></div>
 
-    <div class="content-wrapper">
+    <div class="welcome-section">
+        <h1 class="welcome-title">Welcome back, <?php echo htmlspecialchars($userName); ?>!</h1>
+        <p class="welcome-subtitle">Manage your rental experience from your personalized dashboard</p>
+    </div>
+
+    <div class="container">
+
         <div class="notice-section">
             <div class="notice-content">
                 <h2 class="notice-title">
@@ -228,6 +246,26 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             window.location.href = 'payment-history.php';
         }
 
+        // Load tenant navbar
+        fetch('../includes/navbar/tenant-navbar.php')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Navbar not found');
+                }
+                return response.text();
+            })
+            .then(data => {
+                document.getElementById('tenant-navbar-container').innerHTML = data;
+            })
+            .catch(error => {
+                console.log('Navbar loading failed:', error);
+                // Fallback: create a simple navbar if the file doesn't exist
+                document.getElementById('tenant-navbar-container').innerHTML = `
+                    <nav style="background: #1666ba; padding: 1rem; position: fixed; top: 0; left: 0; right: 0; z-index: 1000;">
+                        <div style="color: white; font-weight: bold; font-size: 1.2rem;">VELA - Tenant Dashboard</div>
+                    </nav>
+                `;
+            });
     </script>
 </body>
 </html>
