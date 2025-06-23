@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         $error = "Database connection failed";
     } else {
         try {
-            $stmt = $conn->prepare("SELECT user_id, name, email, password, role FROM USERS WHERE email = ?");
+            $stmt = $conn->prepare("SELECT user_id, first_name, last_name, email, password, role FROM USERS WHERE email = ?");
             if (!$stmt) {
                 $error = "Database prepare failed: " . $conn->error;
             } else {
@@ -25,7 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                     
                     if (password_verify($password, $user['password'])) {
                         $_SESSION['user_id'] = $user['user_id'];
-                        $_SESSION['name'] = $user['name'];
+                        $_SESSION['first_name'] = $user['first_name'];
+                        $_SESSION['last_name'] = $user['last_name'];
                         $_SESSION['email'] = $user['email'];
                         $_SESSION['role'] = $user['role'];
                         $_SESSION['loggedin'] = true;

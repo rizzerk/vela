@@ -248,16 +248,6 @@ document.querySelectorAll('.nav-link').forEach(link => {
     });
 });
 
-// Load user name from session
-fetch('../get_user_info.php')
-    .then(response => response.json())
-    .then(data => {
-        if (data.name) {
-            document.getElementById('userName').textContent = data.name;
-        }
-    })
-    .catch(error => console.log('Could not load user info'));
-
 // Profile dropdown links
 document.querySelectorAll('.dropdown-menu a').forEach(link => {
     link.addEventListener('click', function(e) {

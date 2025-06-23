@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         $error = "Database connection failed";
     } else {
         try {
-            $stmt = $conn->prepare("SELECT user_id, name, email, password, role FROM USERS WHERE email = ?");
+            $stmt = $conn->prepare("SELECT user_id, first_name, last_name, email, password, role FROM USERS WHERE email = ?");
             if (!$stmt) {
                 $error = "Database prepare failed: " . $conn->error;
             } else {
@@ -25,7 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                     
                     if (password_verify($password, $user['password'])) {
                         $_SESSION['user_id'] = $user['user_id'];
-                        $_SESSION['name'] = $user['name'];
+                        $_SESSION['first_name'] = $user['first_name'];
+                        $_SESSION['last_name'] = $user['last_name'];
                         $_SESSION['email'] = $user['email'];
                         $_SESSION['role'] = $user['role'];
                         $_SESSION['loggedin'] = true;
@@ -153,7 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         }
 
         .login-form h3 {
-            color: #ffffff;
+            color: #1666ba;
             margin-bottom: 2rem;
             font-size: 2rem;
             font-weight: 600;
@@ -188,10 +189,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             border-color: #368ce7;
             box-shadow: 0 8px 25px rgba(54, 140, 231, 0.2);
             color: #000000;
-        }
-
-        .form-group input:focus::placeholder {
-            color: #999999;
         }
 
         .login-btn {
@@ -441,67 +438,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             font-weight: 500;
         }
 
-        .faqs {
-            padding: 8rem 2rem;
-            background: #f8fafc;
-        }
-
-        .faq-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .faq-item {
-            background: #ffffff;
-            border-radius: 16px;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-            border: 1px solid #deecfb;
-            overflow: hidden;
-        }
-
-        .faq-question {
-            padding: 2rem;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #ffffff;
-            transition: all 0.3s ease;
-        }
-
-        .faq-question:hover {
-            background: #f8fafc;
-        }
-
-        .faq-question h3 {
-            color: #1666ba;
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .faq-icon {
-            color: #368ce7;
-            font-size: 1.2rem;
-            transition: transform 0.3s ease;
-        }
-
-        .faq-answer {
-            padding: 0 2rem 2rem 2rem;
-            color: #000000;
-            line-height: 1.6;
-            display: none;
-        }
-
-        .faq-item.active .faq-answer {
-            display: block;
-        }
-
-        .faq-item.active .faq-icon {
-            transform: rotate(180deg);
-        }
-
         @media (max-width: 768px) {
             .features-grid {
                 grid-template-columns: 1fr;
@@ -672,75 +608,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         </div>
     </section>
 
-    <!-- FAQs Section -->
-    <section class="faqs" id="faqs">
-        <div class="container">
-            <h2 class="section-title">Frequently Asked Questions</h2>
-            <p class="section-subtitle">Find answers to common questions about our rental management platform</p>
-            <div class="faq-container">
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>How do I register as a tenant or landlord?</h3>
-                        <i class="fas fa-chevron-down faq-icon"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Click on the "Register here" link on the login form or visit our registration page. You can choose to register as either a tenant looking for properties or a landlord wanting to list your properties.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>How do I submit a maintenance request?</h3>
-                        <i class="fas fa-chevron-down faq-icon"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Once logged in as a tenant, navigate to your dashboard and click on "Maintenance Requests". Fill out the form with details about the issue, and your landlord will be notified immediately.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>How do I make rent payments?</h3>
-                        <i class="fas fa-chevron-down faq-icon"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>You can upload proof of payment through your tenant dashboard. The system will notify your landlord and track your payment history for easy reference.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>Can I view my lease details online?</h3>
-                        <i class="fas fa-chevron-down faq-icon"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Yes! Your dashboard provides complete access to your lease information, including start and end dates, rental amount, and renewal options.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>How do landlords manage multiple properties?</h3>
-                        <i class="fas fa-chevron-down faq-icon"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>The landlord dashboard allows you to add, edit, and manage multiple properties from one central location. You can track tenants, payments, and maintenance requests for all your properties.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>Is my personal information secure?</h3>
-                        <i class="fas fa-chevron-down faq-icon"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Absolutely. We use industry-standard encryption and security measures to protect all user data. Your personal and financial information is kept completely confidential.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- Contact Section -->
     <section class="contact" id="contact">
         <div class="container">
@@ -765,22 +632,5 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             </div>
         </div>
     </section>
-
-    <script>
-        function toggleFaq(element) {
-            const faqItem = element.parentElement;
-            const isActive = faqItem.classList.contains('active');
-            
-            // Close all FAQ items
-            document.querySelectorAll('.faq-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // Open clicked item if it wasn't active
-            if (!isActive) {
-                faqItem.classList.add('active');
-            }
-        }
-    </script>
 </body>
 </html>

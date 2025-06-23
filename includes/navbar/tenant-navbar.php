@@ -1,3 +1,12 @@
+<?php
+session_start();
+if (!isset($_SESSION['loggedin']) || $_SESSION['role'] != 'tenant') {
+    header("Location: ../../index.php");
+    exit();
+}
+$fullName = isset($_SESSION['name']) ? $_SESSION['name'] : 'User';
+?>
+
 <style>
 .tenant-navbar {
     background: #ffffff;
@@ -171,11 +180,11 @@
 </style>
 
 <nav class="tenant-navbar">
-    <a href="#dashboard" class="tenant-logo">VELA</a>
+    <a href="dashboard.php" class="tenant-logo">VELA</a>
     <ul class="tenant-nav-links">
-        <li><a href="#dashboard" class="nav-link active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+        <li><a href="dashboard.php" class="nav-link active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
         <li class="notification-icon">
-            <a href="#notifications" class="nav-link">
+            <a href="notifications.php" class="nav-link">
                 <i class="fas fa-bell"></i> Notifications
                 <span class="notification-badge">3</span>
             </a>
@@ -183,7 +192,7 @@
         <li class="profile-dropdown">
             <button class="profile-btn" id="profileBtn">
                 <i class="fas fa-user-circle"></i>
-                <span id="userName">User</span>
+                <span><?php echo htmlspecialchars($fullName); ?></span>
                 <i class="fas fa-chevron-down"></i>
             </button>
             <div class="dropdown-menu" id="dropdownMenu">
@@ -203,18 +212,15 @@ const navLinks = document.querySelector('.tenant-nav-links');
 const profileBtn = document.getElementById('profileBtn');
 const dropdownMenu = document.getElementById('dropdownMenu');
 
-// Mobile menu toggle
 mobileMenuBtn.addEventListener('click', function() {
     navLinks.classList.toggle('active');
 });
 
-// Profile dropdown toggle
 profileBtn.addEventListener('click', function(e) {
     e.stopPropagation();
     dropdownMenu.classList.toggle('show');
 });
 
-// Close dropdown when clicking outside
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.profile-dropdown')) {
         dropdownMenu.classList.remove('show');
@@ -224,41 +230,14 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Navigation functionality
 document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        // Remove active class from all links
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        
-        // Add active class to clicked link
         this.classList.add('active');
-        
-        // Close mobile menu
         navLinks.classList.remove('active');
-        
-        // Handle navigation
-        const href = this.getAttribute('href');
-        if (href === '#dashboard') {
-            console.log('Navigate to Dashboard');
-        } else if (href === '#notifications') {
-            console.log('Navigate to Notifications');
-        }
     });
 });
 
-// Load user name from session
-fetch('../get_user_info.php')
-    .then(response => response.json())
-    .then(data => {
-        if (data.name) {
-            document.getElementById('userName').textContent = data.name;
-        }
-    })
-    .catch(error => console.log('Could not load user info'));
-
-// Profile dropdown links
 document.querySelectorAll('.dropdown-menu a').forEach(link => {
     link.addEventListener('click', function(e) {
         e.preventDefault();

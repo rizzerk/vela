@@ -1,14 +1,3 @@
-<?php
-session_start();
-
-if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION['role'] !== 'tenant') {
-    header('Location: ../index.php');
-    exit();
-}
-
-$userName = $_SESSION['name'] ?? 'Tenant';
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -179,11 +168,6 @@ $userName = $_SESSION['name'] ?? 'Tenant';
     <div id="tenant-navbar-container"></div>
 
     <div class="container">
-        <div class="welcome-section">
-            <h1 class="welcome-title">Welcome back, <?php echo htmlspecialchars($userName); ?>!</h1>
-            <p class="welcome-subtitle">Manage your rental experience from your personalized dashboard</p>
-        </div>
-
         <div class="notice-section">
             <div class="notice-content">
                 <h2 class="notice-title">
@@ -230,40 +214,25 @@ $userName = $_SESSION['name'] ?? 'Tenant';
 
     <script>
         function viewDues() {
-            window.location.href = 'view-dues.php';
+            alert('Redirecting to View Dues page...');
         }
 
         function payDues() {
-            window.location.href = 'pay-dues.php';
+            alert('Redirecting to Pay Dues page...');
         }
 
         function maintenanceRequest() {
-            window.location.href = 'maintenance-request.php';
+            alert('Redirecting to Maintenance Request page...');
         }
 
         function paymentHistory() {
-            window.location.href = 'payment-history.php';
+            alert('Redirecting to Payment History page...');
         }
 
-        // Load tenant navbar
-        fetch('../includes/navbar/tenant-navbar.php')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Navbar not found');
-                }
-                return response.text();
-            })
+        fetch('../includes/navbar/tenant-navbar.')
+            .then(response => response.text())
             .then(data => {
                 document.getElementById('tenant-navbar-container').innerHTML = data;
-            })
-            .catch(error => {
-                console.log('Navbar loading failed:', error);
-                // Fallback: create a simple navbar if the file doesn't exist
-                document.getElementById('tenant-navbar-container').innerHTML = `
-                    <nav style="background: #1666ba; padding: 1rem; position: fixed; top: 0; left: 0; right: 0; z-index: 1000;">
-                        <div style="color: white; font-weight: bold; font-size: 1.2rem;">VELA - Tenant Dashboard</div>
-                    </nav>
-                `;
             });
     </script>
 </body>

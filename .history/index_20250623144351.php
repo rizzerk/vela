@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         $error = "Database connection failed";
     } else {
         try {
-            $stmt = $conn->prepare("SELECT user_id, name, email, password, role FROM USERS WHERE email = ?");
+            $stmt = $conn->prepare("SELECT user_id, first_name, last_name, email, password, role FROM USERS WHERE email = ?");
             if (!$stmt) {
                 $error = "Database prepare failed: " . $conn->error;
             } else {
@@ -25,7 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                     
                     if (password_verify($password, $user['password'])) {
                         $_SESSION['user_id'] = $user['user_id'];
-                        $_SESSION['name'] = $user['name'];
+                        $_SESSION['first_name'] = $user['first_name'];
+                        $_SESSION['last_name'] = $user['last_name'];
                         $_SESSION['email'] = $user['email'];
                         $_SESSION['role'] = $user['role'];
                         $_SESSION['loggedin'] = true;
@@ -103,6 +104,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             background: #1666ba;
         }
 
+
+
+        /* Hero Section */
         .hero {
             height: 100vh;
             display: flex;
@@ -112,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             margin-top: 4rem;
             padding: 0 5rem;
             gap: 4rem;
-            background: url('./images/landing-page.png');
+            background: url('images/landing-page.png');
             background-size: cover;
             background-position: center;
         }
@@ -153,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         }
 
         .login-form h3 {
-            color: #ffffff;
+            color: #1666ba;
             margin-bottom: 2rem;
             font-size: 2rem;
             font-weight: 600;
@@ -187,11 +191,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             background: #ffffff;
             border-color: #368ce7;
             box-shadow: 0 8px 25px rgba(54, 140, 231, 0.2);
-            color: #000000;
-        }
-
-        .form-group input:focus::placeholder {
-            color: #999999;
         }
 
         .login-btn {
@@ -210,6 +209,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             overflow: hidden;
         }
 
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .login-btn:hover::before {
+            left: 100%;
+        }
+
         .login-btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 15px 40px rgba(54, 140, 231, 0.6);
@@ -225,6 +239,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             border-radius: 8px;
         }
 
+        /* Properties Section */
+        .properties {
+            padding: 8rem 2rem;
+            background: #ffffff;
+        }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -235,7 +255,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             font-size: 3.2rem;
             color: #1666ba;
             font-weight: 800;
+            letter-spacing: -0.03em;
             margin-bottom: 1rem;
+            position: relative;
+            text-decoration: none;
         }
 
         .section-subtitle {
@@ -247,8 +270,149 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             max-width: 700px;
             margin-left: auto;
             margin-right: auto;
+            font-weight: 400;
+            line-height: 1.6;
         }
 
+        .faq .section-title {
+            color: #ffffff;
+        }
+
+        .faq .section-subtitle {
+            color: #ffffff;
+            opacity: 0.9;
+            margin-bottom: 3rem;
+        }
+
+
+
+        .property-grid {
+            display: flex;
+            gap: 2.5rem;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding: 1rem 0;
+        }
+
+        .property-grid::-webkit-scrollbar {
+            display: none;
+        }
+
+        .property-card {
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(22, 102, 186, 0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 280px;
+            height: 420px;
+            flex-shrink: 0;
+            border: 2px solid #deecfb;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .property-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(22, 102, 186, 0.15);
+            border-color: #7ab3ef;
+        }
+
+        .property-image {
+            height: 180px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .property-image::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            background: linear-gradient(transparent, rgba(0,0,0,0.1));
+        }
+
+        .property-info {
+            padding: 1.5rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .property-title {
+            font-size: 1.1rem;
+            color: #1666ba;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .property-price {
+            font-size: 1.5rem;
+            color: #1666ba;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .property-features {
+            display: flex;
+            gap: 0.4rem;
+            margin-bottom: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .feature {
+            background: #deecfb;
+            padding: 0.3rem 0.6rem;
+            border-radius: 16px;
+            font-size: 0.7rem;
+            color: #1666ba;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+
+        .property-location {
+            color: #000000;
+            margin-bottom: 0.8rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .view-btn {
+            background: #368ce7;
+            color: #ffffff;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(54, 140, 231, 0.3);
+            margin-top: auto;
+        }
+
+        .view-btn:hover {
+            background: #1666ba;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(22, 102, 186, 0.4);
+        }
+
+        /* Features Section */
         .features {
             padding: 8rem 2rem;
             background: #ffffff;
@@ -273,6 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         .feature-card:hover {
             transform: translateY(-8px);
             box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #ffffff 0%, #deecfb 100%);
         }
 
         .feature-icon {
@@ -287,6 +452,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             align-items: center;
             justify-content: center;
             margin: 0 auto 1.5rem auto;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover .feature-icon {
+            transform: scale(1.1);
+            background: #7ab3ef;
+            color: #ffffff;
         }
 
         .feature-card h3 {
@@ -296,225 +468,269 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             font-weight: 600;
         }
 
-        .properties {
-            padding: 8rem 2rem;
-            background: #ffffff;
-        }
-
-        .property-grid {
-            display: flex;
-            gap: 2.5rem;
-            overflow-x: auto;
-            padding: 1rem 0;
-        }
-
-        .property-card {
-            background: #ffffff;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 8px 32px rgba(22, 102, 186, 0.08);
-            width: 280px;
-            height: 420px;
-            flex-shrink: 0;
-            border: 2px solid #deecfb;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .property-image {
-            height: 180px;
-            background-size: cover;
-            background-position: center;
-        }
-
-        .property-info {
-            padding: 1.5rem;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .property-title {
-            font-size: 1.1rem;
-            color: #1666ba;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-
-        .property-price {
-            font-size: 1.5rem;
-            color: #1666ba;
-            font-weight: 800;
-            margin-bottom: 1rem;
-        }
-
-        .property-features {
-            display: flex;
-            gap: 0.4rem;
-            margin-bottom: 0.8rem;
-            flex-wrap: wrap;
-        }
-
-        .feature {
-            background: #deecfb;
-            padding: 0.3rem 0.6rem;
-            border-radius: 16px;
-            font-size: 0.7rem;
-            color: #1666ba;
-            font-weight: 600;
-        }
-
-        .property-location {
+        .feature-card p {
             color: #000000;
-            margin-bottom: 0.8rem;
-            font-size: 0.85rem;
-            opacity: 0.7;
+            opacity: 0.8;
+            line-height: 1.6;
+            font-size: 0.95rem;
         }
 
-        .view-btn {
-            background: #368ce7;
-            color: #ffffff;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.9rem;
-            width: 100%;
-            margin-top: auto;
-        }
-
-        .view-btn:hover {
-            background: #1666ba;
-        }
-
-        .contact {
-            padding: 8rem 2rem;
-            background: #f8fafc;
-        }
-
-        .contact-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 3rem;
-        }
-
-        .contact-card {
-            background: #ffffff;
-            padding: 3rem 2rem;
-            border-radius: 16px;
+        /* Notification Section */
+        .notification {
+            padding: 12rem 2rem;
+            background: linear-gradient(135deg, #1666ba 0%, #368ce7 50%, #7ab3ef 100%);
             text-align: center;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
-            border: 1px solid #deecfb;
+            position: relative;
+            overflow: hidden;
         }
 
-        .contact-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        .notification::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 35%),
+                radial-gradient(circle at 40% 80%, rgba(255,255,255,0.12) 0%, transparent 45%);
         }
 
-        .contact-icon {
-            font-size: 3rem;
-            margin-bottom: 1.5rem;
+        .notification .container {
+            position: relative;
+            z-index: 3;
+        }
+
+        .notification h2 {
+            color: #ffffff;
+            margin-bottom: 2rem;
+            font-size: 3.5rem;
+            font-weight: 800;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            letter-spacing: -0.02em;
+        }
+
+        .notification p {
+            color: #ffffff;
+            margin-bottom: 4rem;
+            opacity: 0.9;
+            font-size: 1.4rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.7;
+            font-weight: 400;
+        }
+
+        .register-btn {
+            background: #ffffff;
             color: #1666ba;
-            background: #bedaf7;
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.5rem auto;
+            border: none;
+            padding: 1.5rem 4rem;
+            border-radius: 60px;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 1.3rem;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .contact-card h3 {
-            color: #1666ba;
-            margin-bottom: 1rem;
-            font-size: 1.5rem;
-            font-weight: 600;
+        .register-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.8s;
         }
 
-        .contact-card p {
-            color: #000000;
-            font-size: 1.1rem;
-            font-weight: 500;
+        .register-btn:hover::before {
+            left: 100%;
         }
 
-        .faqs {
-            padding: 8rem 2rem;
-            background: #f8fafc;
+        .register-btn:hover {
+            background: #1666ba;
+            color: #ffffff;
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.2);
         }
 
-        .faq-container {
-            max-width: 800px;
+        /* FAQ Section */
+        .faq {
+            padding: 2rem 2rem;
+            background: linear-gradient(135deg, #1666ba 0%, #368ce7 50%, #7ab3ef 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .faq::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 35%),
+                radial-gradient(circle at 40% 80%, rgba(255,255,255,0.12) 0%, transparent 45%);
+        }
+
+        .faq .container {
+            position: relative;
+            z-index: 3;
+        }
+
+        .faq-grid {
+            max-width: 900px;
             margin: 0 auto;
         }
 
         .faq-item {
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 16px;
             margin-bottom: 1.5rem;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-            border: 1px solid #deecfb;
-            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.4s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .faq-item:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .faq-item:last-child {
+            margin-bottom: 0;
         }
 
         .faq-question {
-            padding: 2rem;
+            padding: 1.5rem 2rem;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #ffffff;
-            transition: all 0.3s ease;
-        }
-
-        .faq-question:hover {
-            background: #f8fafc;
         }
 
         .faq-question h3 {
-            color: #1666ba;
-            font-size: 1.2rem;
-            font-weight: 600;
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 700;
             margin: 0;
+            line-height: 1.4;
         }
 
-        .faq-icon {
-            color: #368ce7;
-            font-size: 1.2rem;
-            transition: transform 0.3s ease;
+        .faq-question i {
+            color: #bedaf7;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .faq-item.active .faq-question i {
+            transform: rotate(180deg);
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
         }
 
         .faq-answer {
-            padding: 0 2rem 2rem 2rem;
-            color: #000000;
-            line-height: 1.6;
-            display: none;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s ease;
         }
 
         .faq-item.active .faq-answer {
-            display: block;
+            max-height: 200px;
         }
 
-        .faq-item.active .faq-icon {
-            transform: rotate(180deg);
+        .faq-answer p {
+            padding: 0 2rem 1.5rem 2rem;
+            color: #ffffff;
+            line-height: 1.6;
+            margin: 0;
+            opacity: 0.9;
+            font-size: 0.95rem;
         }
 
+
+
+        /* Responsive */
         @media (max-width: 768px) {
+            
+            .hero {
+                flex-direction: column;
+                padding: 2rem;
+                margin-top: 7rem;
+                text-align: center;
+            }
+            
+            .hero-content {
+                text-align: center;
+                margin-bottom: 2rem;
+            }
+            
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+            
+            .login-form {
+                width: 100%;
+            }
+            
             .features-grid {
                 grid-template-columns: 1fr;
             }
-            .contact-grid {
-                grid-template-columns: 1fr;
+        }
+
+        @media (max-width: 480px) {
+            
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+            
+            .hero-content p {
+                font-size: 1.2rem;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+            
+            .notification h2 {
+                font-size: 2.5rem;
+            }
+            
+            .notification p {
+                font-size: 1.1rem;
+            }
+            
+            .register-btn {
+                padding: 1.2rem 2.5rem;
+                font-size: 1.1rem;
             }
         }
     </style>
 </head>
 <body>
     <?php include "includes/navbar/navbarOUT.html" ?>
-    
+    <!-- Hero Section -->
     <section class="hero" id="home">
         <div class="hero-content">
             <h1>Find Your Next Home with Ease</h1>
@@ -570,6 +786,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         </div>
     </section>
 
+    <!-- Notification Section -->
+    <section class="notification">
+        <div class="container">
+            <h2>Never Miss a Property</h2>
+            <p>Get notified instantly when properties matching your criteria become available</p>
+            <button class="register-btn" onclick="window.location.href='registration.php'">Register for Vacancy Notifications</button>
+        </div>
+    </section>
+
     <!-- Properties Section -->
     <section class="properties" id="properties">
         <div class="container">
@@ -577,7 +802,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             <p class="section-subtitle">Carefully curated rental properties that combine comfort, convenience, and value in prime locations across the city</p>
             <div class="property-grid">
                 <div class="property-card">
-                    <div class="property-image" style="background-image: url('./images/1.jpg')"></div>
+                    <div class="property-image" style="background-image: url('images/1.jpg')"></div>
                     <div class="property-info">
                         <h3 class="property-title">Luxury Downtown Penthouse</h3>
                         <div class="property-price">₱15,000/month</div>
@@ -593,7 +818,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                 </div>
 
                 <div class="property-card">
-                    <div class="property-image" style="background-image: url('./images/2.jpg')"></div>
+                    <div class="property-image" style="background-image: url('images/2.jpg')"></div>
                     <div class="property-info">
                         <h3 class="property-title">Modern City Apartment</h3>
                         <div class="property-price">₱12,000/month</div>
@@ -609,7 +834,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                 </div>
 
                 <div class="property-card">
-                    <div class="property-image" style="background-image: url('./images/3.jpg')"></div>
+                    <div class="property-image" style="background-image: url('images/3.jpg')"></div>
                     <div class="property-info">
                         <h3 class="property-title">Cozy Studio Unit</h3>
                         <div class="property-price">₱4,500/month</div>
@@ -624,7 +849,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                 </div>
 
                 <div class="property-card">
-                    <div class="property-image" style="background-image: url('./images/4.jpg')"></div>
+                    <div class="property-image" style="background-image: url('images/4.jpg')"></div>
                     <div class="property-info">
                         <h3 class="property-title">Budget-Friendly Flat</h3>
                         <div class="property-price">₱3,500/month</div>
@@ -639,7 +864,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                 </div>
 
                 <div class="property-card">
-                    <div class="property-image" style="background-image: url('./images/5.jpg')"></div>
+                    <div class="property-image" style="background-image: url('images/5.jpg')"></div>
                     <div class="property-info">
                         <h3 class="property-title">Family Townhouse</h3>
                         <div class="property-price">₱8,000/month</div>
@@ -655,7 +880,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                 </div>
 
                 <div class="property-card">
-                    <div class="property-image" style="background-image: url('./images/1.jpg')"></div>
+                    <div class="property-image" style="background-image: url('images/1.jpg')"></div>
                     <div class="property-info">
                         <h3 class="property-title">Affordable Condo Unit</h3>
                         <div class="property-price">₱5,000/month</div>
@@ -672,115 +897,101 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         </div>
     </section>
 
-    <!-- FAQs Section -->
-    <section class="faqs" id="faqs">
+    <!-- FAQ Section -->
+    <section class="faq" id="faq">
         <div class="container">
             <h2 class="section-title">Frequently Asked Questions</h2>
-            <p class="section-subtitle">Find answers to common questions about our rental management platform</p>
-            <div class="faq-container">
+            <p class="section-subtitle">Get answers to common questions about our rental process, requirements, and services</p>
+            <div class="faq-grid">
                 <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>How do I register as a tenant or landlord?</h3>
-                        <i class="fas fa-chevron-down faq-icon"></i>
+                    <div class="faq-question">
+                        <h3>How do I apply for a rental property?</h3>
+                        <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Click on the "Register here" link on the login form or visit our registration page. You can choose to register as either a tenant looking for properties or a landlord wanting to list your properties.</p>
+                        <p>Simply browse our available properties, click "View Details" on your preferred unit, and submit your application online. You'll need to provide basic information, proof of income, and valid identification.</p>
                     </div>
                 </div>
-
+                
                 <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>How do I submit a maintenance request?</h3>
-                        <i class="fas fa-chevron-down faq-icon"></i>
+                    <div class="faq-question">
+                        <h3>What documents do I need to rent?</h3>
+                        <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Once logged in as a tenant, navigate to your dashboard and click on "Maintenance Requests". Fill out the form with details about the issue, and your landlord will be notified immediately.</p>
+                        <p>Required documents include: valid government ID, proof of income (payslips or employment certificate), bank statements, and references from previous landlords if applicable.</p>
                     </div>
                 </div>
-
+                
                 <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>How do I make rent payments?</h3>
-                        <i class="fas fa-chevron-down faq-icon"></i>
+                    <div class="faq-question">
+                        <h3>How much is the security deposit?</h3>
+                        <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>You can upload proof of payment through your tenant dashboard. The system will notify your landlord and track your payment history for easy reference.</p>
+                        <p>Security deposits typically range from 1-2 months' rent, depending on the property. This amount is refundable upon move-out, subject to property condition assessment.</p>
                     </div>
                 </div>
-
+                
                 <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>Can I view my lease details online?</h3>
-                        <i class="fas fa-chevron-down faq-icon"></i>
+                    <div class="faq-question">
+                        <h3>Can I schedule a property viewing?</h3>
+                        <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Yes! Your dashboard provides complete access to your lease information, including start and end dates, rental amount, and renewal options.</p>
+                        <p>Yes! Contact us through the property listing or call our office to schedule a viewing. We offer flexible viewing hours including weekends to accommodate your schedule.</p>
                     </div>
                 </div>
-
+                
                 <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>How do landlords manage multiple properties?</h3>
-                        <i class="fas fa-chevron-down faq-icon"></i>
+                    <div class="faq-question">
+                        <h3>Are utilities included in the rent?</h3>
+                        <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>The landlord dashboard allows you to add, edit, and manage multiple properties from one central location. You can track tenants, payments, and maintenance requests for all your properties.</p>
+                        <p>This varies by property. Some units include water and basic utilities, while others require separate utility arrangements. Check the property details or contact us for specific information.</p>
                     </div>
                 </div>
-
+                
                 <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <h3>Is my personal information secure?</h3>
-                        <i class="fas fa-chevron-down faq-icon"></i>
+                    <div class="faq-question">
+                        <h3>How do I submit maintenance requests?</h3>
+                        <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Absolutely. We use industry-standard encryption and security measures to protect all user data. Your personal and financial information is kept completely confidential.</p>
+                        <p>Once you're a tenant, you can submit maintenance requests through our online portal, mobile app, or by calling our maintenance hotline. Emergency repairs are handled 24/7.</p>
                     </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact Section -->
-    <section class="contact" id="contact">
-        <div class="container">
-            <h2 class="section-title">Get In Touch</h2>
-            <p class="section-subtitle">Have questions? We're here to help you find your perfect home</p>
-            <div class="contact-grid">
-                <div class="contact-card">
-                    <i class="fas fa-phone contact-icon"></i>
-                    <h3>Call Us</h3>
-                    <p>+63 912 345 6789</p>
-                </div>
-                <div class="contact-card">
-                    <i class="fas fa-envelope contact-icon"></i>
-                    <h3>Email Us</h3>
-                    <p>info@vela.com</p>
-                </div>
-                <div class="contact-card">
-                    <i class="fas fa-map-marker-alt contact-icon"></i>
-                    <h3>Visit Us</h3>
-                    <p>123 Main St, Manila, Philippines</p>
                 </div>
             </div>
         </div>
     </section>
 
     <script>
-        function toggleFaq(element) {
-            const faqItem = element.parentElement;
-            const isActive = faqItem.classList.contains('active');
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const email = document.querySelector('input[name="email"]').value;
+            const password = document.querySelector('input[name="password"]').value;
             
-            // Close all FAQ items
-            document.querySelectorAll('.faq-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // Open clicked item if it wasn't active
-            if (!isActive) {
-                faqItem.classList.add('active');
+            if (!email || !password) {
+                e.preventDefault();
+                alert('Please enter both email and password');
             }
-        }
+        });
+
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', function() {
+                const faqItem = this.parentElement;
+                const isActive = faqItem.classList.contains('active');
+                
+                document.querySelectorAll('.faq-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                if (!isActive) {
+                    faqItem.classList.add('active');
+                }
+            });
+        });
     </script>
 </body>
 </html>
