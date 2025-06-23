@@ -1,3 +1,58 @@
+<?php
+session_start();
+require_once 'connection.php';
+
+// Initialize error message
+$error = '';
+
+// Check if form is submitted
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
+    $email = $conn->real_escape_string($_POST['email']);
+    $password = $_POST['password'];
+    
+    try {
+        // Prepare SQL statement
+        $stmt = $conn->prepare("SELECT user_id, name, email, password, role FROM USERS WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows == 1) {
+            $user = $result->fetch_assoc();
+            
+            // Verify password
+            if (password_verify($password, $user['password'])) {
+                // Set session variables
+                $_SESSION['user_id'] = $user['user_id'];
+                $_SESSION['name'] = $user['name'];
+                $_SESSION['email'] = $user['email'];
+                $_SESSION['role'] = $user['role'];
+                $_SESSION['loggedin'] = true;
+                
+                // Update last login (optional)
+                $update_stmt = $conn->prepare("UPDATE USERS SET last_login = NOW() WHERE user_id = ?");
+                $update_stmt->bind_param("i", $user['user_id']);
+                $update_stmt->execute();
+                $update_stmt->close();
+                
+                // Redirect based on role
+                header("Location: " . ($user['role'] == 'tenant' ? 'tenant_dashboard.php' : 'landlord_dashboard.php'));
+                exit();
+            } else {
+                $error = "Invalid email or password";
+            }
+        } else {
+            $error = "Invalid email or password";
+        }
+        
+        $stmt->close();
+    } catch (Exception $e) {
+        error_log("Login error: " . $e->getMessage());
+        $error = "A system error occurred. Please try again.";
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +60,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VELA - Rental Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
     <style>
         * {
             margin: 0;
@@ -44,8 +98,6 @@
         body::-webkit-scrollbar-thumb:hover {
             background: #1666ba;
         }
-
-
 
         /* Hero Section */
         .hero {
@@ -132,6 +184,7 @@
             background: #ffffff;
             border-color: #368ce7;
             box-shadow: 0 8px 25px rgba(54, 140, 231, 0.2);
+            color: #1666ba;
         }
 
         .login-btn {
@@ -168,6 +221,16 @@
         .login-btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 15px 40px rgba(54, 140, 231, 0.6);
+        }
+
+        .login-error {
+            color: #ff4444;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+            background: rgba(255, 68, 68, 0.1);
+            padding: 0.5rem;
+            border-radius: 8px;
         }
 
         /* Properties Section */
@@ -214,8 +277,6 @@
             opacity: 0.9;
             margin-bottom: 3rem;
         }
-
-
 
         .property-grid {
             display: flex;
@@ -600,11 +661,8 @@
             font-size: 0.95rem;
         }
 
-
-
         /* Responsive */
         @media (max-width: 768px) {
-            
             .hero {
                 flex-direction: column;
                 padding: 2rem;
@@ -631,7 +689,6 @@
         }
 
         @media (max-width: 480px) {
-            
             .hero-content h1 {
                 font-size: 2rem;
             }
@@ -670,13 +727,21 @@
         </div>
         <div class="login-form" id="login">
             <h3>Login</h3>
-            <div class="form-group">
-                <input type="text" placeholder="Username" id="username">
+            <?php if ($error): ?>
+                <div class="login-error"><?php echo $error; ?></div>
+            <?php endif; ?>
+            <form method="POST" action="index.php">
+                <div class="form-group">
+                    <input type="email" name="email" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" name="password" placeholder="Password" required>
+                </div>
+                <button type="submit" name="login" class="login-btn">Login</button>
+            </form>
+            <div style="text-align: center; margin-top: 1rem; color: #ffffff;">
+                Don't have an account? <a href="registration.php" style="color: #7ab3ef; text-decoration: none;">Register here</a>
             </div>
-            <div class="form-group">
-                <input type="password" placeholder="Password" id="password">
-            </div>
-            <button class="login-btn">Login</button>
         </div>
     </section>
 
@@ -891,18 +956,18 @@
     </section>
 
     <script>
-        document.querySelector('.login-btn').addEventListener('click', function() {
-            const username = document.querySelector('#username').value;
-            const password = document.querySelector('#password').value;
-            if (username && password) {
-                alert('Login successful for: ' + username);
-                document.querySelector('#username').value = '';
-                document.querySelector('#password').value = '';
-            } else {
-                alert('Please enter both username and password');
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const email = document.querySelector('input[name="email"]').value;
+            const password = document.querySelector('input[name="password"]').value;
+            
+            if (!email || !password) {
+                e.preventDefault();
+                alert('Please enter both email and password');
             }
         });
 
+        // Load navbar
         fetch('includes/navbar/navbarOUT.html')
             .then(response => response.text())
             .then(data => {
@@ -934,6 +999,7 @@
                 }, 100);
             });
 
+        // FAQ functionality
         document.querySelectorAll('.faq-question').forEach(question => {
             question.addEventListener('click', function() {
                 const faqItem = this.parentElement;
