@@ -17,6 +17,14 @@ CREATE TABLE PROPERTY (
     monthly_rent DECIMAL(10, 2)
 );
 
+CREATE TABLE PROPERTY_PHOTO (
+    photo_id INT PRIMARY KEY AUTO_INCREMENT,
+    property_id INT,
+    file_path VARCHAR(255),
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (property_id) REFERENCES PROPERTY(property_id)
+);
+
 CREATE TABLE APPLICATIONS (
     application_id INT PRIMARY KEY AUTO_INCREMENT,
     property_id INT,

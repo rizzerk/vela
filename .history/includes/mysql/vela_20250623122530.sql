@@ -17,6 +17,14 @@ CREATE TABLE PROPERTY (
     monthly_rent DECIMAL(10, 2)
 );
 
+CREATE TABLE PROPERTY_PHOTO (
+    photo_id INT PRIMARY KEY AUTO_INCREMENT,
+    property_id INT,
+    file_path VARCHAR(255),
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (property_id) REFERENCES PROPERTY(property_id)
+);
+
 CREATE TABLE APPLICATIONS (
     application_id INT PRIMARY KEY AUTO_INCREMENT,
     property_id INT,
@@ -69,23 +77,11 @@ CREATE TABLE PAYMENT (
     proof_of_payment VARCHAR(255),
     submitted_at DATETIME,
     reference_num VARCHAR(100),
-    payment_option_id INT, 
+    mode ENUM('cash', 'bpi', 'gcash', 'bdo'),
     status ENUM('pending', 'verified', 'rejected'),
     message TEXT,
     reply TEXT,
-    FOREIGN KEY (bill_id) REFERENCES BILL(bill_id),
-    FOREIGN KEY (payment_option_id) REFERENCES PAYMENT_OPTION(option_id)
-);
-
-
-CREATE TABLE PAYMENT_OPTION (
-    option_id INT PRIMARY KEY AUTO_INCREMENT,
-    landlord_id INT,
-    method ENUM('cash', 'bpi', 'gcash', 'bdo', 'paypal', 'others'),
-    account_name VARCHAR(100),
-    account_number VARCHAR(50),
-    is_active BOOLEAN DEFAULT TRUE,
-    FOREIGN KEY (landlord_id) REFERENCES USERS(user_id)
+    FOREIGN KEY (bill_id) REFERENCES BILL(bill_id)
 );
 
 CREATE TABLE ANNOUNCEMENT (
