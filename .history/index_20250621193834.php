@@ -54,7 +54,7 @@
             justify-content: space-between;
             align-items: center;
             position: relative;
-            margin-top: 4rem;
+            margin-top: 7rem;
             padding: 0 5rem;
             gap: 4rem;
             background: url('images/landing-page.png');
