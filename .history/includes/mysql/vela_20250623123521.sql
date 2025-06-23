@@ -12,7 +12,7 @@ CREATE TABLE PROPERTY (
     property_id INT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(100),
     address VARCHAR(255),
-    status ENUM('vacant', 'occupied') NOT NULL,
+    status ENUM('available', 'unavailable', 'maintenance') NOT NULL,
     description VARCHAR(255),
     monthly_rent DECIMAL(10, 2)
 );
