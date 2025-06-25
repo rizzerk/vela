@@ -1,8 +1,7 @@
 <?php
-session_start();
+
 include '../connection.php';
 
-// Check if user is logged in
 
 // Fetch all properties with their first photo
 $query = "SELECT p.*, 

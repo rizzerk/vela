@@ -1,33 +1,23 @@
 <?php
-include '../connection.php';
-
-// Enable error reporting for debugging
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
+include '../connection.php';
 
-// Define upload directory properly
-$project_root = $_SERVER['DOCUMENT_ROOT'] . '/vela'; // Adjust if your path is different
-$upload_dir = $project_root . '/uploads/properties/';
-
-// Create directory if it doesn't exist
-if (!file_exists($upload_dir)) {
-    mkdir($upload_dir, 0755, true);
-}
 
 $error = '';
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Debug output
-    echo '<pre>';
-    echo 'POST data: ';
-    print_r($_POST);
-    echo 'FILES data: ';
-    print_r($_FILES);
-    echo 'Upload directory: ' . $upload_dir . "\n";
-    echo 'Is upload dir writable: ' . (is_writable($upload_dir) ? 'Yes' : 'No') . "\n";
-    echo '</pre>';
-    
+        echo '<pre>';
+        echo 'POST data: ';
+        print_r($_POST);
+        echo 'FILES data: ';
+        print_r($_FILES);
+        echo 'Upload directory: ' . $upload_dir . "\n";
+        echo 'Is upload dir writable: ' . (is_writable($upload_dir) ? 'Yes' : 'No') . "\n";
+        echo '</pre>';
+        exit(); // Uncomment to stop here and see debug info
+
     $title = mysqli_real_escape_string($conn, $_POST['title']);
     $address = mysqli_real_escape_string($conn, $_POST['address']);
     $status = mysqli_real_escape_string($conn, $_POST['status']);
@@ -43,22 +33,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Handle file uploads
         if (!empty($_FILES['photos']['name'][0])) {
+            $upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/uploads/properties/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            
             foreach ($_FILES['photos']['tmp_name'] as $key => $tmp_name) {
                 if ($_FILES['photos']['error'][$key] === UPLOAD_ERR_OK) {
-                    $file_name = uniqid() . '_' . basename($_FILES['photos']['name'][$key]);
-                    $file_path = $upload_dir . $file_name;
-                    $relative_path = 'uploads/properties/' . $file_name;
+                    $file_name = basename($_FILES['photos']['name'][$key]);
+                    $file_path = 'uploads/properties/' . uniqid() . '_' . $file_name;
+                    $full_path = __DIR__ . '/../../' . $file_path;  // Absolute server path
                     
-                    if (move_uploaded_file($tmp_name, $file_path)) {
+                    if (move_uploaded_file($tmp_name, $full_path)) {
                         $query = "INSERT INTO PROPERTY_PHOTO (property_id, file_path) 
-                                  VALUES ($property_id, '$relative_path')";
+                                  VALUES ($property_id, '$file_path')";
                         mysqli_query($conn, $query);
                     } else {
-                        $error = "Failed to upload file: " . $_FILES['photos']['name'][$key];
-                        // Add detailed error info
-                        $error .= "<br>Upload dir: " . $upload_dir;
-                        $error .= "<br>Writable: " . (is_writable($upload_dir) ? 'Yes' : 'No');
-                        $error .= "<br>Temp file exists: " . (file_exists($tmp_name) ? 'Yes' : 'No');
+                        $error = "Failed to upload file: $file_name";
                     }
                 } else {
                     $error = "Upload error: " . $_FILES['photos']['error'][$key];
@@ -403,12 +394,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     const fileList = document.getElementById('file-list');
     const form = document.getElementById('property-form');
 
-    document.getElementById('property-form').addEventListener('submit', function(e) {
-    if (document.getElementById('photos').files.length === 0) {
-        alert('Please select at least one photo');
-        e.preventDefault();
-    }
-});
     // Make drop area clickable
     dropArea.addEventListener('click', function(e) {
         // Prevent triggering when clicking on child elements

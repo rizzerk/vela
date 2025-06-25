@@ -1,33 +1,11 @@
 <?php
+session_start();
 include '../connection.php';
-
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-// Define upload directory properly
-$project_root = $_SERVER['DOCUMENT_ROOT'] . '/vela'; // Adjust if your path is different
-$upload_dir = $project_root . '/uploads/properties/';
-
-// Create directory if it doesn't exist
-if (!file_exists($upload_dir)) {
-    mkdir($upload_dir, 0755, true);
-}
 
 $error = '';
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Debug output
-    echo '<pre>';
-    echo 'POST data: ';
-    print_r($_POST);
-    echo 'FILES data: ';
-    print_r($_FILES);
-    echo 'Upload directory: ' . $upload_dir . "\n";
-    echo 'Is upload dir writable: ' . (is_writable($upload_dir) ? 'Yes' : 'No') . "\n";
-    echo '</pre>';
-    
     $title = mysqli_real_escape_string($conn, $_POST['title']);
     $address = mysqli_real_escape_string($conn, $_POST['address']);
     $status = mysqli_real_escape_string($conn, $_POST['status']);
@@ -43,22 +21,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Handle file uploads
         if (!empty($_FILES['photos']['name'][0])) {
+            $upload_dir = __DIR__ . '/../uploads/properties/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            
             foreach ($_FILES['photos']['tmp_name'] as $key => $tmp_name) {
                 if ($_FILES['photos']['error'][$key] === UPLOAD_ERR_OK) {
-                    $file_name = uniqid() . '_' . basename($_FILES['photos']['name'][$key]);
-                    $file_path = $upload_dir . $file_name;
-                    $relative_path = 'uploads/properties/' . $file_name;
+                    $file_name = basename($_FILES['photos']['name'][$key]);
+                    $file_path = 'uploads/properties/' . uniqid() . '_' . $file_name;
+                    $full_path = __DIR__ . '/../' . $file_path;
                     
-                    if (move_uploaded_file($tmp_name, $file_path)) {
+                    if (move_uploaded_file($tmp_name, $full_path)) {
                         $query = "INSERT INTO PROPERTY_PHOTO (property_id, file_path) 
-                                  VALUES ($property_id, '$relative_path')";
+                                  VALUES ($property_id, '$file_path')";
                         mysqli_query($conn, $query);
                     } else {
-                        $error = "Failed to upload file: " . $_FILES['photos']['name'][$key];
-                        // Add detailed error info
-                        $error .= "<br>Upload dir: " . $upload_dir;
-                        $error .= "<br>Writable: " . (is_writable($upload_dir) ? 'Yes' : 'No');
-                        $error .= "<br>Temp file exists: " . (file_exists($tmp_name) ? 'Yes' : 'No');
+                        $error = "Failed to upload file: $file_name";
                     }
                 } else {
                     $error = "Upload error: " . $_FILES['photos']['error'][$key];
@@ -272,78 +251,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 gap: 1rem;
             }
         }/* Same styles as before */
-        .file-list-container {
-    margin-top: 1rem;
-    display: none;
-}
-
-.file-list-container.visible {
-    display: block;
-}
-
-.preview-image {
-    max-width: 50px;
-    max-height: 50px;
-    margin-right: 10px;
-    object-fit: cover;
-    border-radius: 4px;
-}
-
-.file-item {
-    display: flex;
-    align-items: center;
-    padding: 8px;
-    background: #f8fafc;
-    border-radius: 6px;
-    margin-bottom: 8px;
-}
-
-.file-item-name {
-    flex: 1;
-    font-size: 0.9rem;
-    margin: 0 10px;
-}
-
-.file-item-size {
-    color: #64748b;
-    font-size: 0.8rem;
-    margin-right: 10px;
-}
-
-.file-item-remove {
-    color: #f87171;
-    cursor: pointer;
-    padding: 5px;
-}
     </style>
 </head>
 <body>
-<?php include ('../includes/navbar/landlord-sidebar.html'); ?>
+    <?php include ('../includes/navbar/landlord-sidebar.html'); ?>
 
-<div class="main-content">
-    <div class="header">
-        <a href="properties.php" class="back-btn">
-            <i class="fas fa-arrow-left"></i> Back to Properties
-        </a>
-        <h1>Add New Property</h1>
-    </div>
+    <div class="main-content">
+        <div class="header">
+            <a href="properties.php" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Back to Properties
+            </a>
+            <h1>Add New Property</h1>
+        </div>
 
-    <div class="form-container">
-        <?php if (!empty($error)): ?>
-            <div class="error-message">
-                <i class="fas fa-exclamation-circle"></i> <?php echo $error; ?>
-            </div>
-        <?php endif; ?>
+        <div class="form-container">
+            <?php if (!empty($error)): ?>
+                <div class="error-message"><?php echo $error; ?></div>
+            <?php endif; ?>
 
-        <?php if (isset($_GET['success'])): ?>
-            <div class="success-message">
-                <i class="fas fa-check-circle"></i> Property added successfully!
-            </div>
-        <?php endif; ?>
-
-
-        <form action="add-property.php" method="POST" enctype="multipart/form-data" id="property-form">
-        <div class="form-row">
+            <form action="add-property.php" method="POST" enctype="multipart/form-data">
+                <div class="form-row">
                     <div class="form-group">
                         <label for="title">Property Title</label>
                         <input type="text" id="title" name="title" class="form-control" required>
@@ -377,16 +304,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="form-group">
-        <label>Property Photos</label>
-        <div class="file-upload" id="drop-area">
-            <i class="fas fa-cloud-upload-alt"></i>
-            <p>Click to upload photos or drag and drop</p>
-            <small>JPEG, PNG (Max 5MB each)</small>
-            <input type="file" id="photos" name="photos[]" multiple accept="image/*" style="display: none;">
-        </div>
-        <div id="file-list" class="file-list-container"></div>
-    </div>
-
+                    <label>Property Photos</label>
+                    <div class="file-upload" onclick="document.getElementById('photos').click()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Click to upload photos or drag and drop</p>
+                        <small>JPEG, PNG (Max 5MB each)</small>
+                        <input type="file" id="photos" name="photos[]" multiple accept="image/*" style="display: none;" onchange="showFileNames(this)">
+                    </div>
+                    <div id="file-list"></div>
+                </div>
 
                 <button type="submit" class="submit-btn">
                     <i class="fas fa-save"></i> Save Property
@@ -397,133 +323,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script>
-   document.addEventListener('DOMContentLoaded', function() {
-    const dropArea = document.getElementById('drop-area');
-    const fileInput = document.getElementById('photos');
-    const fileList = document.getElementById('file-list');
-    const form = document.getElementById('property-form');
-
-    document.getElementById('property-form').addEventListener('submit', function(e) {
-    if (document.getElementById('photos').files.length === 0) {
-        alert('Please select at least one photo');
-        e.preventDefault();
-    }
-});
-    // Make drop area clickable
-    dropArea.addEventListener('click', function(e) {
-        // Prevent triggering when clicking on child elements
-        if (e.target === dropArea || e.target.tagName === 'P' || 
-            e.target.tagName === 'SMALL' || e.target.classList.contains('fa-cloud-upload-alt')) {
-            fileInput.click();
-        }
-    });
-
-    // Prevent default drag behaviors
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, preventDefaults, false);
-    });
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    // Highlight drop area
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropArea.addEventListener(eventName, highlight, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, unhighlight, false);
-    });
-
-    function highlight() {
-        dropArea.classList.add('highlight');
-    }
-
-    function unhighlight() {
-        dropArea.classList.remove('highlight');
-    }
-
-    // Handle dropped files
-    dropArea.addEventListener('drop', handleDrop, false);
-
-    function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        handleFiles(files);
-    }
-
-    // Handle selected files
-    fileInput.addEventListener('change', function() {
-        handleFiles(this.files);
-    });
-
-    function handleFiles(files) {
-        fileList.innerHTML = '';
-        
-        if (files.length > 0) {
-            fileList.classList.add('visible');
+        function showFileNames(input) {
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = '';
             
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
+            if (input.files.length > 0) {
+                fileList.style.display = 'block';
                 
-                // Create preview for images
-                if (file.type.match('image.*')) {
-                    const reader = new FileReader();
+                for (let i = 0; i < input.files.length; i++) {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
                     
-                    reader.onload = function(e) {
-                        const preview = document.createElement('img');
-                        preview.src = e.target.result;
-                        preview.className = 'preview-image';
-                        fileItem.insertBefore(preview, fileItem.firstChild);
-                    };
+                    fileItem.innerHTML = `
+                        <i class="fas fa-image"></i>
+                        <span class="file-item-name">${input.files[i].name}</span>
+                        <span class="file-item-remove" onclick="removeFile(this, ${i})">
+                            <i class="fas fa-times"></i>
+                        </span>
+                    `;
                     
-                    reader.readAsDataURL(file);
+                    fileList.appendChild(fileItem);
                 }
-                
-                fileItem.innerHTML += `
-                    <span class="file-item-name">${file.name}</span>
-                    <span class="file-item-size">(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                    <span class="file-item-remove" data-index="${i}">
-                        <i class="fas fa-times"></i>
-                    </span>
-                `;
-                
-                fileList.appendChild(fileItem);
+            } else {
+                fileList.style.display = 'none';
             }
-            
-            // Add remove event listeners
-            document.querySelectorAll('.file-item-remove').forEach(removeBtn => {
-                removeBtn.addEventListener('click', function() {
-                    const index = parseInt(this.getAttribute('data-index'));
-                    removeFile(index);
-                });
-            });
-        } else {
-            fileList.classList.remove('visible');
         }
-    }
-
-    function removeFile(index) {
-        const files = Array.from(fileInput.files);
-        files.splice(index, 1);
         
-        const dataTransfer = new DataTransfer();
-        files.forEach(file => dataTransfer.items.add(file));
-        fileInput.files = dataTransfer.files;
-        
-        // Re-render file list
-        handleFiles(fileInput.files);
-    }
-
-    // Form submission feedback
-    form.addEventListener('submit', function(e) {
-        const submitBtn = this.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
-    });
-});
-</script>
+        function removeFile(element, index) {
+            const input = document.getElementById('photos');
+            const files = Array.from(input.files);
+            files.splice(index, 1);
+            
+            // Create new DataTransfer object and set the files
+            const dataTransfer = new DataTransfer();
+            files.forEach(file => dataTransfer.items.add(file));
+            input.files = dataTransfer.files;
+            
+            // Update the file list display
+            showFileNames(input);
+        }
+    </script>
+</body>
+</html>
