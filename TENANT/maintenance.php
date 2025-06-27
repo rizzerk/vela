@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once "../connection.php";
 
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION['role'] !== 'tenant') {
     header('Location: ../index.php');
@@ -43,8 +44,10 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             flex-wrap: wrap;
         }
 
-        .form-section, .request-table {
+        .form-section,
+        .request-table {
             flex: 1 1 45%;
+            min-width: 420px;
             background: #fff;
             border-radius: 16px;
             padding: 2rem;
@@ -130,7 +133,7 @@ $userName = $_SESSION['name'] ?? 'Tenant';
         <h1 class="title">Maintenance Request</h1>
 
         <div class="maintenance-wrapper">
-            <!-- Form Section -->
+            <!-- Maintenance Request Form -->
             <div class="form-section">
                 <h2>Submit a Request</h2>
                 <form action="#" method="POST" enctype="multipart/form-data">
@@ -147,7 +150,7 @@ $userName = $_SESSION['name'] ?? 'Tenant';
                 </form>
             </div>
 
-            <!-- My Requests Table -->
+            <!-- Display User Requests -->
             <div class="request-table">
                 <h2>My Requests</h2>
                 <table>
@@ -160,7 +163,7 @@ $userName = $_SESSION['name'] ?? 'Tenant';
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Example placeholder rows -->
+                        <!-- Static example entries for now -->
                         <tr>
                             <td>#001</td>
                             <td>Broken Window</td>
@@ -173,7 +176,26 @@ $userName = $_SESSION['name'] ?? 'Tenant';
                             <td>2025-06-15</td>
                             <td>Resolved</td>
                         </tr>
-                        <!-- Real data will come from backend -->
+                        <!-- You can later replace this with dynamic rows from the DB -->
+                        <?php
+                        /*
+                        Example of fetching real data from database (later on):
+                        $tenantId = $_SESSION['user_id'];
+                        $query = "SELECT id, issue_type, submitted_at, status FROM maintenance_requests WHERE tenant_id = ?";
+                        $stmt = $conn->prepare($query);
+                        $stmt->bind_param("i", $tenantId);
+                        $stmt->execute();
+                        $result = $stmt->get_result();
+                        while ($row = $result->fetch_assoc()) {
+                            echo "<tr>
+                                <td>#{$row['id']}</td>
+                                <td>{$row['issue_type']}</td>
+                                <td>{$row['submitted_at']}</td>
+                                <td>{$row['status']}</td>
+                            </tr>";
+                        }
+                        */
+                        ?>
                     </tbody>
                 </table>
             </div>
@@ -181,3 +203,6 @@ $userName = $_SESSION['name'] ?? 'Tenant';
     </div>
 </body>
 </html>
+
+
+
