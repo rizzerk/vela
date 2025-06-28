@@ -12,6 +12,14 @@ $query = "SELECT p.*,
           FROM PROPERTY p";
 $result = mysqli_query($conn, $query);
 $properties = mysqli_fetch_all($result, MYSQLI_ASSOC);
+
+// Fetch property details for editing (if requested)
+if (isset($_GET['edit_id'])) {
+    $edit_id = mysqli_real_escape_string($conn, $_GET['edit_id']);
+    $edit_query = "SELECT * FROM PROPERTY WHERE property_id = '$edit_id'";
+    $edit_result = mysqli_query($conn, $edit_query);
+    $property_to_edit = mysqli_fetch_assoc($edit_result);
+}
 ?>
 
 <!DOCTYPE html>
@@ -197,67 +205,192 @@ $properties = mysqli_fetch_all($result, MYSQLI_ASSOC);
         }
         
         .empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    width: 100%;
-    margin: 2rem 0;
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* This centers all child elements horizontally */
-}
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            margin: 2rem 0;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-.empty-state .add-property-btn {
-    padding: 0.75rem 1.75rem;
-    font-size: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(22, 102, 186, 0.2);
-    width: auto; /* Remove any fixed width */
-    display: inline-flex; /* Makes the button only as wide as its content */
-    justify-content: center; /* Centers the button content */
-}
-.empty-state:hover {
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-}
+        .empty-state .add-property-btn {
+            padding: 0.75rem 1.75rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(22, 102, 186, 0.2);
+            width: auto;
+            display: inline-flex;
+            justify-content: center;
+        }
+        .empty-state:hover {
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
 
-.empty-state-icon {
-    font-size: 4rem;
-    color: #1666ba;
-    margin-bottom: 1.5rem;
-    opacity: 0.8;
-}
+        .empty-state-icon {
+            font-size: 4rem;
+            color: #1666ba;
+            margin-bottom: 1.5rem;
+            opacity: 0.8;
+        }
 
-.empty-state h3 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-    color: #1e293b;
-    font-weight: 600;
-    max-width: 500px;
-}
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #1e293b;
+            font-weight: 600;
+            max-width: 500px;
+        }
 
-.empty-state p {
-    color: #64748b;
-    margin-bottom: 2rem;
-    line-height: 1.6;
-    font-size: 1rem;
-    max-width: 500px;
-}
+        .empty-state p {
+            color: #64748b;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+            font-size: 1rem;
+            max-width: 500px;
+        }
 
-.empty-state .add-property-btn {
-    padding: 0.75rem 1.75rem;
-    font-size: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(22, 102, 186, 0.2);
-}
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
 
-.empty-state .add-property-btn i {
-    font-size: 0.9rem;
-}
-        
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            color: #1666ba;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+            transition: color 0.3s ease;
+        }
+
+        .close-btn:hover {
+            color: #1666ba;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #1666ba;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #1666ba;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: #1666ba;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #12559e;
+        }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .btn-secondary:hover {
+            background-color: #cbd5e1;
+        }
+
         @media (max-width: 1024px) { 
             .properties-grid { 
                 grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
@@ -279,6 +412,11 @@ $properties = mysqli_fetch_all($result, MYSQLI_ASSOC);
             .add-property-btn { 
                 width: 100%; 
             } 
+
+            .modal-content {
+                width: 95%;
+                padding: 1.5rem;
+            }
         }
     </style>
 </head>
@@ -294,16 +432,16 @@ $properties = mysqli_fetch_all($result, MYSQLI_ASSOC);
         </div>
 
         <?php if (empty($properties)): ?>
-              <div class="empty-state">
-              <div class="empty-state-icon">
-                  <i class="fas fa-home"></i>
-              </div>
-              <h3>No Properties Listed</h3>
-              <p>You haven't added any properties yet. Start by adding your first property to manage rentals, tenants, and payments all in one place.</p>
-              <button class="add-property-btn" onclick="window.location.href='add-property.php'">
-                  <i class="fas fa-plus"></i> Add Your First Property
-              </button>
-          </div>
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-home"></i>
+                </div>
+                <h3>No Properties Listed</h3>
+                <p>You haven't added any properties yet. Start by adding your first property to manage rentals, tenants, and payments all in one place.</p>
+                <button class="add-property-btn" onclick="window.location.href='add-property.php'">
+                    <i class="fas fa-plus"></i> Add Your First Property
+                </button>
+            </div>
         <?php else: ?>
             <div class="properties-grid">
                 <?php foreach ($properties as $property): ?>
@@ -322,7 +460,7 @@ $properties = mysqli_fetch_all($result, MYSQLI_ASSOC);
                             <p class="property-address"><?php echo htmlspecialchars($property['address']); ?></p>
                             <p class="property-price">₱<?php echo number_format($property['monthly_rent'], 2); ?>/month</p>
                             <div class="property-actions">
-                                <button class="action-btn edit-btn">
+                                <button class="action-btn edit-btn" onclick="openEditModal(<?php echo $property['property_id']; ?>)">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
                                 <button class="action-btn delete-btn" data-id="<?php echo $property['property_id']; ?>">
@@ -334,6 +472,53 @@ $properties = mysqli_fetch_all($result, MYSQLI_ASSOC);
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
+    </div>
+
+    <!-- Edit Property Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Property</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="editPropertyForm" action="update-property.php" method="POST">
+                <input type="hidden" name="property_id" id="edit_property_id">
+                
+                <div class="form-group">
+                    <label for="edit_title">Property Title</label>
+                    <input type="text" class="form-control" id="edit_title" name="title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit_address">Address</label>
+                    <input type="text" class="form-control" id="edit_address" name="address" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit_description">Description</label>
+                    <textarea class="form-control" id="edit_description" name="description" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit_monthly_rent">Monthly Rent (₱)</label>
+                    <input type="number" class="form-control" id="edit_monthly_rent" name="monthly_rent" step="0.01" min="0" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit_status">Status</label>
+                    <select class="form-select" id="edit_status" name="status" required>
+                        <option value="available">Available</option>
+                        <option value="unavailable">Unavailable</option>
+                        <option value="maintenance">Maintenance</option>
+                    </select>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -362,6 +547,70 @@ $properties = mysqli_fetch_all($result, MYSQLI_ASSOC);
                         alert('An error occurred while deleting the property');
                     });
                 }
+            });
+        });
+
+        // Modal functions
+        function openEditModal(propertyId) {
+            // Fetch property details
+            fetch(`get-property.php?id=${propertyId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data) {
+                        document.getElementById('edit_property_id').value = data.property_id;
+                        document.getElementById('edit_title').value = data.title;
+                        document.getElementById('edit_address').value = data.address;
+                        document.getElementById('edit_description').value = data.description || '';
+                        document.getElementById('edit_monthly_rent').value = data.monthly_rent;
+                        document.getElementById('edit_status').value = data.status;
+                        
+                        // Show modal
+                        document.getElementById('editModal').style.display = 'flex';
+                    } else {
+                        alert('Error loading property details');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while loading property details');
+                });
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside the modal content
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('editPropertyForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch('update-property.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Property updated successfully');
+                    closeModal();
+                    window.location.reload(); // Refresh to show changes
+                } else {
+                    alert('Error updating property: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the property');
             });
         });
     </script>
