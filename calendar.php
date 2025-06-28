@@ -1,10 +1,10 @@
 <?php
 session_start();
-require_once 'db_connection.php'; // Assuming this file contains your database connection
+require_once 'connection.php'; // Assuming this file contains your database connection
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    header("Location: index.php");
     exit();
 }
 
