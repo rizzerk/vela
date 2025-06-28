@@ -1,6 +1,34 @@
+<?php
+session_start();
+require_once 'connection.php';
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit();
+}
+
+// Get user information
+$user_id = $_SESSION['user_id'];
+$name = $_SESSION['name'];
+$initials = substr($name, 0, 1);
+
+// Process payment form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Add payment processing logic here
+    // This would typically include:
+    // 1. Validating the form inputs
+    // 2. Handling file upload
+    // 3. Storing payment information in database
+    // 4. Sending confirmation email, etc.
+    
+    // For now, we'll just redirect to a confirmation page
+    header("Location: payment_confirmation.php");
+    exit();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,29 +50,25 @@
             min-height: 100vh;
         }
 
-        .header {
-            background-color: #155670;
-            color: white;
-            padding: 15px 5%;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            width: 100%;
-            box-sizing: border-box;
+        .page-title-container {
+            background: white;
+            padding: 20px 10%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
         .page-title {
-            color: #155670;
-            margin: 30px 0 20px 10%;
-            font-size: 2rem;
+            color: #1666ba;
+            font-size: 2.2rem;
             font-weight: 700;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .main-container {
             display: flex;
             justify-content: center;
             min-height: calc(100vh - 180px);
-            padding: 0 20px 80px;
+            padding: 0 10% 80px;
             background-color: white;
         }
 
@@ -67,7 +91,7 @@
         .payment-info h2 {
             text-align: left;
             margin-bottom: 15px;
-            color: #155670;
+            color: #1666ba;
         }
 
         .payment-form-container {
@@ -102,14 +126,10 @@
         }
 
         .nav-text {
-            color: #155670;
+            color: #1666ba;
             font-weight: 500;
-            text-decoration: underline;
+            text-decoration: none;
             transition: color 0.3s;
-        }
-
-        .nav-text:hover {
-            color: #357e9c;
         }
 
         .arrow {
@@ -118,7 +138,7 @@
             justify-content: center;
             width: 50px;
             height: 50px;
-            background-color: #357e9c;
+            background: linear-gradient(to right, #1666ba, #0d4a8a);
             border-radius: 50%;
             color: white;
             font-size: 22px;
@@ -128,12 +148,12 @@
         }
 
         .arrow:hover {
-            background-color: #155670;
-            transform: translateY(-2px);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
         }
 
         h2 {
-            color: #155670;
+            color: #1666ba;
             margin-bottom: 25px;
         }
 
@@ -151,14 +171,14 @@
         }
 
         .payment-options {
-            background-color: rgba(21, 86, 112, 0.05);
+            background-color: #e1f0fa;
             padding: 20px;
             border-radius: 8px;
             margin-top: 20px;
         }
 
         .payment-options h3 {
-            color: #155670;
+            color: #1666ba;
             margin-bottom: 15px;
             text-align: left;
         }
@@ -183,7 +203,7 @@
         .form-grp label {
             text-align: left;
             margin-bottom: 8px;
-            color: #155670;
+            color: #1666ba;
         }
 
         .form-grp input,
@@ -198,15 +218,15 @@
 
         .form-grp input:focus,
         .form-grp select:focus {
-            border-color: #155670;
+            border-color: #1666ba;
             outline: none;
         }
 
         .file-upload-box {
-            border: 2px dashed #155670;
+            border: 2px dashed #1666ba;
             padding: 30px;
             border-radius: 8px;
-            background-color: rgba(21, 86, 112, 0.05);
+            background-color: #e1f0fa;
             text-align: center;
             margin-bottom: 20px;
             position: relative;
@@ -215,18 +235,18 @@
         }
 
         .file-upload-box:hover {
-            background-color: rgba(21, 86, 112, 0.1);
+            background-color: #d0e5f5;
         }
 
         .file-upload-box i {
             font-size: 40px;
-            color: #155670;
+            color: #1666ba;
             margin-bottom: 10px;
         }
 
         .file-upload-box p {
             margin-bottom: 10px;
-            color: #155670;
+            color: #1666ba;
             font-weight: 500;
         }
 
@@ -244,24 +264,26 @@
             margin-top: 15px;
             padding: 12px;
             width: 100%;
-            background-color: #357e9c;
+            background: linear-gradient(to right, #1666ba, #0d4a8a);
             border: none;
             border-radius: 5px;
             color: white;
             font-size: 16px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
             font-weight: 600;
         }
 
         .submit-btn:hover {
-            background-color: #155670;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(13, 74, 138, 0.4);
         }
 
         @media (max-width: 768px) {
             .page-title {
-                margin-left: 20px;
                 font-size: 1.8rem;
+                margin: 20px 0;
+                padding: 0 5%;
             }
             
             .payment-container {
@@ -301,17 +323,13 @@
 </head>
 
 <body>
-    <nav class="header">
-        <div class="header-logo">
-            <h1 id="logo">Logo</h1>
-        </div>
-    </nav>
 
-    <h1 class="page-title">PAY DUES</h1>
+    <div class="page-title-container">
+        <h1 class="page-title">PAY DUES</h1>
+    </div>
     
     <div class="main-container">
         <div class="payment-container">
-            <!-- Left Section - Payment Information -->
             <div class="payment-info">
                 <h2>SCAN TO PAY</h2>
                 <div class="qr-display">
@@ -327,9 +345,8 @@
                 </div>
             </div>
 
-            <!-- Right Section - Payment Form -->
             <div class="payment-form-container">
-                <form id="payment-form" action="process_payment.php" method="post" enctype="multipart/form-data">
+                <form id="payment-form" action="pay-dues.php" method="post" enctype="multipart/form-data">
                     <h2>PROOF OF PAYMENT</h2>
                     
                     <div class="file-upload-box">
@@ -370,15 +387,14 @@
 
     <div class="navigation-arrows">
         <div class="nav-group">
-            <a href="#" class="arrow"><i class="fa-solid fa-arrow-left"></i></a>
-            <a href="#" class="nav-text">View Dues</a>
+            <a href="view-dues.php" class="arrow"><i class="fa-solid fa-arrow-left"></i></a>
+            <p class="nav-text">View Dues</p>
         </div>
 
         <div class="nav-group">
-            <a href="#" class="nav-text">View Payment History</a>
-            <a href="#" class="arrow"><i class="fa-solid fa-arrow-right"></i></a>
+            <p class="nav-text">View Payment History</p>
+            <a href="payment-history.php" class="arrow"><i class="fa-solid fa-arrow-right"></i></a>
         </div>
     </div>
 </body>
-
 </html>
