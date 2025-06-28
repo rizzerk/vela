@@ -102,15 +102,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             font-family: 'Poppins', sans-serif;
         }
 
-        .header {
-            background-color: #155670;
-            color: white;
-            padding: 15px 5%;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            width: 100%;
-            box-sizing: border-box;
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
         }
 
         .main {
@@ -118,16 +112,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            min-height: calc(100vh - 100px);
             text-align: center;
-            padding: 20px;
-            font-family: 'Poppins';
+            padding: 40px 20px;
         }
 
         .form-container {
             position: relative;
             width: 100%;
             max-width: 800px;
+            margin-top: 30px;
         }
 
         .back-arrow {
@@ -137,21 +131,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
         }
 
         .back-arrow a {
-            font-size: 22px;
-            color: black;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            color: #1666ba;
             text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
         }
 
         .back-arrow a:hover {
-            color: #155670;
+            color: #0d4a8a;
+        }
+
+        .back-arrow i {
+            font-size: 22px;
         }
 
         #signup-form {
-            background-color: lightblue;
+            background-color: white;
             padding: 40px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             max-width: 800px;
             width: 100%;
+            border: 1px solid #e0e0e0;
         }
 
         .row {
@@ -168,48 +173,88 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
 
         .form-grp label {
             text-align: left;
+            margin-bottom: 8px;
+            color: #1666ba;
+            font-weight: 500;
         }
 
         .form-grp input {
-            padding: 12px 15px 12px 45px;
+            padding: 12px 15px;
             border: 1px solid #ddd;
             border-radius: 8px;
             font-size: 16px;
-            transition: border-color 0.3s;
+            transition: all 0.3s;
+        }
+
+        .form-grp input:focus {
+            border-color: #1666ba;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(22, 102, 186, 0.1);
+        }
+
+        .footer {
+            margin: 20px 0;
         }
 
         .footer a {
-            color: #155670;
+            color: #1666ba;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.3s;
         }
 
         .footer a:hover {
-            color: #357e9c;
+            color: #0d4a8a;
+            text-decoration: underline;
         }
 
         .signup-btn {
             margin-top: 15px;
-            padding: 12px;
-            width: 30%;
-            background-color: #357e9c;
+            padding: 14px;
+            width: 40%;
+            background: linear-gradient(to right, #1666ba, #0d4a8a);
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
         .signup-btn:hover {
-            background-color: #155670;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(13, 74, 138, 0.3);
         }
 
         .error-message {
-            color: red;
-            margin-bottom: 15px;
+            color: #c62828;
+            margin-bottom: 20px;
             text-align: left;
+            background-color: #ffebee;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #c62828;
         }
 
         .success-message {
-            color: green;
-            margin-bottom: 15px;
-            font-weight: bold;
+            color: #2e7d32;
+            margin-bottom: 20px;
+            text-align: left;
+            background-color: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #2e7d32;
+            font-weight: 600;
+        }
+
+        .form-title {
+            color: #1666ba;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            font-weight: 700;
         }
 
         @media (max-width: 768px) {
@@ -230,26 +275,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             .form-container {
                 padding: 0 10px;
             }
+            
+            #signup-form {
+                padding: 30px 20px;
+            }
+            
+            .header {
+                padding: 12px 5%;
+            }
+            
+            .logo {
+                font-size: 1.4rem;
+            }
         }
     </style>
 </head>
 
 <body>
-
-    <nav class="header">
-        <div class="header-logo">
-            <h1 id="logo">Logo</h1>
-        </div>
-    </nav>
-
     <div class="main">
-
         <div class="form-container">
             <div class="back-arrow">
                 <a href=""><i class="fa-solid fa-arrow-left"></i></a>
             </div>
 
             <form id="signup-form" action="" method="POST">
+                <h2 class="form-title">Create Your Account</h2>
+                
                 <?php if ($success): ?>
                     <div class="success-message">
                         Registration successful! You can now <a href="">login</a>.
@@ -264,46 +315,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
 
                 <div class="row">
                     <div class="form-grp">
-                        <label for="firstname">First Name: </label>
+                        <label for="firstname">First Name</label>
                         <input type="text" name="firstname" id="firstname" value="<?php echo htmlspecialchars($_POST['firstname'] ?? ''); ?>" required>
                     </div>
 
                     <div class="form-grp">
-                        <label for="lastname">Last Name: </label>
+                        <label for="lastname">Last Name</label>
                         <input type="text" name="lastname" id="lastname" value="<?php echo htmlspecialchars($_POST['lastname'] ?? ''); ?>" required>
                     </div>
                 </div>
 
                 <div class="row">
                     <div class="form-grp">
-                        <label for="email">Email: </label>
+                        <label for="email">Email</label>
                         <input type="email" name="email" id="email" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
                     </div>
 
                     <div class="form-grp">
-                        <label for="phonenumber">Phone Number: </label>
-                        <input type="number" name="phonenumber" id="phonenumber" value="<?php echo htmlspecialchars($_POST['phonenumber'] ?? ''); ?>" required>
+                        <label for="phonenumber">Phone Number</label>
+                        <input type="tel" name="phonenumber" id="phonenumber" value="<?php echo htmlspecialchars($_POST['phonenumber'] ?? ''); ?>" required>
                     </div>
                 </div>
 
                 <div class="row">
                     <div class="form-grp">
-                        <label for="password">Password: </label>
+                        <label for="password">Password</label>
                         <input type="password" name="password" id="password" required>
                     </div>
 
                     <div class="form-grp">
-                        <label for="con-password">Confirm Password: </label>
+                        <label for="con-password">Confirm Password</label>
                         <input type="password" name="con-password" id="con-password" required>
                     </div>
                 </div>
 
                 <div class="footer">
-                    <p><em>Already have an account? <strong><a href="">Sign in</a></strong></em></p>
+                    <p><em>Already have an account? <a href="">Sign in</a></em></p>
                 </div>
 
                 <div>
-                    <button type="submit" name="signup" class="signup-btn"><strong>Sign Up</strong></button>
+                    <button type="submit" name="signup" class="signup-btn">Create Account</button>
                 </div>
             </form>
         </div>
