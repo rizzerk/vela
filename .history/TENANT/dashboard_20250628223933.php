@@ -41,6 +41,7 @@ if ($lease) {
     $debug_info .= "No active lease found";
 }
 
+// Don't close connection yet - navbar needs it
 ?>
 
 <!DOCTYPE html>
@@ -59,126 +60,110 @@ if ($lease) {
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8fafc;
-            color: #1e293b;
-            line-height: 1.6;
+            background: #ffffff;
+            color: #000000;
+            line-height: 1.5;
             min-height: 100vh;
-            padding-top: 90px;
+            padding-top: 80px;
         }
 
         .content-wrapper {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 2.5rem;
+            padding: 2rem;
         }
 
         .bills-section {
             background: #ffffff;
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-            border: 1px solid #e2e8f0;
-            margin-bottom: 2rem;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #deecfb;
+            margin-bottom: 1.5rem;
         }
 
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 1.5rem;
         }
 
         .section-title {
-            font-size: 1.75rem;
+            font-size: 1.5rem;
             color: #1666ba;
             font-weight: 700;
-            letter-spacing: -0.025em;
         }
 
         .welcome-text {
-            font-size: 1rem;
-            color: #64748b;
-            font-weight: 500;
+            font-size: 1.1rem;
+            color: #666;
         }
 
         .bill-item {
-            padding: 0;
-            border-radius: 16px;
-            margin-bottom: 0;
-            background: #ffffff;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 2rem;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            border: 1px solid #deecfb;
         }
 
         .bill-item.overdue {
             background: #ffffff;
+            border-color: #dc2626;
         }
 
         .bill-item.unpaid {
             background: #ffffff;
+            border-color: #1666ba;
         }
 
         .bill-item.paid {
             background: #ffffff;
-        }
-
-        .bill-info {
-            flex: 1;
+            border-color: #16a34a;
         }
 
         .bill-amount {
-            font-size: 2rem;
-            font-weight: 800;
-            color: #1e293b;
-            margin-bottom: 0.25rem;
-            line-height: 1;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1666ba;
         }
 
         .bill-due {
-            font-size: 1rem;
-            color: #64748b;
-            font-weight: 500;
-            margin: 0;
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.2rem;
         }
 
         .bill-status {
-            padding: 0.75rem 1.5rem;
-            border-radius: 25px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            text-transform: capitalize;
-            letter-spacing: 0.025em;
-            white-space: nowrap;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            margin-top: 0.3rem;
         }
 
         .status-overdue {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
+            background: #dc2626;
             color: white;
         }
 
         .status-unpaid {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            background: #1666ba;
             color: white;
         }
 
         .status-paid {
-            background: linear-gradient(135deg, #22c55e, #16a34a);
+            background: #16a34a;
             color: white;
         }
 
         .notice-section {
-            background: linear-gradient(135deg, #1666ba 0%, #368ce7 100%);
-            border-radius: 16px;
-            padding: 2.5rem;
-            margin-bottom: 2rem;
+            background: #1666ba;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
             color: #ffffff;
-            box-shadow: 0 10px 15px -3px rgba(22, 102, 186, 0.1), 0 4px 6px -2px rgba(22, 102, 186, 0.05);
         }
 
         .notice-content {
@@ -187,10 +172,9 @@ if ($lease) {
         }
 
         .notice-title {
-            font-size: 1.75rem;
+            font-size: 1.5rem;
             font-weight: 700;
             margin-bottom: 1rem;
-            letter-spacing: -0.025em;
         }
 
         .notice-text {
@@ -201,48 +185,44 @@ if ($lease) {
 
         .actions-section {
             background: #ffffff;
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #deecfb;
         }
 
         .actions-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 1.5rem;
-            margin-top: 1.5rem;
+            margin-top: 1rem;
         }
 
         .action-card {
             background: #1666ba;
-            border-radius: 12px;
-            padding: 2rem;
-            border: none;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #1666ba;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: background-color 0.2s ease;
             text-align: center;
             color: #ffffff;
-            box-shadow: 0 4px 6px -1px rgba(22, 102, 186, 0.1), 0 2px 4px -1px rgba(22, 102, 186, 0.06);
         }
 
         .action-card:hover {
             background: #368ce7;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(22, 102, 186, 0.2), 0 4px 6px -2px rgba(22, 102, 186, 0.1);
         }
 
         .action-icon {
-            font-size: 2.5rem;
+            font-size: 2rem;
             color: #ffffff;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         .action-title {
-            font-size: 1.125rem;
-            font-weight: 600;
+            font-size: 1.1rem;
+            font-weight: 700;
             color: #ffffff;
-            letter-spacing: -0.025em;
+            margin-bottom: 0.5rem;
         }
 
         .action-desc {
@@ -360,18 +340,16 @@ if ($lease) {
             <?php else: ?>
                 <?php foreach ($bills as $bill): ?>
                     <div class="bill-item <?php echo $bill['status']; ?>">
-                        <div class="bill-info">
-                            <div class="bill-amount">₱<?php echo number_format($bill['amount'], 2); ?></div>
-                            <div class="bill-due">Due: <?php echo date('M d, Y', strtotime($bill['due_date'])); ?></div>
-                            <?php if ($bill['description']): ?>
-                                <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b; font-weight: 500;">
-                                    <?php echo htmlspecialchars($bill['description']); ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
+                        <div class="bill-amount">₱<?php echo number_format($bill['amount'], 2); ?></div>
+                        <div class="bill-due">Due: <?php echo date('M d, Y', strtotime($bill['due_date'])); ?></div>
                         <div class="bill-status status-<?php echo $bill['status']; ?>">
                             <?php echo ucfirst($bill['status']); ?>
                         </div>
+                        <?php if ($bill['description']): ?>
+                            <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+                                <?php echo htmlspecialchars($bill['description']); ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -387,6 +365,7 @@ if ($lease) {
             </div>
         </div>
 
+        <div class="actions-section">
             <div class="actions-grid">
                 <div class="action-card" onclick="maintenanceRequest()">
                     <div class="action-icon">
@@ -407,12 +386,12 @@ if ($lease) {
                     <div class="action-title">Lease Details</div>
                 </div>
             </div>
-
+        </div>
     </div>
 
     <script>
         function maintenanceRequest() {
-            window.location.href = 'maintenance.php';
+            window.location.href = 'maintenance-request.php';
         }
         
         function viewPaymentHistory() {

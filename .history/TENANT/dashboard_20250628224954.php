@@ -41,6 +41,7 @@ if ($lease) {
     $debug_info .= "No active lease found";
 }
 
+// Don't close connection yet - navbar needs it
 ?>
 
 <!DOCTYPE html>
@@ -63,7 +64,7 @@ if ($lease) {
             color: #1e293b;
             line-height: 1.6;
             min-height: 100vh;
-            padding-top: 90px;
+            padding-top: 80px;
         }
 
         .content-wrapper {
@@ -104,15 +105,17 @@ if ($lease) {
         }
 
         .bill-item {
-            padding: 0;
-            border-radius: 16px;
-            margin-bottom: 0;
-            background: #ffffff;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 2rem;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+
+        .bill-item:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transform: translateY(-1px);
         }
 
         .bill-item.overdue {
@@ -127,48 +130,41 @@ if ($lease) {
             background: #ffffff;
         }
 
-        .bill-info {
-            flex: 1;
-        }
-
         .bill-amount {
-            font-size: 2rem;
-            font-weight: 800;
-            color: #1e293b;
-            margin-bottom: 0.25rem;
-            line-height: 1;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1666ba;
+            margin-bottom: 0.5rem;
         }
 
         .bill-due {
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: #64748b;
-            font-weight: 500;
-            margin: 0;
+            margin-bottom: 0.75rem;
         }
 
         .bill-status {
-            padding: 0.75rem 1.5rem;
-            border-radius: 25px;
-            font-size: 0.875rem;
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
             font-weight: 600;
-            text-transform: capitalize;
-            letter-spacing: 0.025em;
-            white-space: nowrap;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .status-overdue {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
+            background: #dc2626;
             color: white;
         }
 
         .status-unpaid {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            background: #d97706;
             color: white;
         }
 
         .status-paid {
-            background: linear-gradient(135deg, #22c55e, #16a34a);
+            background: #16a34a;
             color: white;
         }
 
@@ -360,18 +356,16 @@ if ($lease) {
             <?php else: ?>
                 <?php foreach ($bills as $bill): ?>
                     <div class="bill-item <?php echo $bill['status']; ?>">
-                        <div class="bill-info">
-                            <div class="bill-amount">₱<?php echo number_format($bill['amount'], 2); ?></div>
-                            <div class="bill-due">Due: <?php echo date('M d, Y', strtotime($bill['due_date'])); ?></div>
-                            <?php if ($bill['description']): ?>
-                                <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b; font-weight: 500;">
-                                    <?php echo htmlspecialchars($bill['description']); ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
+                        <div class="bill-amount">₱<?php echo number_format($bill['amount'], 2); ?></div>
+                        <div class="bill-due">Due: <?php echo date('M d, Y', strtotime($bill['due_date'])); ?></div>
                         <div class="bill-status status-<?php echo $bill['status']; ?>">
                             <?php echo ucfirst($bill['status']); ?>
                         </div>
+                        <?php if ($bill['description']): ?>
+                            <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+                                <?php echo htmlspecialchars($bill['description']); ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -412,7 +406,7 @@ if ($lease) {
 
     <script>
         function maintenanceRequest() {
-            window.location.href = 'maintenance.php';
+            window.location.href = 'maintenance-request.php';
         }
         
         function viewPaymentHistory() {

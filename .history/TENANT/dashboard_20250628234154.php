@@ -59,7 +59,7 @@ if ($lease) {
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8fafc;
+            background: linear-gradient(135deg, #ffffff 0%, #deecfb 50%, #bedaf7 100%);
             color: #1e293b;
             line-height: 1.6;
             min-height: 100vh;
@@ -73,12 +73,13 @@ if ($lease) {
         }
 
         .bills-section {
-            background: #ffffff;
+            background: linear-gradient(135deg, #ffffff 0%, #deecfb 100%);
             border-radius: 16px;
             padding: 2rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-            border: 1px solid #e2e8f0;
+            box-shadow: 0 8px 32px rgba(22, 102, 186, 0.1);
+            border: 1px solid rgba(222, 236, 251, 0.5);
             margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
         }
 
         .section-header {
@@ -134,7 +135,10 @@ if ($lease) {
         .bill-amount {
             font-size: 2rem;
             font-weight: 800;
-            color: #1e293b;
+            background: linear-gradient(135deg, #1666ba, #368ce7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin-bottom: 0.25rem;
             line-height: 1;
         }
@@ -215,7 +219,7 @@ if ($lease) {
         }
 
         .action-card {
-            background: #1666ba;
+            background: linear-gradient(135deg, #1666ba 0%, #368ce7 100%);
             border-radius: 12px;
             padding: 2rem;
             border: none;
@@ -223,13 +227,13 @@ if ($lease) {
             transition: all 0.3s ease;
             text-align: center;
             color: #ffffff;
-            box-shadow: 0 4px 6px -1px rgba(22, 102, 186, 0.1), 0 2px 4px -1px rgba(22, 102, 186, 0.06);
+            box-shadow: 0 8px 25px rgba(22, 102, 186, 0.2);
         }
 
         .action-card:hover {
-            background: #368ce7;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(22, 102, 186, 0.2), 0 4px 6px -2px rgba(22, 102, 186, 0.1);
+            background: linear-gradient(135deg, #368ce7 0%, #7ab3ef 100%);
+            transform: translateY(-4px);
+            box-shadow: 0 15px 35px rgba(22, 102, 186, 0.3);
         }
 
         .action-icon {

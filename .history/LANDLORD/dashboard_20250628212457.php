@@ -8,12 +8,12 @@ $total_properties = 0;
 $total_vacant = 0;
 $total_occupied = 0;
 
-
+// Check if property_type column exists
 $check_column = "SHOW COLUMNS FROM PROPERTY LIKE 'property_type'";
 $column_result = $conn->query($check_column);
 
 if ($column_result && $column_result->num_rows > 0) {
-
+    // property_type column exists
     $property_query = "SELECT property_type, COUNT(*) as count, 
                              SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as vacant,
                              SUM(CASE WHEN status = 'unavailable' THEN 1 ELSE 0 END) as occupied
@@ -24,7 +24,7 @@ if ($column_result && $column_result->num_rows > 0) {
         $properties = $result->fetch_all(MYSQLI_ASSOC);
     }
 } else {
-
+    // property_type column doesn't exist, get basic stats
     $basic_query = "SELECT 'All Properties' as property_type, COUNT(*) as count,
                            SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as vacant,
                            SUM(CASE WHEN status = 'unavailable' THEN 1 ELSE 0 END) as occupied
@@ -35,16 +35,19 @@ if ($column_result && $column_result->num_rows > 0) {
     }
 }
 
-
+// Calculate totals
 if (!empty($properties)) {
     $total_properties = array_sum(array_column($properties, 'count'));
     $total_vacant = array_sum(array_column($properties, 'vacant'));
     $total_occupied = array_sum(array_column($properties, 'occupied'));
 }
 
+// Debug: Check if we have any properties at all
+$debug_query = "SELECT COUNT(*) as total FROM PROPERTY";
+$debug_result = $conn->query($debug_query);
+$debug_count = $debug_result ? $debug_result->fetch_assoc()['total'] : 0;
 
-
-
+// Handle announcement creation
 if ($_POST['action'] ?? '' === 'add_announcement') {
     $title = $_POST['title'];
     $content = $_POST['content'];
@@ -58,7 +61,7 @@ if ($_POST['action'] ?? '' === 'add_announcement') {
     $stmt->execute();
 }
 
-
+// Fetch announcements
 $announcement_query = "SELECT title, content, created_at 
                       FROM ANNOUNCEMENT 
                       WHERE visible_to IN ('landlord', 'all') 

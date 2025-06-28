@@ -428,7 +428,14 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Remove the client-side active state management since we're using server-side detection
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', function(e) {
+        if (this.getAttribute('onclick')) return; // Skip notification link
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+        navLinks.classList.remove('active');
+    });
+});
 
 document.querySelectorAll('.dropdown-menu a').forEach(link => {
     link.addEventListener('click', function(e) {
@@ -450,18 +457,6 @@ function toggleNotifications(event) {
     const dropdown = document.getElementById('notificationDropdown');
     dropdown.classList.toggle('show');
 }
-
-// Handle notification dropdown toggle on notifications page
-document.addEventListener('DOMContentLoaded', function() {
-    const notificationLink = document.querySelector('.notification-icon .nav-link');
-    if (notificationLink && notificationLink.classList.contains('active')) {
-        // If on notifications page, make the link clickable to toggle dropdown
-        notificationLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            toggleNotifications(e);
-        });
-    }
-});
 
 // Close notification dropdown when clicking outside
 document.addEventListener('click', function(event) {

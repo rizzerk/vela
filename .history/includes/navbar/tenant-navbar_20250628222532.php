@@ -6,9 +6,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] != 'tenant') {
 }
 $fullName = isset($_SESSION['name']) ? $_SESSION['name'] : 'User';
 
-// Get current page to set active nav item
-$currentPage = basename($_SERVER['PHP_SELF']);
-
 // Fetch notifications for dropdown
 if (file_exists('../../connection.php')) {
     require_once '../../connection.php';
@@ -341,9 +338,9 @@ try {
 <nav class="tenant-navbar">
     <a href="dashboard.php" class="tenant-logo">VELA</a>
     <ul class="tenant-nav-links">
-        <li><a href="dashboard.php" class="nav-link <?= $currentPage === 'dashboard.php' ? 'active' : '' ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+        <li><a href="dashboard.php" class="nav-link active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
         <li class="notification-icon" style="position: relative;">
-            <a href="notifications.php" class="nav-link <?= $currentPage === 'notifications.php' ? 'active' : '' ?>">
+            <a href="#" class="nav-link" onclick="toggleNotifications(event)">
                 <i class="fas fa-bell"></i> Notifications
                 <?php if (count($notifications) > 0): ?>
                     <span class="notification-badge"><?= count($notifications) ?></span>
@@ -383,7 +380,7 @@ try {
                 </div>
                 
                 <div class="notification-footer">
-                    <a href="../TENANT/notifications.php">See all notifications</a>
+                    <a href="../../TENANT/notifications.php">See all notifications</a>
                 </div>
             </div>
         </li>
@@ -428,7 +425,14 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Remove the client-side active state management since we're using server-side detection
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', function(e) {
+        if (this.getAttribute('onclick')) return; // Skip notification link
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+        navLinks.classList.remove('active');
+    });
+});
 
 document.querySelectorAll('.dropdown-menu a').forEach(link => {
     link.addEventListener('click', function(e) {
@@ -450,18 +454,6 @@ function toggleNotifications(event) {
     const dropdown = document.getElementById('notificationDropdown');
     dropdown.classList.toggle('show');
 }
-
-// Handle notification dropdown toggle on notifications page
-document.addEventListener('DOMContentLoaded', function() {
-    const notificationLink = document.querySelector('.notification-icon .nav-link');
-    if (notificationLink && notificationLink.classList.contains('active')) {
-        // If on notifications page, make the link clickable to toggle dropdown
-        notificationLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            toggleNotifications(e);
-        });
-    }
-});
 
 // Close notification dropdown when clicking outside
 document.addEventListener('click', function(event) {

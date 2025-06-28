@@ -59,7 +59,7 @@ if ($lease) {
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8fafc;
+            background: linear-gradient(135deg, #ffffff 0%, #deecfb 50%, #bedaf7 100%);
             color: #1e293b;
             line-height: 1.6;
             min-height: 100vh;

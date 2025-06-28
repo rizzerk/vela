@@ -6,30 +6,19 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] != 'tenant') {
 }
 $fullName = isset($_SESSION['name']) ? $_SESSION['name'] : 'User';
 
-// Get current page to set active nav item
-$currentPage = basename($_SERVER['PHP_SELF']);
-
 // Fetch notifications for dropdown
-if (file_exists('../../connection.php')) {
-    require_once '../../connection.php';
-} elseif (file_exists('../connection.php')) {
-    require_once '../connection.php';
-} else {
-    require_once 'connection.php';
-}
+require_once '../../connection.php';
 $notifications = [];
 try {
-    if (isset($conn)) {
-        $query = "SELECT 'bill' as type, CONCAT('Bill: ₱', amount, ' - ', description) as message, 
-                         due_date as date, 'medium' as priority
-                  FROM BILL b 
-                  WHERE b.status IN ('unpaid', 'overdue')
-                  ORDER BY due_date DESC LIMIT 5";
-        
-        $result = $conn->query($query);
-        if ($result) {
-            $notifications = $result->fetch_all(MYSQLI_ASSOC);
-        }
+    $query = "SELECT 'bill' as type, CONCAT('Bill: ₱', amount, ' - ', description) as message, 
+                     due_date as date, 'medium' as priority
+              FROM BILL b 
+              WHERE b.status IN ('unpaid', 'overdue')
+              ORDER BY due_date DESC LIMIT 5";
+    
+    $result = $conn->query($query);
+    if ($result) {
+        $notifications = $result->fetch_all(MYSQLI_ASSOC);
     }
 } catch (Exception $e) {
     error_log("Notifications error: " . $e->getMessage());
@@ -109,11 +98,14 @@ try {
     top: 100%;
     right: 0;
     width: 350px;
-    background: #1666ba;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(22, 102, 186, 0.3);
-    z-index: 9999;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e2e8f0;
+    z-index: 1000;
     display: none;
+    max-height: 400px;
+    overflow: hidden;
     margin-top: 0.5rem;
 }
 
@@ -135,20 +127,22 @@ try {
 
 .notification-header {
     padding: 1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.2);
+    border-bottom: 1px solid #e2e8f0;
     font-weight: 600;
-    color: white;
-    font-size: 1rem;
+    color: #1e293b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .notification-list {
-    max-height: 250px;
+    max-height: 300px;
     overflow-y: auto;
 }
 
 .dropdown-notification {
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid #f1f5f9;
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -157,7 +151,7 @@ try {
 }
 
 .dropdown-notification:hover {
-    background-color: rgba(255,255,255,0.1);
+    background-color: #f8fafc;
 }
 
 .dropdown-notification:last-child {
@@ -165,20 +159,20 @@ try {
 }
 
 .dropdown-notification-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
+    width: 35px;
+    height: 35px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem;
-    background: rgba(255,255,255,0.2);
-    color: white;
+    font-size: 1rem;
+    background: linear-gradient(135deg, #deecfb, #bedaf7);
+    color: #1666ba;
 }
 
 .dropdown-notification.medium .dropdown-notification-icon {
-    background: rgba(245, 158, 11, 0.3);
-    color: white;
+    background: linear-gradient(135deg, #fffbeb, #fed7aa);
+    color: #f59e0b;
 }
 
 .dropdown-notification-content {
@@ -187,51 +181,43 @@ try {
 
 .dropdown-notification-message {
     font-size: 0.85rem;
-    color: white;
+    color: #1e293b;
     margin-bottom: 0.25rem;
     line-height: 1.3;
 }
 
 .dropdown-notification-time {
     font-size: 0.75rem;
-    color: rgba(255,255,255,0.7);
+    color: #64748b;
 }
 
 .notification-footer {
-    padding: 1rem;
-    border-top: 1px solid rgba(255,255,255,0.2);
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #e2e8f0;
     text-align: center;
-    margin-top: 0.5rem;
-    position: relative;
-    z-index: 10;
 }
 
 .notification-footer a {
-    color: white;
+    color: #1666ba;
     text-decoration: none;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 500;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-    display: inline-block;
-    background: rgba(255,255,255,0.15);
 }
 
 .notification-footer a:hover {
-    background: rgba(255,255,255,0.25);
+    text-decoration: underline;
 }
 
 .notification-empty {
     padding: 2rem 1rem;
     text-align: center;
-    color: rgba(255,255,255,0.7);
+    color: #64748b;
 }
 
 .notification-empty i {
-    font-size: 1.5rem;
+    font-size: 2rem;
     margin-bottom: 0.5rem;
-    color: rgba(255,255,255,0.5);
+    color: #bedaf7;
 }
 
 .profile-dropdown {
@@ -341,9 +327,9 @@ try {
 <nav class="tenant-navbar">
     <a href="dashboard.php" class="tenant-logo">VELA</a>
     <ul class="tenant-nav-links">
-        <li><a href="dashboard.php" class="nav-link <?= $currentPage === 'dashboard.php' ? 'active' : '' ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+        <li><a href="dashboard.php" class="nav-link active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
         <li class="notification-icon" style="position: relative;">
-            <a href="notifications.php" class="nav-link <?= $currentPage === 'notifications.php' ? 'active' : '' ?>">
+            <a href="#" class="nav-link" onclick="toggleNotifications(event)">
                 <i class="fas fa-bell"></i> Notifications
                 <?php if (count($notifications) > 0): ?>
                     <span class="notification-badge"><?= count($notifications) ?></span>
@@ -383,7 +369,7 @@ try {
                 </div>
                 
                 <div class="notification-footer">
-                    <a href="../TENANT/notifications.php">See all notifications</a>
+                    <a href="../../TENANT/notifications.php">See all notifications</a>
                 </div>
             </div>
         </li>
@@ -428,7 +414,14 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Remove the client-side active state management since we're using server-side detection
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', function(e) {
+        if (this.getAttribute('onclick')) return; // Skip notification link
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+        navLinks.classList.remove('active');
+    });
+});
 
 document.querySelectorAll('.dropdown-menu a').forEach(link => {
     link.addEventListener('click', function(e) {
@@ -451,17 +444,89 @@ function toggleNotifications(event) {
     dropdown.classList.toggle('show');
 }
 
-// Handle notification dropdown toggle on notifications page
-document.addEventListener('DOMContentLoaded', function() {
-    const notificationLink = document.querySelector('.notification-icon .nav-link');
-    if (notificationLink && notificationLink.classList.contains('active')) {
-        // If on notifications page, make the link clickable to toggle dropdown
-        notificationLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            toggleNotifications(e);
-        });
+// Close notification dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const notificationIcon = document.querySelector('.notification-icon');
+    const dropdown = document.getElementById('notificationDropdown');
+    
+    if (!notificationIcon.contains(event.target)) {
+        dropdown.classList.remove('show');
     }
 });
+</script>
+                </div>
+            </div>
+        </li>
+        <li class="profile-dropdown">
+            <button class="profile-btn" id="profileBtn">
+                <i class="fas fa-user-circle"></i>
+                <span><?php echo htmlspecialchars($fullName); ?></span>
+                <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="dropdown-menu" id="dropdownMenu">
+                <a href="profile.php"><i class="fas fa-user"></i> Profile</a>
+                <a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </li>
+    </ul>
+    <button class="mobile-menu-btn" id="mobileMenuBtn">
+        <i class="fas fa-bars"></i>
+    </button>
+</nav>
+
+<script>
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const navLinks = document.querySelector('.tenant-nav-links');
+const profileBtn = document.getElementById('profileBtn');
+const dropdownMenu = document.getElementById('dropdownMenu');
+
+mobileMenuBtn.addEventListener('click', function() {
+    navLinks.classList.toggle('active');
+});
+
+profileBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    dropdownMenu.classList.toggle('show');
+});
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.profile-dropdown')) {
+        dropdownMenu.classList.remove('show');
+    }
+    if (!e.target.closest('.tenant-navbar')) {
+        navLinks.classList.remove('active');
+    }
+});
+
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', function(e) {
+        if (this.getAttribute('onclick')) return; // Skip notification link
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+        navLinks.classList.remove('active');
+    });
+});
+
+document.querySelectorAll('.dropdown-menu a').forEach(link => {
+    link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const href = this.getAttribute('href');
+        
+        if (href === 'profile.php') {
+            window.location.href = 'profile.php';
+        } else if (href === '../logout.php') {
+            window.location.href = '../logout.php';
+        }
+        
+        dropdownMenu.classList.remove('show');
+    });
+});
+
+function toggleNotifications(event) {
+    event.preventDefault();
+    const dropdown = document.getElementById('notificationDropdown');
+    dropdown.classList.toggle('show');
+}
 
 // Close notification dropdown when clicking outside
 document.addEventListener('click', function(event) {

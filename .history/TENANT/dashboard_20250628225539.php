@@ -41,6 +41,7 @@ if ($lease) {
     $debug_info .= "No active lease found";
 }
 
+// Don't close connection yet - navbar needs it
 ?>
 
 <!DOCTYPE html>
@@ -63,7 +64,7 @@ if ($lease) {
             color: #1e293b;
             line-height: 1.6;
             min-height: 100vh;
-            padding-top: 90px;
+            padding-top: 80px;
         }
 
         .content-wrapper {
@@ -412,7 +413,7 @@ if ($lease) {
 
     <script>
         function maintenanceRequest() {
-            window.location.href = 'maintenance.php';
+            window.location.href = 'maintenance-request.php';
         }
         
         function viewPaymentHistory() {

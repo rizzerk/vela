@@ -73,12 +73,13 @@ if ($lease) {
         }
 
         .bills-section {
-            background: #ffffff;
+            background: linear-gradient(135deg, #ffffff 0%, #deecfb 100%);
             border-radius: 16px;
             padding: 2rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-            border: 1px solid #e2e8f0;
+            box-shadow: 0 8px 32px rgba(22, 102, 186, 0.1);
+            border: 1px solid rgba(222, 236, 251, 0.5);
             margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
         }
 
         .section-header {

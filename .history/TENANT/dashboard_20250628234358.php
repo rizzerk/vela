@@ -59,7 +59,7 @@ if ($lease) {
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8fafc;
+            background: linear-gradient(135deg, #ffffff 0%, #deecfb 50%, #bedaf7 100%);
             color: #1e293b;
             line-height: 1.6;
             min-height: 100vh;
@@ -86,8 +86,11 @@ if ($lease) {
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #1666ba 0%, #368ce7 50%, #7ab3ef 100%);
+            border-radius: 12px;
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(22, 102, 186, 0.2);
         }
 
         .section-title {
@@ -99,7 +102,7 @@ if ($lease) {
 
         .welcome-text {
             font-size: 1rem;
-            color: #64748b;
+            color: rgba(255, 255, 255, 0.9);
             font-weight: 500;
         }
 

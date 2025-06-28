@@ -6,9 +6,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] != 'tenant') {
 }
 $fullName = isset($_SESSION['name']) ? $_SESSION['name'] : 'User';
 
-// Get current page to set active nav item
-$currentPage = basename($_SERVER['PHP_SELF']);
-
 // Fetch notifications for dropdown
 if (file_exists('../../connection.php')) {
     require_once '../../connection.php';
@@ -108,12 +105,15 @@ try {
     position: absolute;
     top: 100%;
     right: 0;
-    width: 350px;
-    background: #1666ba;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(22, 102, 186, 0.3);
-    z-index: 9999;
+    width: 380px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 12px 48px rgba(22, 102, 186, 0.2);
+    border: 2px solid #bedaf7;
+    z-index: 1000;
     display: none;
+    max-height: 450px;
+    overflow: hidden;
     margin-top: 0.5rem;
 }
 
@@ -134,30 +134,37 @@ try {
 }
 
 .notification-header {
-    padding: 1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.2);
-    font-weight: 600;
-    color: white;
-    font-size: 1rem;
+    padding: 1.2rem;
+    border-bottom: 2px solid #deecfb;
+    font-weight: 700;
+    color: #1666ba;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #ffffff 0%, #deecfb 100%);
+    font-size: 1.1rem;
 }
 
 .notification-list {
-    max-height: 250px;
+    max-height: 300px;
     overflow-y: auto;
 }
 
 .dropdown-notification {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid #f1f5f9;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    transition: background-color 0.2s;
+    gap: 1rem;
+    transition: all 0.3s ease;
     cursor: pointer;
+    position: relative;
 }
 
 .dropdown-notification:hover {
-    background-color: rgba(255,255,255,0.1);
+    background: linear-gradient(135deg, #deecfb 0%, #bedaf7 50%);
+    transform: translateX(4px);
+    box-shadow: inset 4px 0 0 #1666ba;
 }
 
 .dropdown-notification:last-child {
@@ -165,19 +172,20 @@ try {
 }
 
 .dropdown-notification-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem;
-    background: rgba(255,255,255,0.2);
+    font-size: 1.1rem;
+    background: linear-gradient(135deg, #1666ba, #368ce7);
     color: white;
+    box-shadow: 0 4px 12px rgba(22, 102, 186, 0.3);
 }
 
 .dropdown-notification.medium .dropdown-notification-icon {
-    background: rgba(245, 158, 11, 0.3);
+    background: linear-gradient(135deg, #f59e0b, #d97706);
     color: white;
 }
 
@@ -186,52 +194,67 @@ try {
 }
 
 .dropdown-notification-message {
-    font-size: 0.85rem;
-    color: white;
-    margin-bottom: 0.25rem;
-    line-height: 1.3;
+    font-size: 0.9rem;
+    color: #1e293b;
+    margin-bottom: 0.4rem;
+    line-height: 1.4;
+    font-weight: 500;
 }
 
 .dropdown-notification-time {
-    font-size: 0.75rem;
-    color: rgba(255,255,255,0.7);
+    font-size: 0.8rem;
+    color: #7ab3ef;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.dropdown-notification-time::before {
+    content: '\f017';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 400;
+    font-size: 0.7rem;
 }
 
 .notification-footer {
     padding: 1rem;
-    border-top: 1px solid rgba(255,255,255,0.2);
+    border-top: 1px solid #e2e8f0;
     text-align: center;
-    margin-top: 0.5rem;
-    position: relative;
-    z-index: 10;
+    background: linear-gradient(135deg, #deecfb 0%, #bedaf7 100%);
+    border-radius: 0 0 12px 12px;
 }
 
 .notification-footer a {
-    color: white;
+    color: #1666ba;
     text-decoration: none;
-    font-size: 0.8rem;
-    font-weight: 500;
+    font-size: 0.9rem;
+    font-weight: 600;
     padding: 0.5rem 1rem;
-    border-radius: 4px;
-    transition: background-color 0.2s;
+    border-radius: 8px;
+    transition: all 0.3s ease;
     display: inline-block;
-    background: rgba(255,255,255,0.15);
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 8px rgba(22, 102, 186, 0.1);
 }
 
 .notification-footer a:hover {
-    background: rgba(255,255,255,0.25);
+    background: #1666ba;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(22, 102, 186, 0.2);
 }
 
 .notification-empty {
     padding: 2rem 1rem;
     text-align: center;
-    color: rgba(255,255,255,0.7);
+    color: #64748b;
 }
 
 .notification-empty i {
-    font-size: 1.5rem;
+    font-size: 2rem;
     margin-bottom: 0.5rem;
-    color: rgba(255,255,255,0.5);
+    color: #bedaf7;
 }
 
 .profile-dropdown {
@@ -341,9 +364,9 @@ try {
 <nav class="tenant-navbar">
     <a href="dashboard.php" class="tenant-logo">VELA</a>
     <ul class="tenant-nav-links">
-        <li><a href="dashboard.php" class="nav-link <?= $currentPage === 'dashboard.php' ? 'active' : '' ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+        <li><a href="dashboard.php" class="nav-link active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
         <li class="notification-icon" style="position: relative;">
-            <a href="notifications.php" class="nav-link <?= $currentPage === 'notifications.php' ? 'active' : '' ?>">
+            <a href="#" class="nav-link" onclick="toggleNotifications(event)">
                 <i class="fas fa-bell"></i> Notifications
                 <?php if (count($notifications) > 0): ?>
                     <span class="notification-badge"><?= count($notifications) ?></span>
@@ -383,7 +406,7 @@ try {
                 </div>
                 
                 <div class="notification-footer">
-                    <a href="../TENANT/notifications.php">See all notifications</a>
+                    <a href="../../TENANT/notifications.php">See all notifications</a>
                 </div>
             </div>
         </li>
@@ -428,7 +451,14 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Remove the client-side active state management since we're using server-side detection
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', function(e) {
+        if (this.getAttribute('onclick')) return; // Skip notification link
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+        navLinks.classList.remove('active');
+    });
+});
 
 document.querySelectorAll('.dropdown-menu a').forEach(link => {
     link.addEventListener('click', function(e) {
@@ -450,18 +480,6 @@ function toggleNotifications(event) {
     const dropdown = document.getElementById('notificationDropdown');
     dropdown.classList.toggle('show');
 }
-
-// Handle notification dropdown toggle on notifications page
-document.addEventListener('DOMContentLoaded', function() {
-    const notificationLink = document.querySelector('.notification-icon .nav-link');
-    if (notificationLink && notificationLink.classList.contains('active')) {
-        // If on notifications page, make the link clickable to toggle dropdown
-        notificationLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            toggleNotifications(e);
-        });
-    }
-});
 
 // Close notification dropdown when clicking outside
 document.addEventListener('click', function(event) {
