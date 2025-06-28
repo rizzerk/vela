@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'connection.php'; // Assuming this file contains your database connection
+require_once 'connection.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -89,22 +89,6 @@ while ($row = $announcementResult->fetch_assoc()) {
     ];
 }
 
-// Get application events (for landlords)
-if ($user_role == 'landlord') {
-    $applicationQuery = "SELECT a.submitted_at, a.status, p.title AS property_name 
-                         FROM APPLICATIONS a 
-                         JOIN PROPERTY p ON a.property_id = p.property_id";
-    $appResult = $conn->query($applicationQuery);
-    while ($row = $appResult->fetch_assoc()) {
-        $date = date('Y-m-d', strtotime($row['submitted_at']));
-        $events[$date][] = [
-            'title' => "Application: " . $row['property_name'] . " (" . ucfirst($row['status']) . ")",
-            'type' => 'application',
-            'date' => $date
-        ];
-    }
-}
-
 // Prepare events for JavaScript
 $js_events = json_encode($events);
 
@@ -132,7 +116,7 @@ if (isset($_GET['prev'])) {
 } elseif (isset($_GET['next'])) {
     $currentMonth++;
     if ($currentMonth > 12) {
-        $currentMonth = 1;
+        $currentMonth = 0;
         $currentYear++;
     }
 }
@@ -150,7 +134,7 @@ $currentMonthName = $monthNames[$currentMonth];
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Property Management Calendar</title>
+    <title>Tenant Calendar - VELA</title>
     <script src="https://kit.fontawesome.com/dddee79f2e.js" crossorigin="anonymous"></script>
     <style>
         * {
@@ -163,11 +147,12 @@ $currentMonthName = $monthNames[$currentMonth];
         body {
             background-color: #f8f9fa;
             color: #343a40;
-            padding: 20px;
             min-height: 100vh;
         }
 
-        .container {
+        /* Main content */
+        .main-content {
+            padding: 25px;
             max-width: 1400px;
             margin: 0 auto;
         }
@@ -176,48 +161,20 @@ $currentMonthName = $monthNames[$currentMonth];
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 0;
-            margin-bottom: 30px;
-            border-bottom: 1px solid #dee2e6;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
         }
 
-        .logo {
-            font-size: 2rem;
+        .page-title {
+            font-size: 1.8rem;
+            color: #1666ba;
             font-weight: 700;
-            color: #155670;
-        }
-
-        .user-info {
             display: flex;
             align-items: center;
-            gap: 15px;
-        }
-
-        .user-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: #155670;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-
-        .user-details {
-            text-align: right;
-        }
-
-        .user-name {
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-
-        .user-role {
-            color: #6c757d;
-            font-size: 0.9rem;
+            gap: 10px;
         }
 
         .calendar-wrapper {
@@ -243,7 +200,7 @@ $currentMonthName = $monthNames[$currentMonth];
         .calendar-header .year {
             font-size: 2.5rem;
             font-weight: 700;
-            color: #155670;
+            color: #1666ba;
         }
 
         .calendar-header .month-nav {
@@ -264,10 +221,11 @@ $currentMonthName = $monthNames[$currentMonth];
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
+            color: #1666ba;
         }
 
         .month-nav button:hover {
-            background: #155670;
+            background: #1666ba;
             color: white;
         }
 
@@ -276,6 +234,7 @@ $currentMonthName = $monthNames[$currentMonth];
             font-weight: 600;
             min-width: 150px;
             text-align: center;
+            color: #343a40;
         }
 
         .calendar-table {
@@ -289,11 +248,12 @@ $currentMonthName = $monthNames[$currentMonth];
         }
 
         .day-header {
-            background: #155670;
+            background: #0d4a8a;
             color: white;
             font-weight: 600;
             padding: 15px 5px;
             text-align: center;
+            font-size: 0.9rem;
         }
 
         .calendar-day {
@@ -316,10 +276,11 @@ $currentMonthName = $monthNames[$currentMonth];
             font-weight: 600;
             font-size: 1.1rem;
             margin-bottom: 5px;
+            color: #495057;
         }
 
         .calendar-day.today .calendar-day-number {
-            background: #155670;
+            background: #1666ba;
             color: white;
             width: 30px;
             height: 30px;
@@ -331,7 +292,7 @@ $currentMonthName = $monthNames[$currentMonth];
 
         .calendar-day.selected {
             background: #e1f0fa;
-            border: 2px solid #155670;
+            border: 2px solid #1666ba;
         }
 
         .calendar-events {
@@ -342,12 +303,13 @@ $currentMonthName = $monthNames[$currentMonth];
 
         .calendar-event {
             font-size: 0.75rem;
-            padding: 4px 8px;
+            padding: 5px 8px;
             border-radius: 4px;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            cursor: pointer;
         }
 
         .calendar-event.lease {
@@ -367,19 +329,16 @@ $currentMonthName = $monthNames[$currentMonth];
 
         .calendar-event.announcement {
             background: #cce5ff;
-            border-left: 3px solid #007bff;
+            border-left: 3px solid #1666ba;
         }
 
-        .calendar-event.application {
-            background: #e2d9f3;
-            border-left: 3px solid #6f42c1;
-        }
-
+        /* Events Sidebar */
         .events-sidebar {
             flex: 1;
             display: flex;
             flex-direction: column;
             gap: 30px;
+            min-width: 300px;
         }
 
         .events-section {
@@ -393,10 +352,12 @@ $currentMonthName = $monthNames[$currentMonth];
             font-size: 1.4rem;
             font-weight: 600;
             margin-bottom: 20px;
-            color: #155670;
+            color: #1666ba;
             display: flex;
             align-items: center;
             gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
         }
 
         .section-title i {
@@ -413,7 +374,7 @@ $currentMonthName = $monthNames[$currentMonth];
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px 0;
+            padding: 12px 0;
             border-bottom: 1px solid #eee;
         }
 
@@ -441,11 +402,7 @@ $currentMonthName = $monthNames[$currentMonth];
         }
 
         .color-indicator.announcement {
-            background: #007bff;
-        }
-
-        .color-indicator.application {
-            background: #6f42c1;
+            background: #1666ba;
         }
 
         .event-details {
@@ -473,6 +430,7 @@ $currentMonthName = $monthNames[$currentMonth];
             border-radius: 8px;
             margin-bottom: 15px;
             transition: all 0.2s ease;
+            cursor: pointer;
         }
 
         .event-card:hover {
@@ -497,12 +455,7 @@ $currentMonthName = $monthNames[$currentMonth];
 
         .event-card.announcement {
             background: #cce5ff;
-            border-left: 4px solid #007bff;
-        }
-
-        .event-card.application {
-            background: #e2d9f3;
-            border-left: 4px solid #6f42c1;
+            border-left: 4px solid #1666ba;
         }
 
         .event-header {
@@ -539,14 +492,59 @@ $currentMonthName = $monthNames[$currentMonth];
             margin-bottom: 15px;
             color: #ced4da;
         }
+        
+        /* Event indicators for mobile */
+        .event-indicators {
+            position: absolute;
+            bottom: 5px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            display: none; /* Hidden by default */
+        }
+        
+        .event-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .event-indicator.lease {
+            background: #28a745;
+        }
+        
+        .event-indicator.bill {
+            background: #ffc107;
+        }
+        
+        .event-indicator.maintenance {
+            background: #dc3545;
+        }
+        
+        .event-indicator.announcement {
+            background: #1666ba;
+        }
 
-        @media (max-width: 992px) {
+        /* Responsive Design */
+        @media (max-width: 1200px) {
             .calendar-wrapper {
                 flex-direction: column;
             }
             
             .calendar-day {
                 min-height: 100px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .main-content {
+                padding: 15px;
+            }
+            
+            .events-sidebar {
+                width: 100%;
             }
         }
 
@@ -557,17 +555,13 @@ $currentMonthName = $monthNames[$currentMonth];
                 gap: 15px;
             }
             
-            .user-info {
-                align-self: flex-end;
-            }
-            
             .calendar-table {
                 grid-template-columns: repeat(7, 1fr);
             }
             
             .day-header {
                 padding: 10px 2px;
-                font-size: 0.8rem;
+                font-size: 0.75rem;
             }
             
             .calendar-day {
@@ -583,22 +577,140 @@ $currentMonthName = $monthNames[$currentMonth];
                 font-size: 0.65rem;
                 padding: 2px 4px;
             }
+            
+            .page-title {
+                font-size: 1.5rem;
+            }
+            
+            .month-title {
+                font-size: 1.5rem;
+                min-width: 120px;
+            }
+            
+            .calendar-header .year {
+                font-size: 2rem;
+            }
+            
+            .events-section {
+                padding: 15px;
+            }
+            
+            .section-title {
+                font-size: 1.2rem;
+            }
+            
+            .calendar-list-item {
+                padding: 8px 0;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .calendar-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .month-nav {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .month-nav a {
+                flex: 1;
+                display: flex;
+                justify-content: center;
+            }
+            
+            .month-nav button {
+                width: 35px;
+                height: 35px;
+            }
+            
+            .calendar-table {
+                gap: 0;
+                border: none;
+                background: transparent;
+            }
+            
+            .day-header {
+                padding: 8px 2px;
+                font-size: 0.7rem;
+            }
+            
+            .calendar-day {
+                min-height: 70px;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+                margin: 1px;
+            }
+            
+            .calendar-day-number {
+                padding: 3px;
+            }
+            
+            .event-card {
+                padding: 10px;
+            }
+            
+            .event-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .event-type, .event-date-display {
+                font-size: 0.8rem;
+            }
+            
+            .event-content {
+                font-size: 0.85rem;
+            }
+            
+            /* Show event indicators on mobile */
+            .event-indicators {
+                display: flex;
+            }
+            
+            /* Hide full event text on mobile */
+            .calendar-events {
+                display: none;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .calendar-day {
+                min-height: 60px;
+            }
+            
+            .calendar-day-number {
+                font-size: 0.8rem;
+            }
+            
+            .month-title {
+                font-size: 1.2rem;
+                min-width: 100px;
+            }
+            
+            .calendar-header .year {
+                font-size: 1.5rem;
+            }
+            
+            .day-header {
+                font-size: 0.65rem;
+                padding: 6px 2px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="main-content">
         <div class="header">
-            <div class="logo">PropertyCalendar</div>
-            <div class="user-info">
-                <div class="user-details">
-                    <div class="user-name"><?php echo $_SESSION['name']; ?></div>
-                    <div class="user-role"><?php echo ucfirst($_SESSION['role']); ?></div>
-                </div>
-                <div class="user-avatar"><?php echo substr($_SESSION['name'], 0, 1); ?></div>
+            <div class="page-title">
+                <i class="fas fa-calendar-alt"></i> Tenant Calendar
             </div>
         </div>
-        
+
         <div class="calendar-wrapper">
             <div class="calendar-container">
                 <div class="calendar-header">
@@ -616,13 +728,13 @@ $currentMonthName = $monthNames[$currentMonth];
 
                 <div class="calendar-table">
                     <!-- Day headers -->
-                    <div class="day-header">Sunday</div>
-                    <div class="day-header">Monday</div>
-                    <div class="day-header">Tuesday</div>
-                    <div class="day-header">Wednesday</div>
-                    <div class="day-header">Thursday</div>
-                    <div class="day-header">Friday</div>
-                    <div class="day-header">Saturday</div>
+                    <div class="day-header">Sun</div>
+                    <div class="day-header">Mon</div>
+                    <div class="day-header">Tue</div>
+                    <div class="day-header">Wed</div>
+                    <div class="day-header">Thu</div>
+                    <div class="day-header">Fri</div>
+                    <div class="day-header">Sat</div>
 
                     <!-- Calendar days -->
                     <?php
@@ -639,19 +751,29 @@ $currentMonthName = $monthNames[$currentMonth];
                     for ($day = 1; $day <= $daysInMonth; $day++) {
                         $dateStr = sprintf("%04d-%02d-%02d", $currentYear, $currentMonth, $day);
                         $isToday = ($dateStr == date('Y-m-d')) ? 'today' : '';
+                        $hasEvents = isset($events[$dateStr]) ? 'has-events' : '';
                         
-                        echo "<div class='calendar-day $isToday' data-date='$dateStr'>";
+                        echo "<div class='calendar-day $isToday $hasEvents' data-date='$dateStr'>";
                         echo "<div class='calendar-day-number'>$day</div>";
-                        echo "<div class='calendar-events'>";
                         
-                        // Display events for this day
+                        // Display event indicators
+                        echo "<div class='event-indicators'>";
                         if (isset($events[$dateStr])) {
                             foreach ($events[$dateStr] as $event) {
-                                echo "<div class='calendar-event {$event['type']}'>{$event['title']}</div>";
+                                echo "<div class='event-indicator {$event['type']}'></div>";
                             }
                         }
-                        
                         echo "</div>";
+                        
+                        // Display events
+                        echo "<div class='calendar-events'>";
+                        if (isset($events[$dateStr])) {
+                            foreach ($events[$dateStr] as $event) {
+                                echo "<div class='calendar-event {$event['type']}' title='{$event['title']}'>{$event['title']}</div>";
+                            }
+                        }
+                        echo "</div>";
+                        
                         echo "</div>";
                     }
                     ?>
@@ -693,15 +815,6 @@ $currentMonthName = $monthNames[$currentMonth];
                                 <div class="event-date">Posted dates</div>
                             </div>
                         </div>
-                        <?php if ($user_role == 'landlord'): ?>
-                        <div class="calendar-list-item">
-                            <div class="color-indicator application"></div>
-                            <div class="event-details">
-                                <div class="event-title">Applications</div>
-                                <div class="event-date">Submission dates</div>
-                            </div>
-                        </div>
-                        <?php endif; ?>
                     </div>
                 </div>
                 
@@ -764,8 +877,37 @@ $currentMonthName = $monthNames[$currentMonth];
                     const selectedDate = this.getAttribute('data-date');
                     
                     // In a real application, you could load events for this date
-                    // via AJAX and display them in the events section
                     console.log("Selected date:", selectedDate);
+                });
+            });
+            
+            // Simulate event click
+            document.querySelectorAll('.calendar-event').forEach(event => {
+                event.addEventListener('click', function() {
+                    alert('Event details: ' + this.title);
+                });
+            });
+            
+            // Add event indicators for mobile
+            document.querySelectorAll('.calendar-day.has-events').forEach(day => {
+                const events = day.querySelectorAll('.calendar-event');
+                const indicators = day.querySelector('.event-indicators');
+                
+                // Clear existing indicators
+                indicators.innerHTML = '';
+                
+                // Add new indicators
+                events.forEach(event => {
+                    const type = Array.from(event.classList).find(cls => 
+                        cls !== 'calendar-event' && 
+                        ['lease', 'bill', 'maintenance', 'announcement'].includes(cls)
+                    );
+                    
+                    if (type) {
+                        const indicator = document.createElement('div');
+                        indicator.className = `event-indicator ${type}`;
+                        indicators.appendChild(indicator);
+                    }
                 });
             });
         });
