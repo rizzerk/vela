@@ -595,34 +595,22 @@ if (isset($_GET['edit_id'])) {
         <!-- Current photos will be loaded here -->
     </div>
     
-    <div class="file-upload" id="drop-area-edit">
-        <i class="fas fa-cloud-upload-alt"></i>
-        <p>Click to upload additional photos or drag and drop</p>
-        <small>JPEG, PNG, WebP (Max 5MB each)</small>
-        <input type="file" id="new_photos" name="new_photos[]" multiple 
-               accept="image/jpeg,image/png,image/webp" style="display: none;">
-    </div>
-    <div id="new_photos_preview" class="file-list-container"></div>
+    <label for="new_photos">Add New Photos</label>
+    <input type="file" class="form-control" id="new_photos" name="new_photos[]" multiple accept="image/*" onchange="previewNewPhotos(this)">
+    <small class="text-muted">You can select multiple photos (Max 10MB each)</small>
+    
+    <div id="new_photos_preview" class="photos-container"></div>
 </div>
-<div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary">
-            <span class="submit-text">Save Changes</span>
-            <span class="loading-spinner" style="display: none;">
-                <i class="fas fa-spinner fa-spin"></i> Processing...
-            </span>
-        </button>
-    </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
         </form>
     </div>
 </div>
 
     <script>
-        let allNewFiles = [];
-const maxFiles = 10;
-const maxSize = 5 * 1024 * 1024; // 5MB
-const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-
         // Delete property functionality
         document.querySelectorAll('.delete-btn').forEach(button => {
             button.addEventListener('click', function() {
@@ -653,11 +641,8 @@ const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
         // Modal functions
         function openEditModal(propertyId) {
-    // Reset form and clear previous files
+    // Clear previous form data
     document.getElementById('editPropertyForm').reset();
-    allNewFiles = [];
-    document.getElementById('new_photos_preview').innerHTML = '';
-    document.getElementById('new_photos').value = '';
     
     // Fetch property details
     fetch(`get-property.php?id=${propertyId}`)
@@ -675,9 +660,6 @@ const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
                 // Load current photos
                 loadPropertyPhotos(propertyId);
                 
-                // Initialize file upload for new photos
-                initFileUpload();
-                
                 // Show modal
                 document.getElementById('editModal').style.display = 'flex';
             } else {
@@ -689,158 +671,6 @@ const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
             alert('An error occurred while loading property details');
         });
 }
-
-function initFileUpload() {
-    const dropArea = document.getElementById('drop-area-edit');
-    const fileInput = document.getElementById('new_photos');
-    const previewContainer = document.getElementById('new_photos_preview');
-    
-    // Make drop area clickable
-    dropArea.addEventListener('click', function(e) {
-        if (e.target === dropArea || e.target.tagName === 'P' || 
-            e.target.tagName === 'SMALL' || e.target.classList.contains('fa-cloud-upload-alt')) {
-            fileInput.click();
-        }
-    });
-
-    // Prevent default drag behaviors
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, preventDefaults, false);
-    });
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    // Highlight drop area
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropArea.addEventListener(eventName, highlight, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, unhighlight, false);
-    });
-
-    function highlight() {
-        dropArea.classList.add('highlight');
-    }
-
-    function unhighlight() {
-        dropArea.classList.remove('highlight');
-    }
-
-    // Handle dropped files
-    dropArea.addEventListener('drop', handleDrop, false);
-
-    function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        handleNewFiles(files);
-    }
-
-    // Handle selected files
-    fileInput.addEventListener('change', function() {
-        handleNewFiles(this.files);
-    });
-    
-    function handleNewFiles(newFiles) {
-        // Check if adding these files would exceed max
-        if (allNewFiles.length + newFiles.length > maxFiles) {
-            alert(`Maximum ${maxFiles} files allowed`);
-            return;
-        }
-
-        // Process each file
-        for (let i = 0; i < newFiles.length; i++) {
-            const file = newFiles[i];
-            
-            if (!allowedTypes.includes(file.type)) {
-                alert(`Invalid file type: ${file.name} (Only JPEG/PNG/WebP allowed)`);
-                continue;
-            }
-            
-            if (file.size > maxSize) {
-                alert(`File too large: ${file.name} (Max 5MB allowed)`);
-                continue;
-            }
-            
-            allNewFiles.push(file);
-        }
-
-        renderNewFilesPreview();
-    }
-
-    function renderNewFilesPreview() {
-        previewContainer.innerHTML = '';
-        
-        if (allNewFiles.length > 0) {
-            previewContainer.classList.add('visible');
-            
-            const listContainer = document.createElement('div');
-            listContainer.className = 'file-list-items';
-            previewContainer.appendChild(listContainer);
-            
-            for (let i = 0; i < allNewFiles.length; i++) {
-                const file = allNewFiles[i];
-                
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                
-                const previewContainer = document.createElement('div');
-                previewContainer.className = 'file-preview';
-                
-                if (file.type.match('image.*')) {
-                    const reader = new FileReader();
-                    
-                    reader.onload = function(e) {
-                        const preview = document.createElement('img');
-                        preview.src = e.target.result;
-                        preview.className = 'preview-image';
-                        previewContainer.appendChild(preview);
-                    };
-                    
-                    reader.readAsDataURL(file);
-                }
-                
-                const fileInfo = document.createElement('div');
-                fileInfo.className = 'file-info';
-                
-                fileInfo.innerHTML = `
-                    <div class="file-item-name" title="${file.name}">${file.name}</div>
-                    <div class="file-item-size">${formatFileSize(file.size)}</div>
-                `;
-                
-                const removeBtn = document.createElement('span');
-                removeBtn.className = 'file-item-remove';
-                removeBtn.setAttribute('data-index', i);
-                removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-                removeBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const index = parseInt(this.getAttribute('data-index'));
-                    allNewFiles.splice(index, 1);
-                    renderNewFilesPreview();
-                });
-                
-                fileItem.appendChild(previewContainer);
-                fileItem.appendChild(fileInfo);
-                fileItem.appendChild(removeBtn);
-                listContainer.appendChild(fileItem);
-            }
-        } else {
-            previewContainer.classList.remove('visible');
-        }
-    }
-
-    function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-}
-
 
 
 function loadPropertyPhotos(propertyId) {
@@ -911,15 +741,8 @@ function deletePhoto(photoId, propertyId) {
         });
 
         // Handle form submission
-     // Update the form submission handler to properly handle multiple files
-document.getElementById('editPropertyForm').addEventListener('submit', function(e) {
+        document.getElementById('editPropertyForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    
-    // Show loading state
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalBtnText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    submitBtn.disabled = true;
     
     const formData = new FormData(this);
     
@@ -927,28 +750,21 @@ document.getElementById('editPropertyForm').addEventListener('submit', function(
         method: 'POST',
         body: formData
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
         if (data.success) {
             alert('Property updated successfully');
             closeModal();
             window.location.reload(); // Refresh to show changes
         } else {
-            throw new Error(data.message || 'Unknown error occurred');
+            alert('Error updating property: ' + (data.message || 'Unknown error'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error updating property: ' + error.message);
-    })
-    .finally(() => {
-        submitBtn.innerHTML = originalBtnText;
-        submitBtn.disabled = false;
+        alert('An error occurred while updating the property');
+        closeModal();
+        window.location.reload(); // Refresh even on error
     });
 });
 
@@ -958,21 +774,14 @@ function previewNewPhotos(input) {
     previewContainer.innerHTML = '';
     
     if (input.files && input.files.length > 0) {
-        // Show how many files were selected
-        const fileCount = document.createElement('p');
-        fileCount.style.margin = '5px 0';
-        fileCount.textContent = `${input.files.length} photo(s) selected`;
-        previewContainer.appendChild(fileCount);
-        
-        // Preview up to 5 images (for performance)
-        const maxPreviews = 5;
-        let previewCount = 0;
-        
-        for (let i = 0; i < input.files.length && previewCount < maxPreviews; i++) {
+        for (let i = 0; i < input.files.length; i++) {
             const file = input.files[i];
             
-            // Check file type
-            if (!file.type.match('image.*')) continue;
+            // Check file size (max 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File ' + file.name + ' is too large (max 10MB)');
+                continue;
+            }
             
             const reader = new FileReader();
             
@@ -985,6 +794,7 @@ function previewNewPhotos(input) {
                 removeBtn.className = 'remove-new-photo';
                 removeBtn.innerHTML = '&times;';
                 removeBtn.onclick = function() {
+                    previewDiv.remove();
                     // Remove the file from the input
                     const files = Array.from(input.files);
                     files.splice(i, 1);
@@ -993,25 +803,13 @@ function previewNewPhotos(input) {
                     const dataTransfer = new DataTransfer();
                     files.forEach(f => dataTransfer.items.add(f));
                     input.files = dataTransfer.files;
-                    
-                    // Update preview
-                    previewNewPhotos(input);
                 };
                 
                 previewDiv.appendChild(removeBtn);
                 previewContainer.appendChild(previewDiv);
-                previewCount++;
             };
             
             reader.readAsDataURL(file);
-        }
-        
-        if (input.files.length > maxPreviews) {
-            const moreText = document.createElement('p');
-            moreText.textContent = `+ ${input.files.length - maxPreviews} more`;
-            moreText.style.fontSize = '0.8em';
-            moreText.style.color = '#666';
-            previewContainer.appendChild(moreText);
         }
     }
 }

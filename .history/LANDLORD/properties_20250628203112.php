@@ -30,6 +30,24 @@ if (isset($_GET['edit_id'])) {
     <title>My Properties - VELA</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* Image handling styles */
+        .property-image {
+            height: 200px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            background-color: #f0f7ff;
+        }
+        
+        .no-image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #e3f2fd;
+            color: #1666ba;
+            font-size: 3rem;
+        }
+        
         /* Base styles */
         * { 
             margin: 0; 
@@ -98,23 +116,6 @@ if (isset($_GET['edit_id'])) {
         .property-card:hover { 
             transform: translateY(-5px); 
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); 
-        }
-        
-        .property-image {
-            height: 200px;
-            background-size: cover;
-            background-position: center;
-            position: relative;
-            background-color: #f0f7ff;
-        }
-        
-        .no-image {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #e3f2fd;
-            color: #1666ba;
-            font-size: 3rem;
         }
         
         .property-status { 
@@ -273,12 +274,51 @@ if (isset($_GET['edit_id'])) {
             padding: 2rem;
             border-radius: 12px;
             width: 90%;
-            max-width: 800px;
+            max-width: 600px;
             max-height: 90vh;
             overflow-y: auto;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             animation: modalFadeIn 0.3s ease;
         }
+
+        .photos-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+
+.photo-thumbnail {
+    width: 100px;
+    height: 100px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 4px;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.photo-thumbnail:hover {
+    transform: scale(1.05);
+}
+
+.delete-photo-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: red;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
 
         @keyframes modalFadeIn {
             from {
@@ -318,7 +358,6 @@ if (isset($_GET['edit_id'])) {
 
         .form-group {
             margin-bottom: 1.5rem;
-            position: relative;
         }
 
         .form-group label {
@@ -357,187 +396,6 @@ if (isset($_GET['edit_id'])) {
             border-color: #1666ba;
         }
 
-        textarea.form-control {
-            min-height: 120px;
-            resize: vertical;
-        }
-
-        /* File upload styles */
-        .file-upload {
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            margin-bottom: 1rem;
-        }
-
-        .file-upload:hover {
-            border-color: #1666ba;
-            background-color: #f8fafc;
-        }
-
-        .file-upload.highlight {
-            border-color: #1666ba;
-            background-color: #ebf5ff;
-        }
-
-        .file-upload.error {
-            border-color: #f87171;
-            background-color: #fef2f2;
-        }
-
-        .file-upload i {
-            font-size: 2rem;
-            color: #1666ba;
-            margin-bottom: 1rem;
-        }
-
-        .file-upload p {
-            color: #64748b;
-            margin-bottom: 0.5rem;
-        }
-
-        .file-upload small {
-            color: #94a3b8;
-        }
-
-        .file-list-container {
-            margin-top: 1rem;
-            display: none;
-        }
-
-        .file-list-container.visible {
-            display: block;
-        }
-
-        .file-list-items {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1rem;
-        }
-
-        .file-item {
-            display: flex;
-            flex-direction: column;
-            padding: 1rem;
-            background: #f8fafc;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-
-        .file-item:hover {
-            background: #f1f5f9;
-        }
-
-        .file-preview {
-            width: 100%;
-            height: 150px;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #e2e8f0;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .preview-image {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-
-        .file-info {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .file-item-name {
-            font-size: 0.9rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-bottom: 0.25rem;
-        }
-
-        .file-item-size {
-            color: #64748b;
-            font-size: 0.8rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .file-item-remove {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            color: #f87171;
-            cursor: pointer;
-            padding: 0.25rem;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-
-        .file-item-remove:hover {
-            color: #ef4444;
-            background: rgba(255, 255, 255, 0.9);
-            transform: scale(1.1);
-        }
-
-        /* Current photos styles */
-        .photos-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .photo-item {
-            position: relative;
-            width: 120px;
-            height: 120px;
-        }
-
-        .photo-thumbnail {
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-            border-radius: 4px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .delete-photo-btn {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            background: #f87171;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .delete-photo-btn:hover {
-            background: #ef4444;
-        }
-
         .modal-footer {
             display: flex;
             justify-content: flex-end;
@@ -572,15 +430,6 @@ if (isset($_GET['edit_id'])) {
             background-color: #cbd5e1;
         }
 
-        .error-message {
-            color: #f87171;
-            margin-top: 0.5rem;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
         @media (max-width: 1024px) { 
             .properties-grid { 
                 grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
@@ -606,10 +455,6 @@ if (isset($_GET['edit_id'])) {
             .modal-content {
                 width: 95%;
                 padding: 1.5rem;
-            }
-            
-            .file-list-items {
-                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -675,7 +520,7 @@ if (isset($_GET['edit_id'])) {
                 <h2>Edit Property</h2>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
-            <form id="editPropertyForm" action="update-property.php" method="POST" enctype="multipart/form-data">
+            <form id="editPropertyForm" action="update-property.php" method="POST">
                 <input type="hidden" name="property_id" id="edit_property_id">
                 
                 <div class="form-group">
@@ -707,42 +552,15 @@ if (isset($_GET['edit_id'])) {
                     </select>
                 </div>
                 
-                <div class="form-group">
-                    <label>Current Photos</label>
-                    <div id="currentPhotos" class="photos-container">
-                        <!-- Current photos will be loaded here -->
-                    </div>
-                    
-                    <div class="file-upload" id="drop-area-edit">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Click to upload additional photos or drag and drop</p>
-                        <small>JPEG, PNG, WebP (Max 5MB each)</small>
-                        <input type="file" id="new_photos" name="new_photos[]" multiple 
-                               accept="image/jpeg,image/png,image/webp" style="display: none;">
-                    </div>
-                    <div id="new_photos_preview" class="file-list-container"></div>
-                </div>
-                
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <span class="submit-text">Save Changes</span>
-                        <span class="loading-spinner" style="display: none;">
-                            <i class="fas fa-spinner fa-spin"></i> Processing...
-                        </span>
-                    </button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        // Global variables
-        let allNewFiles = [];
-        const maxFiles = 10;
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-
         // Delete property functionality
         document.querySelectorAll('.delete-btn').forEach(button => {
             button.addEventListener('click', function() {
@@ -773,30 +591,17 @@ if (isset($_GET['edit_id'])) {
 
         // Modal functions
         function openEditModal(propertyId) {
-            // Reset form and clear previous files
-            document.getElementById('editPropertyForm').reset();
-            allNewFiles = [];
-            document.getElementById('new_photos_preview').innerHTML = '';
-            document.getElementById('new_photos').value = '';
-            
             // Fetch property details
             fetch(`get-property.php?id=${propertyId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data) {
-                        // Populate form fields
                         document.getElementById('edit_property_id').value = data.property_id;
                         document.getElementById('edit_title').value = data.title;
                         document.getElementById('edit_address').value = data.address;
                         document.getElementById('edit_description').value = data.description || '';
                         document.getElementById('edit_monthly_rent').value = data.monthly_rent;
                         document.getElementById('edit_status').value = data.status;
-                        
-                        // Load current photos
-                        loadPropertyPhotos(propertyId);
-                        
-                        // Initialize file upload for new photos
-                        initFileUpload();
                         
                         // Show modal
                         document.getElementById('editModal').style.display = 'flex';
@@ -810,212 +615,8 @@ if (isset($_GET['edit_id'])) {
                 });
         }
 
-        function loadPropertyPhotos(propertyId) {
-            fetch(`get-property-photos.php?id=${propertyId}`)
-                .then(response => response.json())
-                .then(photos => {
-                    const photosContainer = document.getElementById('currentPhotos');
-                    photosContainer.innerHTML = '';
-                    
-                    if (photos.length === 0) {
-                        photosContainer.innerHTML = '<p>No photos available</p>';
-                        return;
-                    }
-                    
-                    photos.forEach(photo => {
-                        const photoWrapper = document.createElement('div');
-                        photoWrapper.className = 'photo-item';
-                        
-                        const photoElement = document.createElement('div');
-                        photoElement.className = 'photo-thumbnail';
-                        photoElement.style.backgroundImage = `url('../${photo.file_path}')`;
-                        
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.className = 'delete-photo-btn';
-                        deleteBtn.innerHTML = '&times;';
-                        deleteBtn.onclick = (e) => {
-                            e.stopPropagation();
-                            deletePhoto(photo.photo_id, propertyId);
-                        };
-                        
-                        photoWrapper.appendChild(photoElement);
-                        photoWrapper.appendChild(deleteBtn);
-                        photosContainer.appendChild(photoWrapper);
-                    });
-                })
-                .catch(error => {
-                    console.error('Error loading photos:', error);
-                    document.getElementById('currentPhotos').innerHTML = '<p>Error loading photos</p>';
-                });
-        }
-
-        function deletePhoto(photoId, propertyId) {
-            if (!confirm('Are you sure you want to delete this photo?')) return;
-            
-            fetch(`delete-photo.php?id=${photoId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        loadPropertyPhotos(propertyId);
-                    } else {
-                        alert('Error deleting photo: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while deleting the photo');
-                });
-        }
-
-        function initFileUpload() {
-            const dropArea = document.getElementById('drop-area-edit');
-            const fileInput = document.getElementById('new_photos');
-            const previewContainer = document.getElementById('new_photos_preview');
-            
-            // Make drop area clickable
-            dropArea.addEventListener('click', function(e) {
-                if (e.target === dropArea || e.target.tagName === 'P' || 
-                    e.target.tagName === 'SMALL' || e.target.classList.contains('fa-cloud-upload-alt')) {
-                    fileInput.click();
-                }
-            });
-
-            // Prevent default drag behaviors
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropArea.addEventListener(eventName, preventDefaults, false);
-            });
-
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-
-            // Highlight drop area
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropArea.addEventListener(eventName, highlight, false);
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropArea.addEventListener(eventName, unhighlight, false);
-            });
-
-            function highlight() {
-                dropArea.classList.add('highlight');
-            }
-
-            function unhighlight() {
-                dropArea.classList.remove('highlight');
-            }
-
-            // Handle dropped files
-            dropArea.addEventListener('drop', handleDrop, false);
-
-            function handleDrop(e) {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                handleNewFiles(files);
-            }
-
-            // Handle selected files
-            fileInput.addEventListener('change', function() {
-                handleNewFiles(this.files);
-            });
-            
-            function handleNewFiles(newFiles) {
-                // Check if adding these files would exceed max
-                if (allNewFiles.length + newFiles.length > maxFiles) {
-                    alert(`Maximum ${maxFiles} files allowed`);
-                    return;
-                }
-
-                // Process each file
-                for (let i = 0; i < newFiles.length; i++) {
-                    const file = newFiles[i];
-                    
-                    if (!allowedTypes.includes(file.type)) {
-                        alert(`Invalid file type: ${file.name} (Only JPEG/PNG/WebP allowed)`);
-                        continue;
-                    }
-                    
-                    if (file.size > maxSize) {
-                        alert(`File too large: ${file.name} (Max 5MB allowed)`);
-                        continue;
-                    }
-                    
-                    allNewFiles.push(file);
-                }
-
-                renderNewFilesPreview();
-            }
-
-            function renderNewFilesPreview() {
-                previewContainer.innerHTML = '';
-                
-                if (allNewFiles.length > 0) {
-                    previewContainer.classList.add('visible');
-                    
-                    const listContainer = document.createElement('div');
-                    listContainer.className = 'file-list-items';
-                    previewContainer.appendChild(listContainer);
-                    
-                    for (let i = 0; i < allNewFiles.length; i++) {
-                        const file = allNewFiles[i];
-                        
-                        const fileItem = document.createElement('div');
-                        fileItem.className = 'file-item';
-                        
-                        const previewContainer = document.createElement('div');
-                        previewContainer.className = 'file-preview';
-                        
-                        if (file.type.match('image.*')) {
-                            const reader = new FileReader();
-                            
-                            reader.onload = function(e) {
-                                const preview = document.createElement('img');
-                                preview.src = e.target.result;
-                                preview.className = 'preview-image';
-                                previewContainer.appendChild(preview);
-                            };
-                            
-                            reader.readAsDataURL(file);
-                        }
-                        
-                        const fileInfo = document.createElement('div');
-                        fileInfo.className = 'file-info';
-                        
-                        fileInfo.innerHTML = `
-                            <div class="file-item-name" title="${file.name}">${file.name}</div>
-                            <div class="file-item-size">${formatFileSize(file.size)}</div>
-                        `;
-                        
-                        const removeBtn = document.createElement('span');
-                        removeBtn.className = 'file-item-remove';
-                        removeBtn.setAttribute('data-index', i);
-                        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-                        removeBtn.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                            const index = parseInt(this.getAttribute('data-index'));
-                            allNewFiles.splice(index, 1);
-                            renderNewFilesPreview();
-                        });
-                        
-                        fileItem.appendChild(previewContainer);
-                        fileItem.appendChild(fileInfo);
-                        fileItem.appendChild(removeBtn);
-                        listContainer.appendChild(fileItem);
-                    }
-                } else {
-                    previewContainer.classList.remove('visible');
-                }
-            }
-
-            function formatFileSize(bytes) {
-                if (bytes === 0) return '0 Bytes';
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
         }
 
         // Close modal when clicking outside the modal content
@@ -1030,57 +631,27 @@ if (isset($_GET['edit_id'])) {
         document.getElementById('editPropertyForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            // Show loading state
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const submitText = submitBtn.querySelector('.submit-text');
-            const loadingSpinner = submitBtn.querySelector('.loading-spinner');
-            
-            submitText.style.display = 'none';
-            loadingSpinner.style.display = 'inline-block';
-            submitBtn.disabled = true;
-            
             const formData = new FormData(this);
-            
-            // Append all new files to the FormData
-            allNewFiles.forEach((file, index) => {
-                formData.append(`new_photos[${index}]`, file);
-            });
             
             fetch('update-property.php', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     alert('Property updated successfully');
                     closeModal();
-                    window.location.reload();
+                    window.location.reload(); // Refresh to show changes
                 } else {
-                    throw new Error(data.message || 'Unknown error occurred');
+                    alert('Error updating property: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error updating property: ' + error.message);
-            })
-            .finally(() => {
-                submitText.style.display = 'inline-block';
-                loadingSpinner.style.display = 'none';
-                submitBtn.disabled = false;
+                alert('An error occurred while updating the property');
             });
         });
-
-        function closeModal() {
-            document.getElementById('editModal').style.display = 'none';
-            // Clear any file inputs
-            document.getElementById('new_photos').value = '';
-        }
     </script>
 </body>
 </html>

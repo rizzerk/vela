@@ -46,7 +46,7 @@ try {
     }
 
     // Handle file uploads if any
-    if (!empty($_FILES['new_photos']['name'][0])) {  // Check if at least one file was uploaded
+    if (!empty($_FILES['new_photos'])) {
         $upload_dir = '../uploads/properties/' . $property_id . '/';
         
         // Create directory if it doesn't exist
@@ -56,24 +56,14 @@ try {
             }
         }
 
-        // Loop through each file
         foreach ($_FILES['new_photos']['tmp_name'] as $key => $tmp_name) {
-            // Check if file was uploaded without errors
             if ($_FILES['new_photos']['error'][$key] === UPLOAD_ERR_OK) {
-                // Validate file size (10MB max)
+                // Validate file
                 $file_size = $_FILES['new_photos']['size'][$key];
                 if ($file_size > 10 * 1024 * 1024) {
                     continue; // Skip files that are too large
                 }
 
-                // Validate file type
-                $file_type = $_FILES['new_photos']['type'][$key];
-                $valid_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-                if (!in_array($file_type, $valid_types)) {
-                    continue; // Skip invalid file types
-                }
-
-                // Generate unique filename
                 $file_name = uniqid() . '_' . basename($_FILES['new_photos']['name'][$key]);
                 $file_path = 'uploads/properties/' . $property_id . '/' . $file_name;
                 $destination = '../' . $file_path;

@@ -391,8 +391,7 @@ if (isset($_GET['edit_id'])) {
             background-color: #cbd5e1;
         }
 
-        /* Add these styles to your existing CSS */
-.photos-container {
+        .photos-container {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
@@ -405,64 +404,30 @@ if (isset($_GET['edit_id'])) {
     background-size: cover;
     background-position: center;
     border-radius: 4px;
-    border: 1px solid #e2e8f0;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.photo-thumbnail:hover {
+    transform: scale(1.05);
 }
 
 .delete-photo-btn {
     position: absolute;
-    top: -10px;
-    right: -10px;
-    background: #f87171;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.delete-photo-btn:hover {
-    background: #ef4444;
-}
-
-/* Preview for newly selected photos */
-#new_photos_preview {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.new-photo-preview {
-    width: 100px;
-    height: 100px;
-    background-size: cover;
-    background-position: center;
-    border-radius: 4px;
-    border: 1px dashed #1666ba;
-    position: relative;
-}
-
-.remove-new-photo {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background: #f87171;
+    top: 5px;
+    right: 5px;
+    background: red;
     color: white;
     border: none;
     border-radius: 50%;
     width: 20px;
     height: 20px;
-    font-size: 10px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 12px;
 }
 
         @media (max-width: 1024px) { 
@@ -588,41 +553,26 @@ if (isset($_GET['edit_id'])) {
             </div>
             
             <!-- Photo Management Section -->
-            <!-- Inside your modal form -->
-<div class="form-group">
-    <label>Current Photos</label>
-    <div id="currentPhotos" class="photos-container">
-        <!-- Current photos will be loaded here -->
-    </div>
-    
-    <div class="file-upload" id="drop-area-edit">
-        <i class="fas fa-cloud-upload-alt"></i>
-        <p>Click to upload additional photos or drag and drop</p>
-        <small>JPEG, PNG, WebP (Max 5MB each)</small>
-        <input type="file" id="new_photos" name="new_photos[]" multiple 
-               accept="image/jpeg,image/png,image/webp" style="display: none;">
-    </div>
-    <div id="new_photos_preview" class="file-list-container"></div>
-</div>
-<div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary">
-            <span class="submit-text">Save Changes</span>
-            <span class="loading-spinner" style="display: none;">
-                <i class="fas fa-spinner fa-spin"></i> Processing...
-            </span>
-        </button>
-    </div>
+            <div class="form-group">
+                <label>Current Photos</label>
+                <div id="currentPhotos" class="photos-container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem;">
+                    <!-- Photos will be loaded here -->
+                </div>
+                
+                <label for="new_photos">Add New Photos</label>
+                <input type="file" class="form-control" id="new_photos" name="new_photos[]" multiple accept="image/*">
+                <small class="text-muted">You can select multiple photos</small>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
         </form>
     </div>
 </div>
 
     <script>
-        let allNewFiles = [];
-const maxFiles = 10;
-const maxSize = 5 * 1024 * 1024; // 5MB
-const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-
         // Delete property functionality
         document.querySelectorAll('.delete-btn').forEach(button => {
             button.addEventListener('click', function() {
@@ -653,12 +603,6 @@ const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
         // Modal functions
         function openEditModal(propertyId) {
-    // Reset form and clear previous files
-    document.getElementById('editPropertyForm').reset();
-    allNewFiles = [];
-    document.getElementById('new_photos_preview').innerHTML = '';
-    document.getElementById('new_photos').value = '';
-    
     // Fetch property details
     fetch(`get-property.php?id=${propertyId}`)
         .then(response => response.json())
@@ -675,9 +619,6 @@ const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
                 // Load current photos
                 loadPropertyPhotos(propertyId);
                 
-                // Initialize file upload for new photos
-                initFileUpload();
-                
                 // Show modal
                 document.getElementById('editModal').style.display = 'flex';
             } else {
@@ -689,159 +630,6 @@ const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
             alert('An error occurred while loading property details');
         });
 }
-
-function initFileUpload() {
-    const dropArea = document.getElementById('drop-area-edit');
-    const fileInput = document.getElementById('new_photos');
-    const previewContainer = document.getElementById('new_photos_preview');
-    
-    // Make drop area clickable
-    dropArea.addEventListener('click', function(e) {
-        if (e.target === dropArea || e.target.tagName === 'P' || 
-            e.target.tagName === 'SMALL' || e.target.classList.contains('fa-cloud-upload-alt')) {
-            fileInput.click();
-        }
-    });
-
-    // Prevent default drag behaviors
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, preventDefaults, false);
-    });
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    // Highlight drop area
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropArea.addEventListener(eventName, highlight, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, unhighlight, false);
-    });
-
-    function highlight() {
-        dropArea.classList.add('highlight');
-    }
-
-    function unhighlight() {
-        dropArea.classList.remove('highlight');
-    }
-
-    // Handle dropped files
-    dropArea.addEventListener('drop', handleDrop, false);
-
-    function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        handleNewFiles(files);
-    }
-
-    // Handle selected files
-    fileInput.addEventListener('change', function() {
-        handleNewFiles(this.files);
-    });
-    
-    function handleNewFiles(newFiles) {
-        // Check if adding these files would exceed max
-        if (allNewFiles.length + newFiles.length > maxFiles) {
-            alert(`Maximum ${maxFiles} files allowed`);
-            return;
-        }
-
-        // Process each file
-        for (let i = 0; i < newFiles.length; i++) {
-            const file = newFiles[i];
-            
-            if (!allowedTypes.includes(file.type)) {
-                alert(`Invalid file type: ${file.name} (Only JPEG/PNG/WebP allowed)`);
-                continue;
-            }
-            
-            if (file.size > maxSize) {
-                alert(`File too large: ${file.name} (Max 5MB allowed)`);
-                continue;
-            }
-            
-            allNewFiles.push(file);
-        }
-
-        renderNewFilesPreview();
-    }
-
-    function renderNewFilesPreview() {
-        previewContainer.innerHTML = '';
-        
-        if (allNewFiles.length > 0) {
-            previewContainer.classList.add('visible');
-            
-            const listContainer = document.createElement('div');
-            listContainer.className = 'file-list-items';
-            previewContainer.appendChild(listContainer);
-            
-            for (let i = 0; i < allNewFiles.length; i++) {
-                const file = allNewFiles[i];
-                
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                
-                const previewContainer = document.createElement('div');
-                previewContainer.className = 'file-preview';
-                
-                if (file.type.match('image.*')) {
-                    const reader = new FileReader();
-                    
-                    reader.onload = function(e) {
-                        const preview = document.createElement('img');
-                        preview.src = e.target.result;
-                        preview.className = 'preview-image';
-                        previewContainer.appendChild(preview);
-                    };
-                    
-                    reader.readAsDataURL(file);
-                }
-                
-                const fileInfo = document.createElement('div');
-                fileInfo.className = 'file-info';
-                
-                fileInfo.innerHTML = `
-                    <div class="file-item-name" title="${file.name}">${file.name}</div>
-                    <div class="file-item-size">${formatFileSize(file.size)}</div>
-                `;
-                
-                const removeBtn = document.createElement('span');
-                removeBtn.className = 'file-item-remove';
-                removeBtn.setAttribute('data-index', i);
-                removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-                removeBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const index = parseInt(this.getAttribute('data-index'));
-                    allNewFiles.splice(index, 1);
-                    renderNewFilesPreview();
-                });
-                
-                fileItem.appendChild(previewContainer);
-                fileItem.appendChild(fileInfo);
-                fileItem.appendChild(removeBtn);
-                listContainer.appendChild(fileItem);
-            }
-        } else {
-            previewContainer.classList.remove('visible');
-        }
-    }
-
-    function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-}
-
-
 
 function loadPropertyPhotos(propertyId) {
     fetch(`get-property-photos.php?id=${propertyId}`)
@@ -856,25 +644,35 @@ function loadPropertyPhotos(propertyId) {
             }
             
             photos.forEach(photo => {
-                const photoWrapper = document.createElement('div');
-                photoWrapper.style.position = 'relative';
-                photoWrapper.style.margin = '5px';
-                
                 const photoElement = document.createElement('div');
                 photoElement.className = 'photo-thumbnail';
+                photoElement.style.position = 'relative';
+                photoElement.style.width = '100px';
+                photoElement.style.height = '100px';
                 photoElement.style.backgroundImage = `url('../${photo.file_path}')`;
+                photoElement.style.backgroundSize = 'cover';
+                photoElement.style.backgroundPosition = 'center';
+                photoElement.style.borderRadius = '4px';
                 
                 const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'delete-photo-btn';
                 deleteBtn.innerHTML = '&times;';
+                deleteBtn.style.position = 'absolute';
+                deleteBtn.style.top = '5px';
+                deleteBtn.style.right = '5px';
+                deleteBtn.style.background = 'red';
+                deleteBtn.style.color = 'white';
+                deleteBtn.style.border = 'none';
+                deleteBtn.style.borderRadius = '50%';
+                deleteBtn.style.width = '20px';
+                deleteBtn.style.height = '20px';
+                deleteBtn.style.cursor = 'pointer';
                 deleteBtn.onclick = (e) => {
                     e.stopPropagation();
                     deletePhoto(photo.photo_id, propertyId);
                 };
                 
-                photoWrapper.appendChild(photoElement);
-                photoWrapper.appendChild(deleteBtn);
-                photosContainer.appendChild(photoWrapper);
+                photoElement.appendChild(deleteBtn);
+                photosContainer.appendChild(photoElement);
             });
         })
         .catch(error => {
@@ -882,7 +680,6 @@ function loadPropertyPhotos(propertyId) {
             document.getElementById('currentPhotos').innerHTML = '<p>Error loading photos</p>';
         });
 }
-
 
 function deletePhoto(photoId, propertyId) {
     if (!confirm('Are you sure you want to delete this photo?')) return;
@@ -911,116 +708,30 @@ function deletePhoto(photoId, propertyId) {
         });
 
         // Handle form submission
-     // Update the form submission handler to properly handle multiple files
-document.getElementById('editPropertyForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    // Show loading state
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalBtnText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    submitBtn.disabled = true;
-    
-    const formData = new FormData(this);
-    
-    fetch('update-property.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            alert('Property updated successfully');
-            closeModal();
-            window.location.reload(); // Refresh to show changes
-        } else {
-            throw new Error(data.message || 'Unknown error occurred');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error updating property: ' + error.message);
-    })
-    .finally(() => {
-        submitBtn.innerHTML = originalBtnText;
-        submitBtn.disabled = false;
-    });
-});
-
-// Add this function to handle new photo previews
-function previewNewPhotos(input) {
-    const previewContainer = document.getElementById('new_photos_preview');
-    previewContainer.innerHTML = '';
-    
-    if (input.files && input.files.length > 0) {
-        // Show how many files were selected
-        const fileCount = document.createElement('p');
-        fileCount.style.margin = '5px 0';
-        fileCount.textContent = `${input.files.length} photo(s) selected`;
-        previewContainer.appendChild(fileCount);
-        
-        // Preview up to 5 images (for performance)
-        const maxPreviews = 5;
-        let previewCount = 0;
-        
-        for (let i = 0; i < input.files.length && previewCount < maxPreviews; i++) {
-            const file = input.files[i];
+        document.getElementById('editPropertyForm').addEventListener('submit', function(e) {
+            e.preventDefault();
             
-            // Check file type
-            if (!file.type.match('image.*')) continue;
+            const formData = new FormData(this);
             
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                const previewDiv = document.createElement('div');
-                previewDiv.className = 'new-photo-preview';
-                previewDiv.style.backgroundImage = `url(${e.target.result})`;
-                
-                const removeBtn = document.createElement('button');
-                removeBtn.className = 'remove-new-photo';
-                removeBtn.innerHTML = '&times;';
-                removeBtn.onclick = function() {
-                    // Remove the file from the input
-                    const files = Array.from(input.files);
-                    files.splice(i, 1);
-                    
-                    // Create new DataTransfer and set files
-                    const dataTransfer = new DataTransfer();
-                    files.forEach(f => dataTransfer.items.add(f));
-                    input.files = dataTransfer.files;
-                    
-                    // Update preview
-                    previewNewPhotos(input);
-                };
-                
-                previewDiv.appendChild(removeBtn);
-                previewContainer.appendChild(previewDiv);
-                previewCount++;
-            };
-            
-            reader.readAsDataURL(file);
-        }
-        
-        if (input.files.length > maxPreviews) {
-            const moreText = document.createElement('p');
-            moreText.textContent = `+ ${input.files.length - maxPreviews} more`;
-            moreText.style.fontSize = '0.8em';
-            moreText.style.color = '#666';
-            previewContainer.appendChild(moreText);
-        }
-    }
-}
-
-function closeModal() {
-    document.getElementById('editModal').style.display = 'none';
-    // Clear any file inputs
-    document.getElementById('new_photos').value = '';
-}
+            fetch('update-property.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Property updated successfully');
+                    closeModal();
+                    window.location.reload(); // Refresh to show changes
+                } else {
+                    alert('Error updating property: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the property');
+            });
+        });
     </script>
 </body>
 </html>
