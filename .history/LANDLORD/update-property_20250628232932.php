@@ -46,8 +46,8 @@ try {
 
     // Handle file uploads if any
     if (!empty($_FILES['new_photos']['name'][0])) {
-        $base_upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/vela';
-        $upload_dir = $base_upload_dir . '/uploads/properties/';
+        $base_upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/vela/uploads/properties/';
+        $upload_dir = $base_upload_dir . $property_id . '/';
         
         // Create directory if it doesn't exist
         if (!file_exists($upload_dir)) {
@@ -67,7 +67,7 @@ try {
                 if (!in_array($file_type, $valid_types)) continue;
 
                 $file_name = uniqid() . '_' . basename($_FILES['new_photos']['name'][$key]);
-                $relative_path = 'uploads/properties/' . $file_name;
+                $relative_path = 'uploads/properties/' . $property_id . '/' . $file_name;
                 $absolute_path = $upload_dir . $file_name;
 
                 if (move_uploaded_file($tmp_name, $absolute_path)) {

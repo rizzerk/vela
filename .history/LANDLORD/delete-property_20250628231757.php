@@ -23,10 +23,6 @@ if ($property_id <= 0) {
     exit(json_encode(['success' => false, 'message' => 'Invalid property ID']));
 }
 
-// Define your upload directory path (matches your add property script)
-$project_root = $_SERVER['DOCUMENT_ROOT'] . '/vela';
-$upload_dir = $project_root . '/uploads/properties/';
-
 // Start transaction
 mysqli_begin_transaction($conn);
 
@@ -69,18 +65,13 @@ try {
     $failed_deletions = [];
     
     foreach ($photo_paths as $path) {
-        // Extract just the filename from the stored path
-        $filename = basename($path);
-        $full_path = $upload_dir . $filename;
-        
+        $full_path = $_SERVER['DOCUMENT_ROOT'] . '/' . ltrim($path, '/');
         if (file_exists($full_path)) {
             if (unlink($full_path)) {
-                $deleted_files[] = $filename;
+                $deleted_files[] = $path;
             } else {
-                $failed_deletions[] = $filename;
+                $failed_deletions[] = $path;
             }
-        } else {
-            $failed_deletions[] = $filename . ' (file not found)';
         }
     }
     
@@ -88,8 +79,7 @@ try {
     $response = [
         'success' => true,
         'message' => 'Property deleted successfully',
-        'deleted_files' => $deleted_files,
-        'upload_directory' => $upload_dir // For debugging
+        'deleted_files' => $deleted_files
     ];
     
     if (!empty($failed_deletions)) {
@@ -102,10 +92,6 @@ try {
     // Rollback transaction on error
     mysqli_rollback($conn);
     header("HTTP/1.1 500 Internal Server Error");
-    echo json_encode([
-        'success' => false, 
-        'message' => $e->getMessage(),
-        'upload_directory' => $upload_dir // For debugging
-    ]);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 ?>

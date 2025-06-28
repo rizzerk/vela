@@ -751,10 +751,10 @@ if (isset($_GET['edit_id'])) {
         const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
         // Delete property functionality
-        document.querySelectorAll('.delete-btn').forEach(button => {
+document.querySelectorAll('.delete-btn').forEach(button => {
     button.addEventListener('click', function() {
         const propertyId = this.getAttribute('data-id');
-        if (confirm('Are you sure you want to delete this property and all its photos? This action cannot be undone.')) {
+        if (confirm('Are you sure you want to delete this property? This action cannot be undone.')) {
             fetch(`delete-property.php?id=${propertyId}`, {
                 method: 'DELETE'
             })
@@ -769,25 +769,17 @@ if (isset($_GET['edit_id'])) {
                     // Remove the property card from the UI
                     this.closest('.property-card').remove();
                     
-                    // Show success message
-                    alert('Property deleted successfully');
-                    
                     // Check if no properties left to show empty state
                     if (document.querySelectorAll('.property-card').length === 0) {
                         window.location.reload();
                     }
-                    
-                    // Show warning if some files couldn't be deleted
-                    if (data.warning) {
-                        console.warn(data.warning);
-                    }
                 } else {
-                    throw new Error(data.message || 'Unknown error occurred');
+                    alert('Error deleting property: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error deleting property: ' + error.message);
+                alert('An error occurred while deleting the property');
             });
         }
     });
