@@ -2,6 +2,26 @@
 session_start();
 include '../connection.php';
 
+// Get landlord ID from session
+$landlord_id = $_SESSION['user_id'] ?? 1; // Default to 1 for testing
+
+// Fetch properties grouped by type
+$property_query = "SELECT property_type, COUNT(*) as count, 
+                         SUM(CASE WHEN status = 'vacant' THEN 1 ELSE 0 END) as vacant,
+                         SUM(CASE WHEN status = 'occupied' THEN 1 ELSE 0 END) as occupied
+                  FROM PROPERTY 
+                  WHERE landlord_id = ? 
+                  GROUP BY property_type";
+$stmt = $conn->prepare($property_query);
+$stmt->bind_param("i", $landlord_id);
+$stmt->execute();
+$properties = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+// Calculate totals
+$total_properties = array_sum(array_column($properties, 'count'));
+$total_vacant = array_sum(array_column($properties, 'vacant'));
+$total_occupied = array_sum(array_column($properties, 'occupied'));
+
 ?>
 
 
@@ -222,42 +242,47 @@ include '../connection.php';
         <div class="dashboard-grid">
             <div class="card">
                 <h2 class="card-title">Properties</h2>
-                <div class="metric">
-                    <span class="metric-label">Condos</span>
-                    <span class="metric-value">2</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">DECA Rooms</span>
-                    <span class="metric-value">4</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Jacosalem Room</span>
-                    <span class="metric-value">1</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Cogon Rooms</span>
-                    <span class="metric-value">5</span>
-                </div>
-                <div class="metric total">
-                    <span class="metric-label">Total Units</span>
-                    <span class="metric-value">12</span>
-                </div>
+                <?php if (empty($properties)): ?>
+                    <div style="text-align: center; padding: 2rem; color: #64748b;">
+                        <i class="fas fa-home" style="font-size: 3rem; margin-bottom: 1rem; color: #bedaf7;"></i>
+                        <p>No properties uploaded yet</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Start by adding your first property</p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($properties as $property): ?>
+                        <div class="metric">
+                            <span class="metric-label"><?= htmlspecialchars($property['property_type']) ?></span>
+                            <span class="metric-value"><?= $property['count'] ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                    <div class="metric total">
+                        <span class="metric-label">Total Units</span>
+                        <span class="metric-value"><?= $total_properties ?></span>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <div class="card status-card">
                 <h2 class="card-title">Status</h2>
-                <div class="status-metric">
-                    <span class="status-label">Vacant</span>
-                    <span class="status-value">3</span>
-                </div>
-                <div class="status-metric">
-                    <span class="status-label">Occupied</span>
-                    <span class="status-value">8</span>
-                </div>
-                <div class="status-metric">
-                    <span class="status-label">Maintenance</span>
-                    <span class="status-value">1</span>
-                </div>
+                <?php if (empty($properties)): ?>
+                    <div style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.8);">
+                        <i class="fas fa-chart-bar" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <p>No status data available</p>
+                    </div>
+                <?php else: ?>
+                    <div class="status-metric">
+                        <span class="status-label">Vacant</span>
+                        <span class="status-value"><?= $total_vacant ?></span>
+                    </div>
+                    <div class="status-metric">
+                        <span class="status-label">Occupied</span>
+                        <span class="status-value"><?= $total_occupied ?></span>
+                    </div>
+                    <div class="status-metric">
+                        <span class="status-label">Maintenance</span>
+                        <span class="status-value">0</span>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <div class="card">

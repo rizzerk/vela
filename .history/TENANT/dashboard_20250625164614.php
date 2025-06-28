@@ -303,29 +303,11 @@ $conn->close();
             }
 
             .section-title {
-                font-size: 1.1rem;
+                font-size: 1.3rem;
             }
 
             .welcome-text {
-                font-size: 0.85rem;
-            }
-
-            .bill-item {
-                padding: 0.75rem;
-                margin-bottom: 0.75rem;
-            }
-
-            .bill-amount {
                 font-size: 1rem;
-            }
-
-            .bill-due {
-                font-size: 0.8rem;
-            }
-
-            .bill-status {
-                font-size: 0.7rem;
-                padding: 0.2rem 0.6rem;
             }
 
             .notice-title {
@@ -380,7 +362,6 @@ $conn->close();
             </div>
         </div>
 
-            
             <div class="actions-grid">
                 <div class="action-card" onclick="maintenanceRequest()">
                     <div class="action-icon">
@@ -404,6 +385,7 @@ $conn->close();
                     <div class="action-desc">Review your lease agreement and property information</div>
                 </div>
             </div>
+    </div>
 
     <script>
         function maintenanceRequest() {

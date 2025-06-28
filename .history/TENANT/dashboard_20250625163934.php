@@ -201,49 +201,44 @@ $conn->close();
 
         .actions-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem;
             margin-top: 1rem;
         }
 
         .action-card {
-            background: linear-gradient(135deg, #1666ba 0%, #368ce7 100%);
+            background: #ffffff;
             border-radius: 16px;
             padding: 2rem;
-            box-shadow: 0 4px 12px rgba(22, 102, 186, 0.2);
-            border: 2px solid #1666ba;
+            box-shadow: 0 2px 8px rgba(22, 102, 186, 0.06);
+            border: 1px solid #deecfb;
             cursor: pointer;
             transition: all 0.3s ease;
             text-align: center;
-            color: #ffffff;
         }
 
         .action-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(22, 102, 186, 0.3);
-            background: linear-gradient(135deg, #368ce7 0%, #7ab3ef 100%);
-        }
-
-        .action-card:active {
-            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(22, 102, 186, 0.15);
+            border-color: #bedaf7;
         }
 
         .action-icon {
             font-size: 2.5rem;
-            color: #ffffff;
+            color: #1666ba;
             margin-bottom: 1rem;
         }
 
         .action-title {
             font-size: 1.1rem;
-            font-weight: 700;
-            color: #ffffff;
+            font-weight: 600;
+            color: #1666ba;
             margin-bottom: 0.5rem;
         }
 
         .action-desc {
             font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.9);
+            color: #666;
             line-height: 1.4;
         }
 
@@ -263,79 +258,6 @@ $conn->close();
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 0.5rem;
-            }
-
-            .bills-section, .actions-section {
-                padding: 1rem;
-            }
-
-            .notice-section {
-                padding: 1.5rem;
-            }
-
-            .actions-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 0.5rem;
-            }
-
-            .action-card {
-                padding: 1rem;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 120px;
-            }
-
-            .action-icon {
-                font-size: 1.5rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .action-title {
-                font-size: 0.8rem;
-                margin-bottom: 0.25rem;
-            }
-
-            .action-desc {
-                font-size: 0.7rem;
-                display: none;
-            }
-
-            .section-title {
-                font-size: 1.1rem;
-            }
-
-            .welcome-text {
-                font-size: 0.85rem;
-            }
-
-            .bill-item {
-                padding: 0.75rem;
-                margin-bottom: 0.75rem;
-            }
-
-            .bill-amount {
-                font-size: 1rem;
-            }
-
-            .bill-due {
-                font-size: 0.8rem;
-            }
-
-            .bill-status {
-                font-size: 0.7rem;
-                padding: 0.2rem 0.6rem;
-            }
-
-            .notice-title {
-                font-size: 1.1rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .notice-text {
-                font-size: 0.8rem;
-                line-height: 1.4;
             }
         }
     </style>
@@ -380,7 +302,6 @@ $conn->close();
             </div>
         </div>
 
-            
             <div class="actions-grid">
                 <div class="action-card" onclick="maintenanceRequest()">
                     <div class="action-icon">
@@ -404,6 +325,7 @@ $conn->close();
                     <div class="action-desc">Review your lease agreement and property information</div>
                 </div>
             </div>
+    </div>
 
     <script>
         function maintenanceRequest() {

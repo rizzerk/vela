@@ -13,7 +13,7 @@ CREATE TABLE PROPERTY (
     landlord_id INT,
     title VARCHAR(100),
     address VARCHAR(255),
-    property_type ENUM('apartment', 'house', 'condo', 'studio', 'commercial', 'others') NOT NULL,
+    property_type VARCHAR(50) NOT NULL,
     status ENUM('vacant', 'occupied') NOT NULL,
     description VARCHAR(255),
     monthly_rent DECIMAL(10, 2),

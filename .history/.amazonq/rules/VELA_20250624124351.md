@@ -1,3 +1,5 @@
+MY DATABASE STRUCTURE
+
 CREATE TABLE USERS (
     user_id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100),
@@ -10,14 +12,11 @@ CREATE TABLE USERS (
 
 CREATE TABLE PROPERTY (
     property_id INT PRIMARY KEY AUTO_INCREMENT,
-    landlord_id INT,
     title VARCHAR(100),
     address VARCHAR(255),
-    property_type ENUM('apartment', 'house', 'condo', 'studio', 'commercial', 'others') NOT NULL,
     status ENUM('vacant', 'occupied') NOT NULL,
     description VARCHAR(255),
-    monthly_rent DECIMAL(10, 2),
-    FOREIGN KEY (landlord_id) REFERENCES USERS(user_id)
+    monthly_rent DECIMAL(10, 2)
 );
 
 CREATE TABLE PROPERTY_PHOTO (
@@ -109,3 +108,16 @@ CREATE TABLE ANNOUNCEMENT (
     created_at DATETIME,
     FOREIGN KEY (created_by) REFERENCES USERS(user_id)
 );
+
+
+MY COLOR SCHEME:
+Only use the following color scheme when decorating my system
+
+#deecfb
+#bedaf7
+#7ab3ef
+#368ce7
+#1666ba
+#ffffff
+#000000
+
