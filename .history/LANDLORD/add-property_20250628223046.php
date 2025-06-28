@@ -528,7 +528,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="property_type">Property Type</label>
                     <select id="property_type" name="property_type" class="form-control <?php echo isset($errors['property_type']) ? 'error' : ''; ?>" required>
                         <option value="apartment" <?php echo ($_POST['property_type'] ?? '') === 'apartment' ? 'selected' : ''; ?>>Apartment</option>
-                        <option value="house" <?php echo ($_POST['property_type'] ?? '') === 'house' ? 'selected' : ''; ?>>House</option>
+                        <option value="house" <?php echo ($_POST['property_type'] ?? '') === 'house' ? 'selected' : ''; ?>>Hous</option>
                         <option value="condo" <?php echo ($_POST['property_type'] ?? '') === 'condo' ? 'selected' : ''; ?>>Condo</option>
                         <option value="studio" <?php echo ($_POST['property_type'] ?? '') === 'studio' ? 'selected' : ''; ?>>Studio</option>
                         <option value="commercial" <?php echo ($_POST['property_type'] ?? '') === 'commercial' ? 'selected' : ''; ?>>Commercial</option>

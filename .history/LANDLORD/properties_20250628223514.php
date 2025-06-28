@@ -701,18 +701,6 @@ if (isset($_GET['edit_id'])) {
                         <option value="occupied">occupied</option>
                     </select>
                 </div>
-
-                <div class="form-group">
-                    <label for="edit_property_type">Property Type</label>
-                    <select class="form-select" id="edit_property_type" name="property_type" required>
-                        <option value="apartment">Apartment</option>
-                        <option value="house">House</option>
-                        <option value="condo">Condo</option>
-                        <option value="studio">Studio</option>
-                        <option value="commercial">Commercial</option>
-                        <option value="others">Others</option>
-                    </select>
-                </div>
                 
                 <div class="form-group">
                     <label>Current Photos</label>
@@ -798,7 +786,6 @@ if (isset($_GET['edit_id'])) {
                         document.getElementById('edit_description').value = data.description || '';
                         document.getElementById('edit_monthly_rent').value = data.monthly_rent;
                         document.getElementById('edit_status').value = data.status;
-                        document.getElementById('edit_property_type').value = data.property_type;
                         
                         // Load current photos
                         loadPropertyPhotos(propertyId);

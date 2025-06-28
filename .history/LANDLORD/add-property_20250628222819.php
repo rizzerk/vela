@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors['address'] = "Address is required";
     }
     
-    if (!in_array($status, ['vacant', 'occupied'])) {
+    if (!in_array($status, ['available', 'unavailable', 'maintenance'])) {
         $errors['status'] = "Invalid status selected";
     }
 
@@ -489,8 +489,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group <?php echo isset($errors['status']) ? 'has-error' : ''; ?>">
                     <label for="status">Status</label>
                     <select id="status" name="status" class="form-control <?php echo isset($errors['status']) ? 'error' : ''; ?>" required>
-                        <option value="vacant" <?php echo ($_POST['status'] ?? '') === 'vacant' ? 'selected' : ''; ?>>Vacant</option>
-                        <option value="occupied" <?php echo ($_POST['status'] ?? '') === 'occupied' ? 'selected' : ''; ?>>Occupied</option>
+                        <option value="available" <?php echo ($_POST['status'] ?? '') === 'available' ? 'selected' : ''; ?>>Available</option>
+                        <option value="unavailable" <?php echo ($_POST['status'] ?? '') === 'unavailable' ? 'selected' : ''; ?>>Unavailable</option>
+                        <option value="maintenance" <?php echo ($_POST['status'] ?? '') === 'maintenance' ? 'selected' : ''; ?>>Under Maintenance</option>
                     </select>
                     <?php if (isset($errors['status'])): ?>
                         <div class="error-message">
@@ -528,7 +529,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="property_type">Property Type</label>
                     <select id="property_type" name="property_type" class="form-control <?php echo isset($errors['property_type']) ? 'error' : ''; ?>" required>
                         <option value="apartment" <?php echo ($_POST['property_type'] ?? '') === 'apartment' ? 'selected' : ''; ?>>Apartment</option>
-                        <option value="house" <?php echo ($_POST['property_type'] ?? '') === 'house' ? 'selected' : ''; ?>>House</option>
+                        <option value="house" <?php echo ($_POST['property_type'] ?? '') === 'house' ? 'selected' : ''; ?>>Hous</option>
                         <option value="condo" <?php echo ($_POST['property_type'] ?? '') === 'condo' ? 'selected' : ''; ?>>Condo</option>
                         <option value="studio" <?php echo ($_POST['property_type'] ?? '') === 'studio' ? 'selected' : ''; ?>>Studio</option>
                         <option value="commercial" <?php echo ($_POST['property_type'] ?? '') === 'commercial' ? 'selected' : ''; ?>>Commercial</option>
