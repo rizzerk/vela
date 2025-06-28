@@ -196,67 +196,30 @@ $properties = mysqli_fetch_all($result, MYSQLI_ASSOC);
             background-color: #fecaca; 
         }
         
-        .empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    width: 100%;
-    margin: 2rem 0;
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* This centers all child elements horizontally */
-}
-
-.empty-state .add-property-btn {
-    padding: 0.75rem 1.75rem;
-    font-size: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(22, 102, 186, 0.2);
-    width: auto; /* Remove any fixed width */
-    display: inline-flex; /* Makes the button only as wide as its content */
-    justify-content: center; /* Centers the button content */
-}
-.empty-state:hover {
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-}
-
-.empty-state-icon {
-    font-size: 4rem;
-    color: #1666ba;
-    margin-bottom: 1.5rem;
-    opacity: 0.8;
-}
-
-.empty-state h3 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-    color: #1e293b;
-    font-weight: 600;
-    max-width: 500px;
-}
-
-.empty-state p {
-    color: #64748b;
-    margin-bottom: 2rem;
-    line-height: 1.6;
-    font-size: 1rem;
-    max-width: 500px;
-}
-
-.empty-state .add-property-btn {
-    padding: 0.75rem 1.75rem;
-    font-size: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(22, 102, 186, 0.2);
-}
-
-.empty-state .add-property-btn i {
-    font-size: 0.9rem;
-}
+        .empty-state { 
+            text-align: center; 
+            padding: 4rem; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); 
+        }
+        
+        .empty-state i { 
+            font-size: 3rem; 
+            color: #1666ba; 
+            margin-bottom: 1.5rem; 
+        }
+        
+        .empty-state h3 { 
+            font-size: 1.5rem; 
+            margin-bottom: 1rem; 
+            color: #1666ba; 
+        }
+        
+        .empty-state p { 
+            color: #64748b; 
+            margin-bottom: 2rem; 
+        }
         
         @media (max-width: 1024px) { 
             .properties-grid { 
@@ -294,16 +257,14 @@ $properties = mysqli_fetch_all($result, MYSQLI_ASSOC);
         </div>
 
         <?php if (empty($properties)): ?>
-              <div class="empty-state">
-              <div class="empty-state-icon">
-                  <i class="fas fa-home"></i>
-              </div>
-              <h3>No Properties Listed</h3>
-              <p>You haven't added any properties yet. Start by adding your first property to manage rentals, tenants, and payments all in one place.</p>
-              <button class="add-property-btn" onclick="window.location.href='add-property.php'">
-                  <i class="fas fa-plus"></i> Add Your First Property
-              </button>
-          </div>
+            <div class="empty-state">
+                <i class="fas fa-home"></i>
+                <h3>No Properties Yet</h3>
+                <p>You haven't added any properties yet. Get started by adding your first property.</p>
+                <button class="add-property-btn" onclick="window.location.href='add-property.php'">
+                    <i class="fas fa-plus"></i> Add Property
+                </button>
+            </div>
         <?php else: ?>
             <div class="properties-grid">
                 <?php foreach ($properties as $property): ?>

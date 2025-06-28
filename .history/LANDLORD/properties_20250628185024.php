@@ -236,7 +236,6 @@ $properties = mysqli_fetch_all($result, MYSQLI_ASSOC);
     margin-bottom: 1rem;
     color: #1e293b;
     font-weight: 600;
-    max-width: 500px;
 }
 
 .empty-state p {
@@ -244,7 +243,6 @@ $properties = mysqli_fetch_all($result, MYSQLI_ASSOC);
     margin-bottom: 2rem;
     line-height: 1.6;
     font-size: 1rem;
-    max-width: 500px;
 }
 
 .empty-state .add-property-btn {

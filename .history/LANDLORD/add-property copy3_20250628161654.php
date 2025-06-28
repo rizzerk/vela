@@ -554,17 +554,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const dropArea = document.getElementById('drop-area');
     const fileInput = document.getElementById('photos');
     const fileList = document.getElementById('file-list');
-    const fileCounter = document.getElementById('file-counter');
     const form = document.getElementById('property-form');
     const submitBtn = document.getElementById('submit-btn');
     
     // Allowed file types and max size
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     const maxSize = 5 * 1024 * 1024; // 5MB
-    const maxFiles = 10;
-    
-    // Track all selected files
-    let allFiles = [];
     
     // Make drop area clickable
     dropArea.addEventListener('click', function(e) {
@@ -606,75 +601,20 @@ document.addEventListener('DOMContentLoaded', function() {
     dropArea.addEventListener('drop', handleDrop, false);
 
     function handleDrop(e) {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    
-    // Clear any previous error state when new files are dropped
-    dropArea.classList.remove('error');
-    const photoError = document.querySelector('.form-group.photos .error-message');
-    if (photoError) photoError.remove();
-    
-    handleFiles(files);
-}
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
 
     // Handle selected files
     fileInput.addEventListener('change', function() {
         handleFiles(this.files);
     });
-   
-    function handleFiles(newFiles) {
-    // Reset error state when new files are being handled
-    dropArea.classList.remove('error');
-    const photoError = document.querySelector('.form-group.photos .error-message');
-    if (photoError) photoError.remove();
 
-    // Check if adding these files would exceed max
-    if (allFiles.length + newFiles.length > maxFiles) {
-        showFileError(`Maximum ${maxFiles} files allowed`);
-        return;
-    }
-
-    let hasInvalidFiles = false;
-    
-    // First validate all new files before adding them
-    for (let i = 0; i < newFiles.length; i++) {
-        const file = newFiles[i];
-        
-        if (!allowedTypes.includes(file.type)) {
-            hasInvalidFiles = true;
-            continue;
-        }
-        
-        if (file.size > maxSize) {
-            hasInvalidFiles = true;
-            continue;
-        }
-        
-        // Only add valid files
-        allFiles.push(file);
-    }
-
-    if (hasInvalidFiles) {
-        showFileError('Some files were invalid and not added (Only JPEG/PNG/WebP under 5MB allowed)');
-    }
-
-    // If we have at least one valid file, clear any previous errors
-    if (allFiles.length > 0) {
-        dropArea.classList.remove('error');
-        const photoError = document.querySelector('.form-group.photos .error-message');
-        if (photoError) photoError.remove();
-    }
-
-    renderFileList();
-    updateFileInput();
-    updateFileCounter();
-}
-
-    
-    function renderFileList() {
+    function handleFiles(files) {
         fileList.innerHTML = '';
         
-        if (allFiles.length > 0) {
+        if (files.length > 0) {
             fileList.classList.add('visible');
             
             // Clear previous errors
@@ -689,8 +629,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             let hasInvalidFiles = false;
             
-            for (let i = 0; i < allFiles.length; i++) {
-                const file = allFiles[i];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
                 
                 // Validate file
                 if (!allowedTypes.includes(file.type)) {
@@ -763,16 +703,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function updateFileInput() {
-        const dataTransfer = new DataTransfer();
-        allFiles.forEach(file => dataTransfer.items.add(file));
-        fileInput.files = dataTransfer.files;
-    }
-    
-    function updateFileCounter() {
-        fileCounter.textContent = `${allFiles.length} file(s) selected`;
-    }
-    
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -782,32 +712,34 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showFileError(message) {
-    // Only show as error if we don't have any valid files
-    if (allFiles.length === 0) {
         dropArea.classList.add('error');
+        
+        const existingError = document.querySelector('.form-group.photos .error-message');
+        if (existingError) {
+            existingError.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+            return;
+        }
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+        
+        const formGroup = document.querySelector('.form-group.photos');
+        if (formGroup) {
+            formGroup.appendChild(errorDiv);
+        }
     }
-    
-    const existingError = document.querySelector('.form-group.photos .error-message');
-    if (existingError) {
-        existingError.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
-        return;
-    }
-    
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-message';
-    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
-    
-    const formGroup = document.querySelector('.form-group.photos');
-    if (formGroup) {
-        formGroup.appendChild(errorDiv);
-    }
-}
 
     function removeFile(index) {
-        allFiles.splice(index, 1);
-        updateFileInput();
-        renderFileList();
-        updateFileCounter();
+        const files = Array.from(fileInput.files);
+        files.splice(index, 1);
+        
+        const dataTransfer = new DataTransfer();
+        files.forEach(file => dataTransfer.items.add(file));
+        fileInput.files = dataTransfer.files;
+        
+        // Re-render file list
+        handleFiles(fileInput.files);
     }
 
     // Form validation before submission
@@ -840,13 +772,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Validate file upload
-        if (allFiles.length === 0) {
+        if (fileInput.files.length === 0) {
             dropArea.classList.add('error');
             showFileError('At least one photo is required');
             isValid = false;
         } else {
             // Validate each file
-            allFiles.forEach(file => {
+            Array.from(fileInput.files).forEach(file => {
                 if (!allowedTypes.includes(file.type)) {
                     showFileError(`Invalid file type: ${file.name} (Only JPEG, PNG, and WebP are allowed)`);
                     isValid = false;

@@ -606,70 +606,32 @@ document.addEventListener('DOMContentLoaded', function() {
     dropArea.addEventListener('drop', handleDrop, false);
 
     function handleDrop(e) {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    
-    // Clear any previous error state when new files are dropped
-    dropArea.classList.remove('error');
-    const photoError = document.querySelector('.form-group.photos .error-message');
-    if (photoError) photoError.remove();
-    
-    handleFiles(files);
-}
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
 
     // Handle selected files
     fileInput.addEventListener('change', function() {
         handleFiles(this.files);
     });
-   
+
     function handleFiles(newFiles) {
-    // Reset error state when new files are being handled
-    dropArea.classList.remove('error');
-    const photoError = document.querySelector('.form-group.photos .error-message');
-    if (photoError) photoError.remove();
-
-    // Check if adding these files would exceed max
-    if (allFiles.length + newFiles.length > maxFiles) {
-        showFileError(`Maximum ${maxFiles} files allowed`);
-        return;
-    }
-
-    let hasInvalidFiles = false;
-    
-    // First validate all new files before adding them
-    for (let i = 0; i < newFiles.length; i++) {
-        const file = newFiles[i];
-        
-        if (!allowedTypes.includes(file.type)) {
-            hasInvalidFiles = true;
-            continue;
+        // Check if adding these files would exceed max
+        if (allFiles.length + newFiles.length > maxFiles) {
+            showFileError(`Maximum ${maxFiles} files allowed`);
+            return;
         }
         
-        if (file.size > maxSize) {
-            hasInvalidFiles = true;
-            continue;
+        // Add new files to our tracking array
+        for (let i = 0; i < newFiles.length; i++) {
+            allFiles.push(newFiles[i]);
         }
         
-        // Only add valid files
-        allFiles.push(file);
+        renderFileList();
+        updateFileInput();
+        updateFileCounter();
     }
-
-    if (hasInvalidFiles) {
-        showFileError('Some files were invalid and not added (Only JPEG/PNG/WebP under 5MB allowed)');
-    }
-
-    // If we have at least one valid file, clear any previous errors
-    if (allFiles.length > 0) {
-        dropArea.classList.remove('error');
-        const photoError = document.querySelector('.form-group.photos .error-message');
-        if (photoError) photoError.remove();
-    }
-
-    renderFileList();
-    updateFileInput();
-    updateFileCounter();
-}
-
     
     function renderFileList() {
         fileList.innerHTML = '';
@@ -782,26 +744,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showFileError(message) {
-    // Only show as error if we don't have any valid files
-    if (allFiles.length === 0) {
         dropArea.classList.add('error');
+        
+        const existingError = document.querySelector('.form-group.photos .error-message');
+        if (existingError) {
+            existingError.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+            return;
+        }
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+        
+        const formGroup = document.querySelector('.form-group.photos');
+        if (formGroup) {
+            formGroup.appendChild(errorDiv);
+        }
     }
-    
-    const existingError = document.querySelector('.form-group.photos .error-message');
-    if (existingError) {
-        existingError.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
-        return;
-    }
-    
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-message';
-    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
-    
-    const formGroup = document.querySelector('.form-group.photos');
-    if (formGroup) {
-        formGroup.appendChild(errorDiv);
-    }
-}
 
     function removeFile(index) {
         allFiles.splice(index, 1);
