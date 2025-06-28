@@ -10,6 +10,7 @@ CREATE TABLE USERS (
 
 CREATE TABLE PROPERTY (
     property_id INT PRIMARY KEY AUTO_INCREMENT,
+    landlord_id INT,
     title VARCHAR(100),
     address VARCHAR(255),
     property_type ENUM('apartment', 'house', 'condo', 'studio', 'commercial', 'others') NOT NULL,
@@ -108,5 +109,3 @@ CREATE TABLE ANNOUNCEMENT (
     created_at DATETIME,
     FOREIGN KEY (created_by) REFERENCES USERS(user_id)
 );
-
-

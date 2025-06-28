@@ -380,7 +380,6 @@ $conn->close();
             </div>
         </div>
 
-            
             <div class="actions-grid">
                 <div class="action-card" onclick="maintenanceRequest()">
                     <div class="action-icon">
@@ -404,6 +403,7 @@ $conn->close();
                     <div class="action-desc">Review your lease agreement and property information</div>
                 </div>
             </div>
+    </div>
 
     <script>
         function maintenanceRequest() {

@@ -191,60 +191,29 @@ $conn->close();
             opacity: 0.95;
         }
 
-        .actions-section {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 2px 8px rgba(22, 102, 186, 0.06);
-            border: 1px solid #deecfb;
-        }
-
-        .actions-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
-            margin-top: 1rem;
-        }
-
-        .action-card {
+        .maintenance-card {
             background: linear-gradient(135deg, #1666ba 0%, #368ce7 100%);
             border-radius: 16px;
             padding: 2rem;
-            box-shadow: 0 4px 12px rgba(22, 102, 186, 0.2);
-            border: 2px solid #1666ba;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            color: #ffffff;
             text-align: center;
-            color: #ffffff;
+            cursor: pointer;
+            transition: transform 0.3s ease;
         }
 
-        .action-card:hover {
+        .maintenance-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(22, 102, 186, 0.3);
-            background: linear-gradient(135deg, #368ce7 0%, #7ab3ef 100%);
         }
 
-        .action-card:active {
-            transform: translateY(-2px);
-        }
-
-        .action-icon {
-            font-size: 2.5rem;
-            color: #ffffff;
-            margin-bottom: 1rem;
-        }
-
-        .action-title {
-            font-size: 1.1rem;
+        .maintenance-title {
+            font-size: 1.3rem;
             font-weight: 700;
-            color: #ffffff;
             margin-bottom: 0.5rem;
         }
 
-        .action-desc {
+        .maintenance-desc {
             font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.9);
-            line-height: 1.4;
+            opacity: 0.9;
         }
 
         .no-bills {
@@ -263,79 +232,6 @@ $conn->close();
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 0.5rem;
-            }
-
-            .bills-section, .actions-section {
-                padding: 1rem;
-            }
-
-            .notice-section {
-                padding: 1.5rem;
-            }
-
-            .actions-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 0.5rem;
-            }
-
-            .action-card {
-                padding: 1rem;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 120px;
-            }
-
-            .action-icon {
-                font-size: 1.5rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .action-title {
-                font-size: 0.8rem;
-                margin-bottom: 0.25rem;
-            }
-
-            .action-desc {
-                font-size: 0.7rem;
-                display: none;
-            }
-
-            .section-title {
-                font-size: 1.1rem;
-            }
-
-            .welcome-text {
-                font-size: 0.85rem;
-            }
-
-            .bill-item {
-                padding: 0.75rem;
-                margin-bottom: 0.75rem;
-            }
-
-            .bill-amount {
-                font-size: 1rem;
-            }
-
-            .bill-due {
-                font-size: 0.8rem;
-            }
-
-            .bill-status {
-                font-size: 0.7rem;
-                padding: 0.2rem 0.6rem;
-            }
-
-            .notice-title {
-                font-size: 1.1rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .notice-text {
-                font-size: 0.8rem;
-                line-height: 1.4;
             }
         }
     </style>
@@ -380,42 +276,15 @@ $conn->close();
             </div>
         </div>
 
-            
-            <div class="actions-grid">
-                <div class="action-card" onclick="maintenanceRequest()">
-                    <div class="action-icon">
-                        <i class="fas fa-tools"></i>
-                    </div>
-                    <div class="action-title">Maintenance Request</div>
-                    <div class="action-desc">Report issues or request repairs for your property</div>
-                </div>
-                <div class="action-card" onclick="viewPaymentHistory()">
-                    <div class="action-icon">
-                        <i class="fas fa-history"></i>
-                    </div>
-                    <div class="action-title">Payment History</div>
-                    <div class="action-desc">View your past payments and transaction records</div>
-                </div>
-                <div class="action-card" onclick="viewLease()">
-                    <div class="action-icon">
-                        <i class="fas fa-file-contract"></i>
-                    </div>
-                    <div class="action-title">Lease Details</div>
-                    <div class="action-desc">Review your lease agreement and property information</div>
-                </div>
-            </div>
+        <div class="maintenance-card" onclick="maintenanceRequest()">
+            <h3 class="maintenance-title">Maintenance Request</h3>
+            <p class="maintenance-desc">Report issues or request repairs for your unit</p>
+        </div>
+    </div>
 
     <script>
         function maintenanceRequest() {
             window.location.href = 'maintenance-request.php';
-        }
-        
-        function viewPaymentHistory() {
-            window.location.href = 'payment-history.php';
-        }
-        
-        function viewLease() {
-            window.location.href = 'lease-details.php';
         }
     </script>
 </body>
