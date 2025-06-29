@@ -15,8 +15,7 @@ CREATE TABLE PROPERTY (
     property_type ENUM('apartment', 'house', 'condo', 'studio', 'commercial', 'others') NOT NULL,
     status ENUM('vacant', 'occupied') NOT NULL,
     description VARCHAR(255),
-    monthly_rent DECIMAL(10, 2),
-    FOREIGN KEY (landlord_id) REFERENCES USERS(user_id)
+    monthly_rent DECIMAL(10, 2)
 );
 
 CREATE TABLE PROPERTY_PHOTO (
