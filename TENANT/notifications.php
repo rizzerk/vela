@@ -8,11 +8,16 @@ $sort = $_GET['sort'] ?? 'newest';
 $order = $sort === 'newest' ? 'DESC' : 'ASC';
 
 try {
-    $query = "SELECT 'bill' as type, CONCAT('Bill: ₱', amount, ' - ', description) as message, 
+    $query = "(SELECT 'bill' as type, CONCAT('Bill: ₱', amount, ' - ', description) as message, 
                      due_date as date, 'medium' as priority
               FROM BILL b 
-              WHERE b.status IN ('unpaid', 'overdue')
-              ORDER BY due_date $order LIMIT 10";
+              WHERE b.status IN ('unpaid', 'overdue'))
+              UNION ALL
+              (SELECT 'announcement' as type, CONCAT(title, ' - ', content) as message,
+                     created_at as date, priority
+              FROM ANNOUNCEMENT a
+              WHERE a.visible_to IN ('tenant', 'all'))
+              ORDER BY date $order LIMIT 10";
     
     $result = $conn->query($query);
     if ($result) {
@@ -259,6 +264,8 @@ $fullName = $_SESSION['name'] ?? 'User';
                         <div class="page-notification-icon">
                             <?php if ($notification['type'] === 'bill'): ?>
                                 <i class="fas fa-file-invoice-dollar"></i>
+                            <?php elseif ($notification['type'] === 'announcement'): ?>
+                                <i class="fas fa-bullhorn"></i>
                             <?php elseif ($notification['type'] === 'payment'): ?>
                                 <i class="fas fa-credit-card"></i>
                             <?php else: ?>
