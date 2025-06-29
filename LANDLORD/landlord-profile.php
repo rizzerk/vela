@@ -552,17 +552,6 @@
 </head>
 <body>
   <div class="container">
-    <header>
-      <div class="logo">
-        <i class="fas fa-home"></i>
-        <span>LandlordHub</span>
-      </div>
-      <div class="user-actions">
-        <button class="btn btn-outline">
-          <i class="fas fa-cog"></i> Settings
-        </button>
-      </div>
-    </header>
 
     <div class="profile-header">
       <h1>Landlord Profile</h1>
@@ -683,10 +672,6 @@
       </div>
     </div>
     
-    <footer>
-      <p>&copy; 2023 LandlordHub - Property Management Portal. All rights reserved.</p>
-      <p>Your trusted platform for property management</p>
-    </footer>
   </div>
 
   <!-- Edit Profile Modal -->
