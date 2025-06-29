@@ -22,6 +22,7 @@
       --success: #28a745;
       --border: #dee2e6;
       --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --radius: 12px;
     }
 
     body {
@@ -80,7 +81,7 @@
 
     .left-panel, .right-panel {
       background: white;
-      border-radius: 12px;
+      border-radius: var(--radius);
       box-shadow: var(--shadow);
       padding: 30px;
       flex: 1;
@@ -111,12 +112,16 @@
       padding: 20px 0;
     }
 
+    .profile-pic-container {
+      position: relative;
+      margin-bottom: 25px;
+    }
+
     .profile-pic {
       width: 150px;
       height: 150px;
       border-radius: 50%;
       background: linear-gradient(135deg, #e0e7ff, #d1e0fd);
-      margin-bottom: 25px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -124,6 +129,29 @@
       color: var(--primary);
       border: 4px solid white;
       box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .profile-pic img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .upload-overlay {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      background: var(--primary);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
 
     .profile-name {
@@ -131,11 +159,13 @@
       font-weight: 600;
       margin-bottom: 5px;
       color: var(--dark);
+      text-align: center;
     }
 
     .profile-role {
       color: var(--secondary);
       margin-bottom: 25px;
+      text-align: center;
     }
 
     .info-grid {
@@ -334,6 +364,156 @@
       box-shadow: 0 4px 10px rgba(255, 71, 87, 0.3);
     }
 
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      display: none;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 500px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 1.8rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-title i {
+      color: var(--primary);
+    }
+
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--secondary);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--dark);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+
+    .form-control:focus {
+      border-color: var(--primary);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+    }
+
+    .image-upload-container {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 25px;
+      text-align: center;
+      margin-bottom: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .image-upload-container:hover {
+      border-color: var(--primary);
+      background: #f8faff;
+    }
+
+    .image-upload-container i {
+      font-size: 3rem;
+      color: var(--primary);
+      margin-bottom: 15px;
+    }
+
+    .image-upload-container p {
+      color: var(--secondary);
+      margin-bottom: 15px;
+    }
+
+    .image-upload-container .btn {
+      margin-top: 10px;
+    }
+
+    .image-preview {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .image-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .btn-secondary {
+      padding: 10px 20px;
+      background: #f8f9fa;
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-modal-primary {
+      padding: 10px 25px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
       .profile-content {
@@ -347,6 +527,16 @@
       
       .documents-grid {
         grid-template-columns: repeat(2, 1fr);
+      }
+
+      .profile-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+      
+      .btn-group {
+        width: 100%;
       }
     }
 
@@ -365,7 +555,7 @@
     <header>
       <div class="logo">
         <i class="fas fa-home"></i>
-        <span>RentalEase</span>
+        <span>LandlordHub</span>
       </div>
       <div class="user-actions">
         <button class="btn btn-outline">
@@ -392,11 +582,16 @@
         <h2 class="panel-title"><i class="fas fa-user-circle"></i> ACCOUNT INFORMATION</h2>
         
         <div class="profile-section">
-          <div class="profile-pic">
-            <i class="fas fa-building"></i>
+          <div class="profile-pic-container">
+            <div class="profile-pic" id="profileImageDisplay">
+              <i class="fas fa-building"></i>
+            </div>
+            <div class="upload-overlay" id="changeImageBtn">
+              <i class="fas fa-camera"></i>
+            </div>
           </div>
           <h2 class="profile-name" id="companyName">Smith Realty LLC</h2>
-          <div class="profile-role">Professional Landlord & Property Manager</div>
+          <div class="profile-role">Professional Property Manager</div>
           
           <div class="info-grid">
             <div class="info-item">
@@ -474,20 +669,6 @@
               </div>
               <div class="document-label">Lease Agreement</div>
             </div>
-            
-            <div class="document-card">
-              <div class="document-preview">
-                <i class="fas fa-receipt"></i>
-              </div>
-              <div class="document-label">Payment Records</div>
-            </div>
-            
-            <div class="document-card">
-              <div class="document-preview">
-                <i class="fas fa-shield-alt"></i>
-              </div>
-              <div class="document-label">Insurance</div>
-            </div>
           </div>
         </div>
         
@@ -495,32 +676,36 @@
           <button class="btn btn-outline">
             <i class="fas fa-download"></i> Download Documents
           </button>
+          <button class="btn btn-outline">
+            <i class="fas fa-upload"></i> Upload New
+          </button>
         </div>
       </div>
     </div>
     
     <footer>
-      <p>&copy; 2023 RentalEase - Landlord Portal. All rights reserved.</p>
+      <p>&copy; 2023 LandlordHub - Property Management Portal. All rights reserved.</p>
       <p>Your trusted platform for property management</p>
     </footer>
   </div>
 
   <!-- Edit Profile Modal -->
-  <div class="modal" id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 20px;">
-    <div style="background: white; border-radius: 15px; width: 100%; max-width: 500px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-      <h2 style="font-size: 1.8rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-        <i class="fas fa-edit" style="color: #4a6cf7;"></i> Edit Profile
-      </h2>
+  <div class="modal" id="editModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title"><i class="fas fa-edit"></i> Edit Profile</h2>
+        <button class="close-modal" id="closeModal">&times;</button>
+      </div>
       
-      <form id="profileForm" style="display: grid; gap: 15px;">
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          <label style="font-weight: 500; color: #343a40;">Company/Full Name</label>
-          <input type="text" id="editCompanyName" value="Smith Realty LLC" style="padding: 12px 15px; border: 1px solid #dee2e6; border-radius: 8px; font-size: 1rem;">
+      <form id="profileForm">
+        <div class="form-group">
+          <label for="editCompanyName">Company/Full Name</label>
+          <input type="text" id="editCompanyName" class="form-control" value="Smith Realty LLC">
         </div>
         
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          <label style="font-weight: 500; color: #343a40;">Contact Method</label>
-          <select id="editContactMethod" style="padding: 12px 15px; border: 1px solid #dee2e6; border-radius: 8px; font-size: 1rem;">
+        <div class="form-group">
+          <label for="editContactMethod">Contact Method</label>
+          <select id="editContactMethod" class="form-control">
             <option value="Email">Email</option>
             <option value="Phone">Phone</option>
             <option value="Text">Text</option>
@@ -528,19 +713,33 @@
           </select>
         </div>
         
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          <label style="font-weight: 500; color: #343a40;">Contact Hours</label>
-          <input type="text" id="editContactHours" value="Weekdays 8am-6pm" style="padding: 12px 15px; border: 1px solid #dee2e6; border-radius: 8px; font-size: 1rem;">
+        <div class="form-group">
+          <label for="editContactHours">Contact Hours</label>
+          <input type="text" id="editContactHours" class="form-control" value="Weekdays 8am-6pm">
         </div>
         
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          <label style="font-weight: 500; color: #343a40;">Payment Method</label>
-          <input type="text" id="editPaymentMethod" value="Online Portal" style="padding: 12px 15px; border: 1px solid #dee2e6; border-radius: 8px; font-size: 1rem;">
+        <div class="form-group">
+          <label for="editPaymentMethod">Payment Method</label>
+          <input type="text" id="editPaymentMethod" class="form-control" value="Online Portal">
         </div>
         
-        <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px;">
-          <button type="button" id="cancelEdit" style="padding: 10px 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 30px; font-weight: 500; cursor: pointer;">Cancel</button>
-          <button type="button" id="saveChanges" style="padding: 10px 25px; background: #4a6cf7; color: white; border: none; border-radius: 30px; font-weight: 500; cursor: pointer;">Save Changes</button>
+        <div class="form-group">
+          <label>Profile Image</label>
+          <div class="image-upload-container" id="imageUploadContainer">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Click to upload a profile image</p>
+            <p class="small">JPG or PNG, max 2MB</p>
+            <button type="button" class="btn btn-outline">Select Image</button>
+            <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+          </div>
+          <div class="image-preview" id="imagePreview">
+            <img src="" alt="Preview">
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="cancelEdit">Cancel</button>
+          <button type="button" class="btn-modal-primary" id="saveChanges">Save Changes</button>
         </div>
       </form>
     </div>
@@ -550,24 +749,46 @@
     // DOM Elements
     const editBtn = document.getElementById('editBtn');
     const editModal = document.getElementById('editModal');
+    const closeModal = document.getElementById('closeModal');
     const cancelEdit = document.getElementById('cancelEdit');
     const saveChanges = document.getElementById('saveChanges');
+    const imageUploadContainer = document.getElementById('imageUploadContainer');
+    const imageUpload = document.getElementById('imageUpload');
+    const imagePreview = document.getElementById('imagePreview');
+    const profileImageDisplay = document.getElementById('profileImageDisplay');
+    const changeImageBtn = document.getElementById('changeImageBtn');
     
-    // Form fields
+    // Profile display elements
     const companyName = document.getElementById('companyName');
     const contactMethod = document.getElementById('contactMethod');
     const contactHours = document.getElementById('contactHours');
     const paymentMethod = document.getElementById('paymentMethod');
     
-    // Edit form fields
+    // Edit form elements
     const editCompanyName = document.getElementById('editCompanyName');
     const editContactMethod = document.getElementById('editContactMethod');
     const editContactHours = document.getElementById('editContactHours');
     const editPaymentMethod = document.getElementById('editPaymentMethod');
     
+    // Initialize modal with current values
+    function initModal() {
+      editCompanyName.value = companyName.textContent;
+      editContactMethod.value = contactMethod.textContent;
+      editContactHours.value = contactHours.textContent;
+      editPaymentMethod.value = paymentMethod.textContent;
+      
+      // Reset image preview
+      imagePreview.style.display = 'none';
+    }
+    
     // Event listeners
     editBtn.addEventListener('click', () => {
+      initModal();
       editModal.style.display = 'flex';
+    });
+    
+    closeModal.addEventListener('click', () => {
+      editModal.style.display = 'none';
     });
     
     cancelEdit.addEventListener('click', () => {
@@ -581,6 +802,18 @@
       contactHours.textContent = editContactHours.value;
       paymentMethod.textContent = editPaymentMethod.value;
       
+      // If image preview is visible, set it as profile image
+      if (imagePreview.style.display === 'block') {
+        const previewImg = imagePreview.querySelector('img');
+        profileImageDisplay.innerHTML = '';
+        const newImg = document.createElement('img');
+        newImg.src = previewImg.src;
+        profileImageDisplay.appendChild(newImg);
+        
+        // Here you would typically upload the image to your server
+        // and save the path to the database
+      }
+      
       // Show success message
       alert('Profile updated successfully!');
       
@@ -588,7 +821,35 @@
       editModal.style.display = 'none';
     });
     
-    // Close modal when clicking outside the form
+    // Image upload functionality
+    imageUploadContainer.addEventListener('click', () => {
+      imageUpload.click();
+    });
+    
+    changeImageBtn.addEventListener('click', () => {
+      imageUpload.click();
+    });
+    
+    imageUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        if (file.size > 2 * 1024 * 1024) {
+          alert('File size exceeds 2MB limit. Please choose a smaller image.');
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const img = imagePreview.querySelector('img');
+          img.src = event.target.result;
+          imagePreview.style.display = 'block';
+          imageUploadContainer.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    // Close modal when clicking outside
     window.addEventListener('click', (e) => {
       if (e.target === editModal) {
         editModal.style.display = 'none';
