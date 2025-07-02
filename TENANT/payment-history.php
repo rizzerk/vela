@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once "../connection.php";
 
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION['role'] !== 'tenant') {
     header('Location: ../index.php');
@@ -7,6 +8,28 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION
 }
 
 $userName = $_SESSION['name'] ?? 'Tenant';
+$tenantId = $_SESSION['user_id'] ?? null;
+
+$paymentResults = null;
+
+if ($tenantId) {
+    $query = "SELECT 
+                p.amount_paid,
+                p.reference_num,
+                p.submitted_at AS date_paid,
+                p.status,
+                b.description AS transaction_type
+              FROM PAYMENT p
+              JOIN BILL b ON p.bill_id = b.bill_id
+              JOIN LEASE l ON b.lease_id = l.lease_id
+              WHERE l.tenant_id = ?
+              ORDER BY p.submitted_at DESC";
+
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $tenantId);
+    $stmt->execute();
+    $paymentResults = $stmt->get_result();
+}
 ?>
 
 <!DOCTYPE html>
@@ -14,13 +37,20 @@ $userName = $_SESSION['name'] ?? 'Tenant';
 <head>
     <meta charset="UTF-8">
     <title>Payment History - VELA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #ffffff 0%, #deecfb 100%);
-            margin: 0;
             padding-top: 80px;
+            color: #000000;
         }
 
         .container {
@@ -30,7 +60,7 @@ $userName = $_SESSION['name'] ?? 'Tenant';
         }
 
         h1.title {
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             color: #1666ba;
             font-weight: 800;
             text-align: center;
@@ -38,12 +68,12 @@ $userName = $_SESSION['name'] ?? 'Tenant';
         }
 
         .table-wrapper {
-            overflow-x: auto;
             background: #ffffff;
             padding: 2rem;
             border-radius: 16px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 8px rgba(22, 102, 186, 0.06);
             border: 1px solid #deecfb;
+            overflow-x: auto;
         }
 
         table {
@@ -53,18 +83,24 @@ $userName = $_SESSION['name'] ?? 'Tenant';
         }
 
         th, td {
-            padding: 0.75rem 1rem;
+            padding: 1rem;
             text-align: left;
-            border-bottom: 1px solid #e0e0e0;
         }
 
         th {
             background-color: #f0f6fd;
-            font-weight: 600;
             color: #1666ba;
+            font-size: 1rem;
+            font-weight: 600;
         }
 
-        td:last-child {
+        td {
+            background-color: #f9f9f9;
+            font-size: 0.95rem;
+        }
+
+        td:last-child,
+        th:last-child {
             text-align: right;
         }
 
@@ -72,7 +108,7 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             margin-top: 2rem;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            padding: 0 1rem;
         }
 
         .nav-links a {
@@ -90,11 +126,23 @@ $userName = $_SESSION['name'] ?? 'Tenant';
         }
 
         @media (max-width: 768px) {
-            table {
-                font-size: 0.9rem;
+            .container {
+                padding: 1rem;
             }
+
             h1.title {
                 font-size: 2rem;
+            }
+
+            table {
+                font-size: 0.85rem;
+                min-width: 100%;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: center;
             }
         }
     </style>
@@ -112,24 +160,24 @@ $userName = $_SESSION['name'] ?? 'Tenant';
                         <th>Transactions</th>
                         <th>Date</th>
                         <th>Transaction #</th>
-                        <th style="text-align:right;">Amount</th>
+                        <th>Amount</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Placeholder sample rows -->
-                    <tr>
-                        <td>Monthly Rent</td>
-                        <td>2025-06-05</td>
-                        <td>TRX-20250605</td>
-                        <td style="text-align:right;">₱5,000.00</td>
-                    </tr>
-                    <tr>
-                        <td>Late Fee</td>
-                        <td>2025-06-07</td>
-                        <td>TRX-20250607</td>
-                        <td style="text-align:right;">₱300.00</td>
-                    </tr>
-                    <!-- Backend data will go here -->
+                    <?php if ($paymentResults && $paymentResults->num_rows > 0): ?>
+                        <?php while ($row = $paymentResults->fetch_assoc()): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($row['transaction_type']) ?></td>
+                                <td><?= htmlspecialchars(date('Y-m-d', strtotime($row['date_paid']))) ?></td>
+                                <td><?= htmlspecialchars($row['reference_num']) ?></td>
+                                <td>₱<?= number_format($row['amount_paid'], 2) ?></td>
+                            </tr>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="4" style="text-align:center;">No payment history found.</td>
+                        </tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>

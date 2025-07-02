@@ -1,5 +1,6 @@
-<?php
+<?php 
 session_start();
+require_once "../connection.php";
 
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION['role'] !== 'tenant') {
     header('Location: ../index.php');
@@ -7,20 +8,24 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION
 }
 
 $userName = $_SESSION['name'] ?? 'Tenant';
+$userId = $_SESSION['user_id'] ?? 0;  // Make sure user_id is set in session on login
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Maintenance Request - VELA</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <style>
+        /* Reset and base */
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #ffffff 0%, #deecfb 100%);
             margin: 0;
-            padding: 80px 0 40px;
+            padding-top: 80px;
+            color: #333;
         }
 
         .container {
@@ -29,36 +34,44 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             padding: 2rem;
         }
 
-        .title {
-            font-size: 2.2rem;
+        h1.title {
+            font-size: 2.5rem;
             font-weight: 800;
             color: #1666ba;
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
         }
 
+        /* Flex container for form and requests */
         .maintenance-wrapper {
             display: flex;
             gap: 2rem;
-            flex-wrap: wrap;
+            flex-wrap: nowrap; /* Keep side-by-side */
+            justify-content: space-between;
+            align-items: flex-start;
         }
 
-        .form-section, .request-table {
-            flex: 1 1 45%;
+        /* Sections styling */
+        .form-section, .request-section {
+            flex: 1 1 48%;
             background: #fff;
             border-radius: 16px;
             padding: 2rem;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 8px rgba(22, 102, 186, 0.06);
             border: 1px solid #deecfb;
+            min-width: 320px;
+            max-height: 600px; /* optional for scrolling */
+            overflow-y: auto;
         }
 
-        .form-section h2,
-        .request-table h2 {
-            font-size: 1.4rem;
+        h2 {
+            font-size: 1.5rem;
             color: #1666ba;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
         }
 
+        /* Form elements */
         label {
             font-weight: 600;
             display: block;
@@ -67,20 +80,20 @@ $userName = $_SESSION['name'] ?? 'Tenant';
         }
 
         input[type="text"],
-        textarea {
+        textarea,
+        input[type="file"] {
             width: 100%;
             padding: 0.75rem;
             border-radius: 8px;
             border: 1px solid #ccc;
             background: #f2f7fb;
+            font-size: 0.95rem;
+            box-sizing: border-box;
         }
 
         input[type="file"] {
-            background: #f2f7fb;
-            padding: 0.75rem;
-            border-radius: 8px;
-            border: 1px dashed #999;
-            width: 100%;
+            border-style: dashed;
+            border-color: #999;
         }
 
         button {
@@ -91,6 +104,7 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             padding: 0.75rem 1.5rem;
             border-radius: 8px;
             cursor: pointer;
+            font-weight: 600;
             transition: background 0.3s ease;
         }
 
@@ -98,6 +112,7 @@ $userName = $_SESSION['name'] ?? 'Tenant';
             background: #104e91;
         }
 
+        /* Table styles */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -105,20 +120,30 @@ $userName = $_SESSION['name'] ?? 'Tenant';
         }
 
         th, td {
-            padding: 0.75rem;
+            padding: 0.75rem 1rem;
             text-align: left;
             border-bottom: 1px solid #e0e0e0;
+            font-size: 0.95rem;
         }
 
         th {
-            background: #f0f6fd;
-            font-weight: 600;
+            background-color: #f0f6fd;
             color: #1666ba;
+            font-weight: 600;
         }
 
+        /* Responsive: stack on small screens */
         @media (max-width: 768px) {
             .maintenance-wrapper {
+                flex-wrap: wrap;
                 flex-direction: column;
+            }
+
+            .form-section, .request-section {
+                flex: 1 1 100%;
+                max-height: none;
+                overflow-y: visible;
+                margin-bottom: 1.5rem;
             }
         }
     </style>
@@ -130,53 +155,69 @@ $userName = $_SESSION['name'] ?? 'Tenant';
         <h1 class="title">Maintenance Request</h1>
 
         <div class="maintenance-wrapper">
-            <!-- Form Section -->
-            <div class="form-section">
-                <h2>Submit a Request</h2>
+            <!-- Left: Maintenance Request Form -->
+            <section class="form-section" aria-labelledby="submit-request">
+                <h2 id="submit-request">Submit a Request</h2>
                 <form action="#" method="POST" enctype="multipart/form-data">
                     <label for="issueType">Issue Type</label>
-                    <input type="text" id="issueType" name="issueType" placeholder="e.g. Broken faucet" required>
+                    <input type="text" id="issueType" name="issueType" placeholder="e.g. Broken faucet" required />
 
                     <label for="description">Description</label>
                     <textarea id="description" name="description" rows="5" placeholder="Describe the issue in detail..." required></textarea>
 
                     <label for="imageUpload">Upload Image</label>
-                    <input type="file" id="imageUpload" name="imageUpload" accept="image/*">
+                    <input type="file" id="imageUpload" name="imageUpload" accept="image/*" />
 
                     <button type="submit">Submit</button>
                 </form>
-            </div>
+            </section>
 
-            <!-- My Requests Table -->
-            <div class="request-table">
-                <h2>My Requests</h2>
+            <!-- Right: User's Requests Table -->
+            <section class="request-section" aria-labelledby="my-requests">
+                <h2 id="my-requests">My Requests</h2>
                 <table>
                     <thead>
                         <tr>
-                            <th>Request ID</th>
+                            <th>ID</th>
                             <th>Type</th>
-                            <th>Date Submitted</th>
+                            <th>Date</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Example placeholder rows -->
-                        <tr>
-                            <td>#001</td>
-                            <td>Broken Window</td>
-                            <td>2025-06-20</td>
-                            <td>Pending</td>
-                        </tr>
-                        <tr>
-                            <td>#002</td>
-                            <td>Leaking Faucet</td>
-                            <td>2025-06-15</td>
-                            <td>Resolved</td>
-                        </tr>
-                        <!-- Real data will come from backend -->
+                        <?php
+                        if ($userId > 0) {
+                            $stmt = $conn->prepare("
+                                SELECT MR.request_id, MR.description, MR.requested_at, MR.status
+                                FROM MAINTENANCE_REQUEST MR
+                                JOIN LEASE L ON MR.lease_id = L.lease_id
+                                WHERE L.tenant_id = ?
+                                ORDER BY MR.requested_at DESC
+                            ");
+                            $stmt->bind_param("i", $userId);
+                            $stmt->execute();
+                            $result = $stmt->get_result();
+
+                            if ($result->num_rows === 0) {
+                                echo "<tr><td colspan='4' style='text-align:center;'>No maintenance requests found.</td></tr>";
+                            } else {
+                                while ($row = $result->fetch_assoc()) {
+                                    echo "<tr>
+                                            <td>#".htmlspecialchars($row['request_id'])."</td>
+                                            <td>".htmlspecialchars($row['description'])."</td>
+                                            <td>".htmlspecialchars(date('Y-m-d', strtotime($row['requested_at'])))."</td>
+                                            <td>".ucfirst(str_replace('_', ' ', htmlspecialchars($row['status'])))."</td>
+                                          </tr>";
+                                }
+                            }
+                            $stmt->close();
+                        } else {
+                            echo "<tr><td colspan='4' style='text-align:center;'>User not logged in properly.</td></tr>";
+                        }
+                        ?>
                     </tbody>
                 </table>
-            </div>
+            </section>
         </div>
     </div>
 </body>

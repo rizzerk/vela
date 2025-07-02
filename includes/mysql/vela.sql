@@ -107,3 +107,5 @@ CREATE TABLE ANNOUNCEMENT (
     created_at DATETIME,
     FOREIGN KEY (created_by) REFERENCES USERS(user_id)
 );
+
+
