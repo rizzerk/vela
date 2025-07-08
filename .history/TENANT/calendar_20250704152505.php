@@ -704,8 +704,6 @@ $currentMonthName = $monthNames[$currentMonth];
     </style>
 </head>
 <body>
-<?php include '../includes/navbar/tenant-navbar.php'?>
-
     <div class="main-content">
         <div class="header">
             <div class="page-title">

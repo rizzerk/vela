@@ -630,7 +630,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             <div class="notification-card">
                 <h3><i class="fas fa-bell"></i> Stay Updated on New Vacancies</h3>
                 <p>Be the first to know when new properties become available. Get instant notifications about vacancy openings that match your preferences and budget.</p>
-                <button class="notify-btn" onclick="window.location.href='registration.php'">Register for Vacancy Notifications</button>
+                <button class="notify-btn" onclick="registerForNotifications()">Register for Vacancy Notifications</button>
             </div>
         </div>
     </section>
@@ -762,7 +762,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             }
         }
 
-
+        function registerForNotifications() {
+            alert('Redirecting to notification registration...');
+            // You can redirect to a registration page or open a modal
+            // window.location.href = 'notification-signup.php';
+        }
     </script>
 </body>
 </html>

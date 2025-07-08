@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../connection.php';
+require_once 'connection.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -704,8 +704,6 @@ $currentMonthName = $monthNames[$currentMonth];
     </style>
 </head>
 <body>
-<?php include '../includes/navbar/tenant-navbar.php'?>
-
     <div class="main-content">
         <div class="header">
             <div class="page-title">
