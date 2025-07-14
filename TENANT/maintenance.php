@@ -1,4 +1,4 @@
-<?php 
+<?php  
 session_start();
 require_once "../connection.php";
 
@@ -8,7 +8,9 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION
 }
 
 $userName = $_SESSION['name'] ?? 'Tenant';
-$userId = $_SESSION['user_id'] ?? 0;  // Make sure user_id is set in session on login
+$userId = $_SESSION['user_id'] ?? 0;
+
+$message = ''; // Will hold success/error messages
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $issueType = trim($_POST["issueType"]);
@@ -48,15 +50,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $insertStmt->bind_param("iss", $leaseId, $description, $imagePath);
 
         if ($insertStmt->execute()) {
-            echo "<script>alert('Request submitted successfully.'); window.location.href = 'maintenance.php';</script>";
-            exit();
+            $message = "<span class='success-message'>Request submitted successfully.</span>";
         } else {
-            echo "<script>alert('Error submitting request.');</script>";
+            $message = "<span class='error-message'>Error submitting request.</span>";
         }
 
         $insertStmt->close();
     } else {
-        echo "<script>alert('No active lease found.');</script>";
+        $message = "<span class='error-message'>No active lease found. Please make sure you have an active lease before submitting a request.</span>";
     }
 
     $leaseStmt->close();
@@ -179,6 +180,31 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             font-weight: 600;
         }
 
+        .message-box {
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        /* Success message style */
+        .success-message {
+            display: inline-block;
+            padding: 0.75rem 1rem;
+            background-color: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #badbcc;
+            border-radius: 8px;
+        }
+
+        /* Error message style */
+        .error-message {
+            display: inline-block;
+            padding: 0.75rem 1rem;
+            background-color: #f8d7da;
+            color: #842029;
+            border: 1px solid #f5c2c7;
+            border-radius: 8px;
+        }
+
         @media (max-width: 768px) {
             .maintenance-wrapper {
                 flex-wrap: wrap;
@@ -204,6 +230,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <!-- Left: Maintenance Request Form -->
             <section class="form-section" aria-labelledby="submit-request">
                 <h2 id="submit-request">Submit a Request</h2>
+
+                <?php if (!empty($message)) : ?>
+                    <div class="message-box">
+                        <?php echo $message; ?>
+                    </div>
+                <?php endif; ?>
+
                 <form action="#" method="POST" enctype="multipart/form-data">
                     <label for="issueType">Issue Type</label>
                     <input type="text" id="issueType" name="issueType" placeholder="e.g. Broken faucet" required />
