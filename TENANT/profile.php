@@ -19,10 +19,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
 
     $updateStmt = $conn->prepare("UPDATE USERS SET name = ?, email = ?, phone = ? WHERE user_id = ?");
     $updateStmt->bind_param("sssi", $newName, $newEmail, $newPhone, $userId);
-    
+
     if ($updateStmt->execute()) {
         $successMsg = "Profile updated successfully!";
-        $_SESSION['name'] = $newName; // Update session
+        $_SESSION['name'] = $newName;
     } else {
         $successMsg = "Failed to update profile.";
     }
@@ -47,14 +47,12 @@ $leaseStmt->bind_param("i", $userId);
 $leaseStmt->execute();
 $leaseResult = $leaseStmt->get_result();
 $lease = $leaseResult->fetch_assoc();
-
-$conn->close();
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Tenant Profile - VELA</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
@@ -198,23 +196,23 @@ $conn->close();
     </style>
 </head>
 <body>
+
 <?php include '../includes/navbar/tenant-navbar.php'; ?>
 
 <div class="content-wrapper">
     <div class="profile-container">
+        <!-- Left: Profile Info -->
         <div class="left-profile">
+            <h2>ACCOUNT</h2>
             <div class="profile-avatar"></div>
-            <form method="POST">
-                <label>
-                    Name:
+            <form method="POST" action="">
+                <label>Name:
                     <input type="text" name="name" value="<?php echo htmlspecialchars($user['name']); ?>" required>
                 </label>
-                <label>
-                    Email:
+                <label>Email:
                     <input type="email" name="email" value="<?php echo htmlspecialchars($user['email']); ?>" required>
                 </label>
-                <label>
-                    Phone:
+                <label>Phone:
                     <input type="text" name="phone" value="<?php echo htmlspecialchars($user['phone']); ?>" required>
                 </label>
                 <button type="submit" name="update_profile" class="submit-btn">Save Changes</button>
@@ -223,8 +221,9 @@ $conn->close();
                 <?php endif; ?>
             </form>
         </div>
+
+        <!-- Right: Lease Info and Landlord Contact -->
         <div class="right-profile">
-            <h2>Account</h2>
             <div class="section-title">Lease Agreements</div>
             <?php if ($lease): ?>
                 <div class="lease-box">
@@ -237,7 +236,15 @@ $conn->close();
                     </a>
                 </div>
 
-                <div class="section-title">Landlord Contact</div>
+                <div class="section-title" style="margin-top: 2rem;">Landlord Contract</div>
+                <div class="lease-box">
+                    <p><strong>Contract for:</strong> <?php echo htmlspecialchars($lease['landlord_name']); ?></p>
+                    <a class="download-btn" href="landlord-contract.php">
+                        View Contract <i class="fas fa-download"></i>
+                    </a>
+                </div>
+
+                <div class="section-title" style="margin-top: 2rem;">Landlord Contact:</div>
                 <div class="lease-box">
                     <p><strong>Name:</strong> <?php echo htmlspecialchars($lease['landlord_name']); ?></p>
                     <p><strong>Email:</strong> <?php echo htmlspecialchars($lease['landlord_email']); ?></p>
@@ -254,5 +261,6 @@ $conn->close();
     </div>
 </div>
 
+<?php $conn->close(); ?>
 </body>
 </html>

@@ -9,6 +9,58 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION
 
 $userName = $_SESSION['name'] ?? 'Tenant';
 $userId = $_SESSION['user_id'] ?? 0;  // Make sure user_id is set in session on login
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $issueType = trim($_POST["issueType"]);
+    $description = trim($_POST["description"]);
+    $imagePath = null;
+
+    // Find active lease ID for this user
+    $leaseStmt = $conn->prepare("SELECT lease_id FROM LEASE WHERE tenant_id = ? AND active = 1 LIMIT 1");
+    $leaseStmt->bind_param("i", $userId);
+    $leaseStmt->execute();
+    $leaseResult = $leaseStmt->get_result();
+
+    if ($leaseResult && $leaseRow = $leaseResult->fetch_assoc()) {
+        $leaseId = $leaseRow['lease_id'];
+
+        // Handle image upload if any
+        if (!empty($_FILES['imageUpload']['name'])) {
+            $uploadDir = "../uploads/maintenance/";
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+
+            $fileTmp = $_FILES['imageUpload']['tmp_name'];
+            $fileName = basename($_FILES['imageUpload']['name']);
+            $targetFilePath = $uploadDir . time() . "_" . $fileName;
+
+            if (move_uploaded_file($fileTmp, $targetFilePath)) {
+                $imagePath = $targetFilePath;
+            }
+        }
+
+        // Insert into MAINTENANCE_REQUEST table with image path
+        $insertStmt = $conn->prepare("
+            INSERT INTO MAINTENANCE_REQUEST (lease_id, description, status, requested_at, updated_at, image_path)
+            VALUES (?, ?, 'pending', NOW(), NOW(), ?)
+        ");
+        $insertStmt->bind_param("iss", $leaseId, $description, $imagePath);
+
+        if ($insertStmt->execute()) {
+            echo "<script>alert('Request submitted successfully.'); window.location.href = 'maintenance.php';</script>";
+            exit();
+        } else {
+            echo "<script>alert('Error submitting request.');</script>";
+        }
+
+        $insertStmt->close();
+    } else {
+        echo "<script>alert('No active lease found.');</script>";
+    }
+
+    $leaseStmt->close();
+}
 ?>
 
 <!DOCTYPE html>
@@ -19,7 +71,6 @@ $userId = $_SESSION['user_id'] ?? 0;  // Make sure user_id is set in session on 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <style>
-        /* Reset and base */
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #ffffff 0%, #deecfb 100%);
@@ -42,16 +93,14 @@ $userId = $_SESSION['user_id'] ?? 0;  // Make sure user_id is set in session on 
             margin-bottom: 2.5rem;
         }
 
-        /* Flex container for form and requests */
         .maintenance-wrapper {
             display: flex;
             gap: 2rem;
-            flex-wrap: nowrap; /* Keep side-by-side */
+            flex-wrap: nowrap;
             justify-content: space-between;
             align-items: flex-start;
         }
 
-        /* Sections styling */
         .form-section, .request-section {
             flex: 1 1 48%;
             background: #fff;
@@ -60,7 +109,7 @@ $userId = $_SESSION['user_id'] ?? 0;  // Make sure user_id is set in session on 
             box-shadow: 0 2px 8px rgba(22, 102, 186, 0.06);
             border: 1px solid #deecfb;
             min-width: 320px;
-            max-height: 600px; /* optional for scrolling */
+            max-height: 600px;
             overflow-y: auto;
         }
 
@@ -71,7 +120,6 @@ $userId = $_SESSION['user_id'] ?? 0;  // Make sure user_id is set in session on 
             font-weight: 700;
         }
 
-        /* Form elements */
         label {
             font-weight: 600;
             display: block;
@@ -112,7 +160,6 @@ $userId = $_SESSION['user_id'] ?? 0;  // Make sure user_id is set in session on 
             background: #104e91;
         }
 
-        /* Table styles */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -132,7 +179,6 @@ $userId = $_SESSION['user_id'] ?? 0;  // Make sure user_id is set in session on 
             font-weight: 600;
         }
 
-        /* Responsive: stack on small screens */
         @media (max-width: 768px) {
             .maintenance-wrapper {
                 flex-wrap: wrap;
@@ -182,13 +228,14 @@ $userId = $_SESSION['user_id'] ?? 0;  // Make sure user_id is set in session on 
                             <th>Type</th>
                             <th>Date</th>
                             <th>Status</th>
+                            <th>Image</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php
                         if ($userId > 0) {
                             $stmt = $conn->prepare("
-                                SELECT MR.request_id, MR.description, MR.requested_at, MR.status
+                                SELECT MR.request_id, MR.description, MR.requested_at, MR.status, MR.image_path
                                 FROM MAINTENANCE_REQUEST MR
                                 JOIN LEASE L ON MR.lease_id = L.lease_id
                                 WHERE L.tenant_id = ?
@@ -199,20 +246,27 @@ $userId = $_SESSION['user_id'] ?? 0;  // Make sure user_id is set in session on 
                             $result = $stmt->get_result();
 
                             if ($result->num_rows === 0) {
-                                echo "<tr><td colspan='4' style='text-align:center;'>No maintenance requests found.</td></tr>";
+                                echo "<tr><td colspan='5' style='text-align:center;'>No maintenance requests found.</td></tr>";
                             } else {
                                 while ($row = $result->fetch_assoc()) {
                                     echo "<tr>
                                             <td>#".htmlspecialchars($row['request_id'])."</td>
                                             <td>".htmlspecialchars($row['description'])."</td>
                                             <td>".htmlspecialchars(date('Y-m-d', strtotime($row['requested_at'])))."</td>
-                                            <td>".ucfirst(str_replace('_', ' ', htmlspecialchars($row['status'])))."</td>
-                                          </tr>";
+                                            <td>".ucfirst(str_replace('_', ' ', htmlspecialchars($row['status'])))."</td>";
+
+                                    if (!empty($row['image_path'])) {
+                                        echo "<td><img src='" . htmlspecialchars($row['image_path']) . "' style='width:60px;'></td>";
+                                    } else {
+                                        echo "<td>N/A</td>";
+                                    }
+
+                                    echo "</tr>";
                                 }
                             }
                             $stmt->close();
                         } else {
-                            echo "<tr><td colspan='4' style='text-align:center;'>User not logged in properly.</td></tr>";
+                            echo "<tr><td colspan='5' style='text-align:center;'>User not logged in properly.</td></tr>";
                         }
                         ?>
                     </tbody>

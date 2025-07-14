@@ -218,23 +218,7 @@ for ($i = 0; $i < $totalCells; $i++) {
 </head>
 <body>
 
-<!-- Sidebar -->
-<div class="sidebar">
-  <div class="sidebar-header">
-    <h2>VELA</h2>
-  </div>
-  <ul class="nav-menu">
-    <li class="nav-item"><a href="dashboard.php" class="nav-link"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
-    <li class="nav-item"><a href="#" class="nav-link"><i class="fas fa-building"></i>Properties</a></li>
-    <li class="nav-item"><a href="#" class="nav-link"><i class="fas fa-chart-line"></i>Financial Reports</a></li>
-    <li class="nav-item"><a href="#" class="nav-link active"><i class="fas fa-tools"></i>Maintenance Requests</a></li>
-    <li class="nav-item"><a href="#" class="nav-link"><i class="fas fa-credit-card"></i>Payments</a></li>
-    <li class="nav-item"><a href="#" class="nav-link"><i class="fas fa-file-alt"></i>Tenant Applications</a></li>
-    <li class="nav-item"><a href="#" class="nav-link"><i class="fas fa-receipt"></i>Tenant Payments</a></li>
-    <li class="nav-item"><a href="#" class="nav-link"><i class="fas fa-history"></i>Tenant History</a></li>
-    <li class="nav-item"><a href="#" class="nav-link"><i class="fas fa-user"></i>Landlord Profile</a></li>
-  </ul>
-</div>
+<?php include ('../includes/navbar/landlord-sidebar.html'); ?>
 
 <!-- Main Content -->
 <div class="main-content">
