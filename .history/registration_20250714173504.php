@@ -297,7 +297,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                 
                 <?php if ($success): ?>
                     <div class="success-message">
-                        Registration successful! You can now <a href="index.php">login</a>.
+                        Registration successful! You can now <a href="">login</a>.
                     </div>
                 <?php elseif (!empty($errors)): ?>
                     <div class="error-message">

@@ -4,7 +4,7 @@ CREATE TABLE USERS (
     email VARCHAR(100) UNIQUE,
     phone VARCHAR(20),
     password VARCHAR(255),
-    role ENUM('tenant', 'landlord', 'general_user') NOT NULL,
+    role ENUM('tenant', 'landlord') NOT NULL,
 );
 
 CREATE TABLE PROPERTY (
@@ -32,8 +32,7 @@ CREATE TABLE APPLICATIONS (
     status ENUM('pending', 'approved', 'rejected'),
     submitted_at DATETIME,
     approved_at DATETIME,
-    occupation VARCHAR(100),
-    monthly_income INT,
+    documents VARCHAR(255),
     num_of_tenants INT,
     co_tenants VARCHAR(255),
     FOREIGN KEY (property_id) REFERENCES PROPERTY(property_id),
@@ -55,7 +54,6 @@ CREATE TABLE MAINTENANCE_REQUEST (
     request_id INT PRIMARY KEY AUTO_INCREMENT,
     lease_id INT,
     description TEXT,
-    image_path VARCHAR(255), 
     status ENUM('pending', 'in_progress', 'resolved'),
     requested_at DATETIME,
     updated_at DATETIME,
@@ -108,7 +106,5 @@ CREATE TABLE ANNOUNCEMENT (
     created_at DATETIME,
     FOREIGN KEY (created_by) REFERENCES USERS(user_id)
 );
-
-
 
 

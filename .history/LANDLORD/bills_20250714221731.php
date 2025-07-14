@@ -1,0 +1,177 @@
+<?php
+session_start();
+require_once '../connection.php';
+
+// Filter by bill type if specified
+$type_filter = isset($_GET['type']) ? $_GET['type'] : 'all';
+
+// Build query with optional filter
+$billsQuery = "SELECT b.*, p.title as property_title, 
+                      u.name as tenant_name, u.email as tenant_email
+               FROM BILL b
+               JOIN LEASE l ON b.lease_id = l.lease_id
+               JOIN PROPERTY p ON l.property_id = p.property_id
+               JOIN USERS u ON l.tenant_id = u.user_id";
+
+if ($type_filter !== 'all') {
+    $billsQuery .= " WHERE b.bill_type = '" . $conn->real_escape_string($type_filter) . "'";
+}
+
+$billsQuery .= " ORDER BY b.due_date DESC";
+$billsResult = $conn->query($billsQuery);
+$bills = $billsResult->fetch_all(MYSQLI_ASSOC);
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Bills</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .filter-btn {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .filter-btn.active {
+            background: #1666ba;
+            color: white;
+            border-color: #1666ba;
+        }
+        .bill-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            position: relative;
+        }
+        .bill-type {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            background: #f0f0f0;
+        }
+        .paid {
+            background-color: #e6ffe6;
+        }
+        .unpaid {
+            background-color: #ffe6e6;
+        }
+        .overdue {
+            background-color: #ffcccc;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <?php include "includes/navbar/navbarIN.html" ?>
+    
+    <div class="container">
+        <h1>Manage Bills</h1>
+        
+        <div class="filter-bar">
+            <a href="bills.php?type=all" class="filter-btn <?php echo $type_filter === 'all' ? 'active' : ''; ?>">
+                All Bills
+            </a>
+            <a href="bills.php?type=rent" class="filter-btn <?php echo $type_filter === 'rent' ? 'active' : ''; ?>">
+                Rent
+            </a>
+            <a href="bills.php?type=utility" class="filter-btn <?php echo $type_filter === 'utility' ? 'active' : ''; ?>">
+                Utilities
+            </a>
+            <a href="bills.php?type=penalty" class="filter-btn <?php echo $type_filter === 'penalty' ? 'active' : ''; ?>">
+                Penalties
+            </a>
+            <a href="bills.php?type=other" class="filter-btn <?php echo $type_filter === 'other' ? 'active' : ''; ?>">
+                Other
+            </a>
+        </div>
+        
+        <div class="action-buttons">
+            <button onclick="window.location.href='generate_monthly_bills.php'">
+                Generate Monthly Rent Bills
+            </button>
+            <button onclick="window.location.href='create-bill.php'">
+                Create Custom Bill
+            </button>
+        </div>
+        
+        <?php foreach ($bills as $bill): ?>
+            <div class="bill-card <?php echo $bill['status']; ?>">
+                <span class="bill-type"><?php echo ucfirst($bill['bill_type']); ?></span>
+                <h3><?php echo htmlspecialchars($bill['property_title']); ?></h3>
+                <p>Tenant: <?php echo htmlspecialchars($bill['tenant_name']); ?></p>
+                <p>Amount: ₱<?php echo number_format($bill['amount'], 2); ?></p>
+                <p>Due: <?php echo date('M d, Y', strtotime($bill['due_date'])); ?></p>
+                
+                <?php if ($bill['bill_type'] === 'rent' && $bill['billing_period_start']): ?>
+                    <p>Period: <?php echo date('M d', strtotime($bill['billing_period_start'])) . ' - ' . 
+                                  date('M d, Y', strtotime($bill['billing_period_end'])); ?></p>
+                <?php endif; ?>
+                
+                <?php if (!empty($bill['description'])): ?>
+                    <p>Description: <?php echo htmlspecialchars($bill['description']); ?></p>
+                <?php endif; ?>
+                
+                <p>Status: <strong><?php echo ucfirst($bill['status']); ?></strong></p>
+                
+                <?php if ($bill['status'] == 'unpaid' || $bill['status'] == 'overdue'): ?>
+                    <button onclick="markAsPaid(<?php echo $bill['bill_id']; ?>)">
+                        Mark as Paid
+                    </button>
+                <?php endif; ?>
+                
+                <button onclick="deleteBill(<?php echo $bill['bill_id']; ?>)">
+                    Delete Bill
+                </button>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <script>
+        function markAsPaid(billId) {
+            if (confirm('Mark this bill as paid?')) {
+                fetch('mark_paid.php?id=' + billId)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    });
+            }
+        }
+        
+        function deleteBill(billId) {
+            if (confirm('Are you sure you want to delete this bill?')) {
+                fetch('delete_bill.php?id=' + billId, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

@@ -64,8 +64,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                             header("Location: LANDLORD/dashboard.php");
                             exit;
                         } elseif ($user['role'] == 'general_user') {
-                            header("Location: index.php");
+                            // Stay on index.php (no redirection)
+                            // You may optionally set a session variable or message here
                         } else {
+                            // Optional: handle unknown roles
                             echo "Invalid user role.";
                         }
                         exit();

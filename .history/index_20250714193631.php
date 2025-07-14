@@ -57,17 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                         } catch (Exception $update_e) {
                         }
                         
-                        if ($user['role'] == 'tenant') {
-                            header("Location: TENANT/dashboard.php");
-                            exit;
-                        } elseif ($user['role'] == 'landlord') {
-                            header("Location: LANDLORD/dashboard.php");
-                            exit;
-                        } elseif ($user['role'] == 'general_user') {
-                            header("Location: index.php");
-                        } else {
-                            echo "Invalid user role.";
-                        }
+                        header("Location: " . ($user['role'] == 'tenant' ? 'TENANT/dashboard.php' : 'LANDLORD/dashboard.php'));
                         exit();
                     } else {
                         $error = "Invalid email or password";

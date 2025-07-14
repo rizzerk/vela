@@ -55,7 +55,6 @@ CREATE TABLE MAINTENANCE_REQUEST (
     request_id INT PRIMARY KEY AUTO_INCREMENT,
     lease_id INT,
     description TEXT,
-    image_path VARCHAR(255), 
     status ENUM('pending', 'in_progress', 'resolved'),
     requested_at DATETIME,
     updated_at DATETIME,
@@ -108,7 +107,5 @@ CREATE TABLE ANNOUNCEMENT (
     created_at DATETIME,
     FOREIGN KEY (created_by) REFERENCES USERS(user_id)
 );
-
-
 
 

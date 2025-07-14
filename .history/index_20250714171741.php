@@ -17,12 +17,6 @@ if ($conn) {
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['logout'])) {
-    session_destroy();
-    header("Location: index.php");
-    exit();
-}
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
     $email = trim($_POST['email']);
     $password = trim($_POST['password']);
@@ -57,17 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                         } catch (Exception $update_e) {
                         }
                         
-                        if ($user['role'] == 'tenant') {
-                            header("Location: TENANT/dashboard.php");
-                            exit;
-                        } elseif ($user['role'] == 'landlord') {
-                            header("Location: LANDLORD/dashboard.php");
-                            exit;
-                        } elseif ($user['role'] == 'general_user') {
-                            header("Location: index.php");
-                        } else {
-                            echo "Invalid user role.";
-                        }
+                        header("Location: " . ($user['role'] == 'tenant' ? 'TENANT/dashboard.php' : 'LANDLORD/dashboard.php'));
                         exit();
                     } else {
                         $error = "Invalid email or password";
@@ -138,6 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             justify-content: space-between;
             align-items: center;
             position: relative;
+            margin-top: 4rem;
             padding: 0 5rem;
             gap: 4rem;
             background: url('./images/landing-page.png');
@@ -257,70 +242,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             max-width: 1200px;
             margin: 0 auto;
         }
-
-        .user-welcome {
-            background: rgba(255, 255, 255, 0.12);
-            border-radius: 24px;
-            padding: 2rem;
-            border: 2px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 32px 80px rgba(0,0,0,0.15);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            text-align: center;
-            color: white;
-            width: 380px;
-        }
-        
-        .user-welcome h3 {
-            font-size: 1.8rem;
-            margin-bottom: 1rem;
-        }
-        
-        .user-welcome p {
-            margin-bottom: 1.5rem;
-            font-size: 1.1rem;
-        }
-        
-        .logout-btn {
-            background: linear-gradient(135deg, #ff4444, #cc0000);
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 15px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 1.1rem;
-            transition: all 0.4s ease;
-            box-shadow: 0 10px 30px rgba(255, 68, 68, 0.4);
-            width: 100%;
-        }
-        
-        .logout-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(255, 68, 68, 0.6);
-        }
-        
-        .user-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-        
-        .user-action-btn {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 0.8rem;
-            border-radius: 12px;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-        
-        .user-action-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
 
         .section-title {
             text-align: center;
@@ -646,36 +567,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
     </style>
 </head>
 <body>
-    <?php
-        include "includes/navbar/navbarOUT.html";
-    ?>
+    <?php include "includes/navbar/navbarOUT.html" ?>
     
     <section class="hero" id="home">
         <div class="hero-content">
             <h1>Find Your Next Home with Ease</h1>
             <p>Seamless rental experience, from browsing to moving in</p>
         </div>
-        
-        <?php if (isset($_SESSION['loggedin']) && $_SESSION['role'] == 'general_user'): ?>
-            <div class="user-welcome">
-                <h3>Welcome back, <?php echo htmlspecialchars($_SESSION['name']); ?>!</h3>
-                <p>You're logged in and ready to find your perfect home.</p>
-                
-                <div class="user-actions">
-                    <a href="my-applications.php" class="user-action-btn">
-                        <i class="fas fa-clipboard-list"></i> View My Applications
-                    </a>
-                    <a href="index.php#properties" class="user-action-btn">
-                        <i class="fas fa-search"></i> Browse Properties
-                    </a>
-                </div>
-                
-                <form method="POST" action="">
-                    <button type="submit" name="logout" class="logout-btn">Logout</button>
-                </form>
-            </div>
-
-            <?php else: ?>
         <div class="login-form" id="login">
             <h3>Login</h3>
             <?php if ($error): ?>
@@ -694,7 +592,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                 Don't have an account? <a href="registration.php" style="color: #7ab3ef; text-decoration: none;">Register here</a>
             </div>
         </div>
-        <?php endif; ?>
     </section>
 
     <!-- Features Section -->

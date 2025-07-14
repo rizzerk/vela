@@ -24,16 +24,11 @@ $debug_info = "User ID: $userId, ";
 
 if ($lease) {
     $debug_info .= "Lease ID: {$lease['lease_id']}, ";
-
-// Update the bill query to include bill_type
-$billQuery = "SELECT bill_id, amount, due_date, status, description, 
+    $billQuery = "SELECT bill_id, amount, due_date, status, description, 
                      billing_period_start, billing_period_end, bill_type
               FROM BILL 
               WHERE lease_id = ? 
-              ORDER BY due_date DESC";
-
-
-
+              ORDER BY due_date DESC LIMIT 1";
     $billStmt = $conn->prepare($billQuery);
     $billStmt->bind_param("i", $lease['lease_id']);
     $billStmt->execute();
@@ -365,20 +360,14 @@ $billQuery = "SELECT bill_id, amount, due_date, status, description,
                 <div class="no-bills">No bills found</div>
             <?php else: ?>
                 <?php foreach ($bills as $bill): ?>
-
-
-
-<div class="bill-item <?php echo $bill['status']; ?>">
+                    <div class="bill-item <?php echo $bill['status']; ?>">
     <div class="bill-info">
-        <div class="bill-type"><?php echo ucfirst($bill['bill_type']); ?></div>
         <div class="bill-amount">₱<?php echo number_format($bill['amount'], 2); ?></div>
         <div class="bill-due">Due: <?php echo date('M d, Y', strtotime($bill['due_date'])); ?></div>
-        <?php if ($bill['bill_type'] === 'rent' && $bill['billing_period_start']): ?>
-            <div class="bill-period">
-                Period: <?php echo date('M d', strtotime($bill['billing_period_start'])) . ' - ' . 
-                              date('M d, Y', strtotime($bill['billing_period_end'])); ?>
-            </div>
-        <?php endif; ?>
+        <div class="bill-period">
+            Period: <?php echo date('M d', strtotime($bill['billing_period_start'])) . ' - ' . 
+                          date('M d, Y', strtotime($bill['billing_period_end'])); ?>
+        </div>
         <?php if ($bill['description']): ?>
             <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b; font-weight: 500;">
                 <?php echo htmlspecialchars($bill['description']); ?>
@@ -389,12 +378,6 @@ $billQuery = "SELECT bill_id, amount, due_date, status, description,
         <?php echo ucfirst($bill['status']); ?>
     </div>
 </div>
-
-
-
-
-
-
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
