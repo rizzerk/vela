@@ -1,4 +1,4 @@
-<?php
+<?php 
 session_start();
 require_once '../connection.php';
 
@@ -76,31 +76,24 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
             background-color: #f9fafb;
         }
 
-        .status {
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-align: center;
-            display: inline-block;
+        .status-dropdown {
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            color: #333;
         }
-
-        .pending { background-color: #fcd34d; color: #92400e; }
-        .verified { background-color: #4ade80; color: #065f46; }
-        .rejected { background-color: #f87171; color: #7f1d1d; }
 
         .download-icon {
             color: #1666ba;
             font-size: 1rem;
         }
 
-        .no-payments {
-            padding: 2rem;
+        .no-record {
             text-align: center;
-            color: #64748b;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+            color: #999;
+            padding: 1rem;
         }
     </style>
 </head>
@@ -110,31 +103,35 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     <div class="main-content">
         <h1>Payments</h1>
 
-        <?php if (empty($payments)): ?>
-            <div class="no-payments">
-                <i class="fas fa-file-invoice-dollar" style="font-size:2rem;"></i>
-                <p>No payment records found.</p>
-            </div>
-        <?php else: ?>
-            <table>
-                <thead>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tenant</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Proof of Payment</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($payments)): ?>
                     <tr>
-                        <th>Tenant</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th>Proof of Payment</th>
-                        <th>Amount</th>
+                        <td colspan="5" class="no-record">
+                            <i class="fas fa-file-invoice-dollar" style="font-size:1.5rem;"></i><br>
+                            No payment records found.
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
+                <?php else: ?>
                     <?php foreach ($payments as $payment): ?>
                         <tr>
                             <td><?= htmlspecialchars($payment['tenant_name']) ?></td>
                             <td><?= date('M d, Y H:i', strtotime($payment['submitted_at'])) ?></td>
                             <td>
-                                <span class="status <?= strtolower($payment['status']) ?>">
-                                    <?= ucfirst($payment['status']) ?>
-                                </span>
+                                <select class="status-dropdown" onchange="updatePaymentStatus(<?= $payment['payment_id'] ?>, this.value)">
+                                    <option value="pending" <?= $payment['status'] === 'pending' ? 'selected' : '' ?>>Pending</option>
+                                    <option value="confirmed" <?= $payment['status'] === 'confirmed' ? 'selected' : '' ?>>Confirmed</option>
+                                    <option value="rejected" <?= $payment['status'] === 'rejected' ? 'selected' : '' ?>>Rejected</option>
+                                </select>
                             </td>
                             <td>
                                 <?php if (!empty($payment['proof_of_payment'])): ?>
@@ -142,15 +139,29 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                                         <i class="fas fa-download download-icon"></i>
                                     </a>
                                 <?php else: ?>
-                                    <em style="color:#94a3b8;">No file</em>
+                                    <em style="color:#aaa;">No file</em>
                                 <?php endif; ?>
                             </td>
                             <td>₱<?= number_format($payment['amount_paid'], 2) ?></td>
                         </tr>
                     <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
     </div>
+
+    <script>
+        function updatePaymentStatus(paymentId, newStatus) {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "update-payment-status.php", true);
+            xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            xhr.onload = function() {
+                if (xhr.status !== 200) {
+                    alert("Failed to update payment status.");
+                }
+            };
+            xhr.send("payment_id=" + paymentId + "&status=" + newStatus);
+        }
+    </script>
 </body>
 </html>
