@@ -184,6 +184,29 @@ function getFirstDayOfMonth($month, $year) {
             gap: 10px;
         }
 
+        .view-dues-btn {
+            background: #1666ba;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .view-dues-btn:hover {
+            background: #0d4a8a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .view-dues-btn i {
+            font-size: 1rem;
+        }
+
         .calendar-wrapper {
             display: flex;
             gap: 30px;
@@ -651,6 +674,11 @@ function getFirstDayOfMonth($month, $year) {
                 gap: 15px;
             }
             
+            .view-dues-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
             .calendar-table {
                 grid-template-columns: repeat(7, 1fr);
             }
@@ -813,6 +841,9 @@ function getFirstDayOfMonth($month, $year) {
             <div class="page-title">
                 <i class="fas fa-calendar-alt"></i> Tenant Calendar
             </div>
+            <a href="view-dues.php" class="view-dues-btn">
+                <i class="fas fa-receipt"></i> View Dues
+            </a>
         </div>
 
         <div class="calendar-wrapper">

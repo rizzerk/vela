@@ -696,6 +696,8 @@ function getStatusBadge($status) {
         </h1>
     </div>
 
+    <?php include '../includes/navbar/tenant-navbar.php'?>
+
     <div class="main-container">
         <div class="dues-container">
             <?php if ($lease): ?>
