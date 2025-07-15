@@ -6,10 +6,8 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] != 'tenant') {
 }
 $fullName = isset($_SESSION['name']) ? $_SESSION['name'] : 'User';
 
-// Get current page to set active nav item
 $currentPage = basename($_SERVER['PHP_SELF']);
 
-// Fetch notifications for dropdown
 if (file_exists('../../connection.php')) {
     require_once '../../connection.php';
 } elseif (file_exists('../connection.php')) {
@@ -24,7 +22,6 @@ $tenant_id = $_SESSION['user_id'] ?? 1;
 
 try {
     if (isset($conn)) {
-        // Count unpaid/overdue bills
         $query = "SELECT COUNT(*) as count 
                  FROM BILL b 
                  JOIN LEASE l ON b.lease_id = l.lease_id 
@@ -36,7 +33,6 @@ try {
         $result = $stmt->get_result();
         $notification_count += $result->fetch_assoc()['count'];
         
-        // Count recent announcements
         $query = "SELECT COUNT(*) as count 
                  FROM ANNOUNCEMENT 
                  WHERE visible_to IN ('tenant', 'all') 
@@ -45,7 +41,6 @@ try {
         $result = $conn->query($query);
         $notification_count += $result->fetch_assoc()['count'];
         
-        // Get recent notifications for dropdown
         $query = "SELECT 'bill' as type, CONCAT('Bill: ₱', amount, ' - ', description) as message, 
                          due_date as date, 'medium' as priority
                   FROM BILL b 

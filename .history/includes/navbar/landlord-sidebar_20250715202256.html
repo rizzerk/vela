@@ -1,71 +1,3 @@
-<?php
-session_start();
-if (!isset($_SESSION['loggedin']) || $_SESSION['role'] != 'tenant') {
-    header("Location: ../../index.php");
-    exit();
-}
-$fullName = isset($_SESSION['name']) ? $_SESSION['name'] : 'User';
-
-// Get current page to set active nav item
-$currentPage = basename($_SERVER['PHP_SELF']);
-
-// Fetch notifications for dropdown
-if (file_exists('../../connection.php')) {
-    require_once '../../connection.php';
-} elseif (file_exists('../connection.php')) {
-    require_once '../connection.php';
-} else {
-    require_once 'connection.php';
-}
-
-$notifications = [];
-$notification_count = 0;
-$tenant_id = $_SESSION['user_id'] ?? 1;
-
-try {
-    if (isset($conn)) {
-        // Count unpaid/overdue bills
-        $query = "SELECT COUNT(*) as count 
-                 FROM BILL b 
-                 JOIN LEASE l ON b.lease_id = l.lease_id 
-                 WHERE l.tenant_id = ? AND b.status IN ('unpaid', 'overdue')";
-        
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("i", $tenant_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $notification_count += $result->fetch_assoc()['count'];
-        
-        // Count recent announcements
-        $query = "SELECT COUNT(*) as count 
-                 FROM ANNOUNCEMENT 
-                 WHERE visible_to IN ('tenant', 'all') 
-                 AND created_at > DATE_SUB(NOW(), INTERVAL 7 DAY)";
-        
-        $result = $conn->query($query);
-        $notification_count += $result->fetch_assoc()['count'];
-        
-        // Get recent notifications for dropdown
-        $query = "SELECT 'bill' as type, CONCAT('Bill: ₱', amount, ' - ', description) as message, 
-                         due_date as date, 'medium' as priority
-                  FROM BILL b 
-                  JOIN LEASE l ON b.lease_id = l.lease_id
-                  WHERE l.tenant_id = ? AND b.status IN ('unpaid', 'overdue')
-                  ORDER BY due_date DESC LIMIT 5";
-        
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("i", $tenant_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        if ($result) {
-            $notifications = $result->fetch_all(MYSQLI_ASSOC);
-        }
-    }
-} catch (Exception $e) {
-    error_log("Notifications error: " . $e->getMessage());
-}
-?>
-
 <style>
 .tenant-navbar {
     background: #ffffff;
@@ -369,15 +301,13 @@ try {
 </style>
 
 <nav class="tenant-navbar">
-    <a href="dashboard.php" class="tenant-logo">VELA</a>
+    <a href="dashboard.html" class="tenant-logo">VELA</a>
     <ul class="tenant-nav-links">
-        <li><a href="dashboard.php" class="nav-link <?= $currentPage === 'dashboard.php' ? 'active' : '' ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+        <li><a href="dashboard.html" class="nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
         <li class="notification-icon" style="position: relative;">
-            <a href="notifications.php" class="nav-link <?= $currentPage === 'notifications.php' ? 'active' : '' ?>">
+            <a href="notifications.html" class="nav-link">
                 <i class="fas fa-bell"></i> Notifications
-                <?php if ($notification_count > 0): ?>
-                    <span class="notification-badge"><?= $notification_count ?></span>
-                <?php endif; ?>
+                <span class="notification-badge">3</span>
             </a>
             
             <div class="notification-dropdown" id="notificationDropdown">
@@ -386,46 +316,31 @@ try {
                 </div>
                 
                 <div class="notification-list">
-                    <?php if (empty($notifications)): ?>
-                        <div class="notification-empty">
-                            <i class="fas fa-bell"></i>
-                            <p>No new notifications</p>
+                    <div class="dropdown-notification medium">
+                        <div class="dropdown-notification-icon">
+                            <i class="fas fa-file-invoice-dollar"></i>
                         </div>
-                    <?php else: ?>
-                        <?php foreach ($notifications as $notification): ?>
-                            <div class="dropdown-notification <?= $notification['priority'] ?>">
-                                <div class="dropdown-notification-icon">
-                                    <?php if ($notification['type'] === 'bill'): ?>
-                                        <i class="fas fa-file-invoice-dollar"></i>
-                                    <?php elseif ($notification['type'] === 'payment'): ?>
-                                        <i class="fas fa-credit-card"></i>
-                                    <?php else: ?>
-                                        <i class="fas fa-tools"></i>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="dropdown-notification-content">
-                                    <div class="dropdown-notification-message"><?= htmlspecialchars($notification['message']) ?></div>
-                                    <div class="dropdown-notification-time"><?= date('M j, g:i A', strtotime($notification['date'])) ?></div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                        <div class="dropdown-notification-content">
+                            <div class="dropdown-notification-message">New bill available</div>
+                            <div class="dropdown-notification-time">Dec 15, 2:30 PM</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="notification-footer">
-                    <a href="../TENANT/notifications.php">See all notifications</a>
+                    <a href="notifications.html">See all notifications</a>
                 </div>
             </div>
         </li>
         <li class="profile-dropdown">
             <button class="profile-btn" id="profileBtn">
                 <i class="fas fa-user-circle"></i>
-                <span><?php echo htmlspecialchars($fullName); ?></span>
+                <span>User Name</span>
                 <i class="fas fa-chevron-down"></i>
             </button>
             <div class="dropdown-menu" id="dropdownMenu">
-                <a href="profile.php"><i class="fas fa-user"></i> Profile</a>
-                <a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <a href="profile.html"><i class="fas fa-user"></i> Profile</a>
+                <a href="logout.html"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </li>
     </ul>
@@ -458,19 +373,11 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Remove the client-side active state management since we're using server-side detection
-
 document.querySelectorAll('.dropdown-menu a').forEach(link => {
     link.addEventListener('click', function(e) {
         e.preventDefault();
         const href = this.getAttribute('href');
-        
-        if (href === 'profile.php') {
-            window.location.href = 'profile.php';
-        } else if (href === '../logout.php') {
-            window.location.href = '../logout.php';
-        }
-        
+        window.location.href = href;
         dropdownMenu.classList.remove('show');
     });
 });
@@ -481,11 +388,9 @@ function toggleNotifications(event) {
     dropdown.classList.toggle('show');
 }
 
-// Handle notification dropdown toggle on notifications page
 document.addEventListener('DOMContentLoaded', function() {
     const notificationLink = document.querySelector('.notification-icon .nav-link');
     if (notificationLink && notificationLink.classList.contains('active')) {
-        // If on notifications page, make the link clickable to toggle dropdown
         notificationLink.addEventListener('click', function(e) {
             e.preventDefault();
             toggleNotifications(e);
@@ -493,7 +398,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Close notification dropdown when clicking outside
 document.addEventListener('click', function(event) {
     const notificationIcon = document.querySelector('.notification-icon');
     const dropdown = document.getElementById('notificationDropdown');

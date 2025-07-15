@@ -193,7 +193,7 @@ if ($lease) {
         
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            grid-template-columns: 1.5fr 1fr;
             gap: 2rem;
             min-height: calc(100vh - 200px);
         }
@@ -542,8 +542,8 @@ if ($lease) {
         
         .calendar-day {
             background: white;
-            height: 80px;
-            padding: 6px;
+            height: 110px;
+            padding: 8px;
             position: relative;
             transition: all 0.2s ease;
             display: flex;

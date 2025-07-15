@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Landlord Dashboard - VELA</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #ffffff 0%, #deecfb 100%);
+            color: #000000;
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 8rem 2rem 2rem;
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 4rem;
+            background: #ffffff;
+            padding: 3rem 2rem;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(22, 102, 186, 0.08);
+            border: 1px solid rgba(222, 236, 251, 0.5);
+        }
+
+        .welcome-title {
+            font-size: 2.8rem;
+            color: #1666ba;
+            font-weight: 800;
+            margin-bottom: 0.8rem;
+            letter-spacing: -0.02em;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.2rem;
+            color: #000000;
+            opacity: 0.6;
+            font-weight: 400;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .stats-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(22, 102, 186, 0.08);
+            border: 1px solid rgba(222, 236, 251, 0.5);
+        }
+
+        .stats-title {
+            font-size: 1.3rem;
+            color: #1666ba;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .property-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .property-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            background: #deecfb;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+        }
+
+        .property-row:hover {
+            background: #bedaf7;
+        }
+
+        .property-row.total {
+            background: #1666ba;
+            color: #ffffff;
+            font-weight: 700;
+            margin-top: 0.5rem;
+        }
+
+        .property-name {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #000000;
+        }
+
+        .property-row.total .property-name {
+            color: #ffffff;
+        }
+
+        .property-count {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1666ba;
+        }
+
+        .property-row.total .property-count {
+            color: #ffffff;
+        }
+
+        .status-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .status-item {
+            text-align: center;
+            padding: 1.5rem 1rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .status-item.vacant {
+            background: #bedaf7;
+        }
+
+        .status-item.occupied {
+            background: #7ab3ef;
+        }
+
+        .status-item.maintenance {
+            background: #368ce7;
+        }
+
+        .status-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .status-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-item.vacant .status-number {
+            color: #1666ba;
+        }
+
+        .status-item.occupied .status-number,
+        .status-item.maintenance .status-number {
+            color: #ffffff;
+        }
+
+        .status-label {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .status-item.vacant .status-label {
+            color: #1666ba;
+        }
+
+        .status-item.occupied .status-label,
+        .status-item.maintenance .status-label {
+            color: #ffffff;
+        }
+
+        .announcements-section {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(22, 102, 186, 0.08);
+            border: 1px solid rgba(222, 236, 251, 0.5);
+        }
+
+        .announcements-title {
+            font-size: 1.5rem;
+            color: #1666ba;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .announcement-item {
+            padding: 1.5rem;
+            background: #deecfb;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #368ce7;
+        }
+
+        .announcement-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .announcement-date {
+            font-size: 0.8rem;
+            color: #1666ba;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .announcement-text {
+            font-size: 1rem;
+            color: #000000;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 6rem 1rem 2rem;
+            }
+            
+            .welcome-title {
+                font-size: 2rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .property-stats,
+            .status-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="welcome-section">
+            <h1 class="welcome-title">Landlord Dashboard</h1>
+            <p class="welcome-subtitle">Manage your properties and tenants efficiently</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stats-card">
+                <h2 class="stats-title">
+                    <i class="fas fa-building"></i>
+                    Property Overview
+                </h2>
+                <div class="property-list">
+                    <div class="property-row">
+                        <span class="property-name">Condo 1</span>
+                        <span class="property-count">1</span>
+                    </div>
+                    <div class="property-row">
+                        <span class="property-name">Condo 2</span>
+                        <span class="property-count">1</span>
+                    </div>
+                    <div class="property-row">
+                        <span class="property-name">DECA (Big Rooms)</span>
+                        <span class="property-count">2</span>
+                    </div>
+                    <div class="property-row">
+                        <span class="property-name">DECA (Small Rooms)</span>
+                        <span class="property-count">2</span>
+                    </div>
+                    <div class="property-row">
+                        <span class="property-name">Jacosalem Room</span>
+                        <span class="property-count">1</span>
+                    </div>
+                    <div class="property-row">
+                        <span class="property-name">Cogon Rooms</span>
+                        <span class="property-count">5</span>
+                    </div>
+                    <div class="property-row total">
+                        <span class="property-name">Total</span>
+                        <span class="property-count">12</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-card">
+                <h2 class="stats-title">
+                    <i class="fas fa-chart-pie"></i>
+                    Property Status
+                </h2>
+                <div class="status-stats">
+                    <div class="status-item vacant">
+                        <div class="status-number">3</div>
+                        <div class="status-label">Vacant</div>
+                    </div>
+                    <div class="status-item occupied">
+                        <div class="status-number">8</div>
+                        <div class="status-label">Occupied</div>
+                    </div>
+                    <div class="status-item maintenance">
+                        <div class="status-number">1</div>
+                        <div class="status-label">Under Maintenance</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="announcements-section">
+            <h2 class="announcements-title">
+                <i class="fas fa-bullhorn"></i>
+                Recent Announcements
+            </h2>
+            <div class="announcement-item">
+                <div class="announcement-date">December 15, 2024</div>
+                <div class="announcement-text">
+                    Scheduled maintenance for Building A elevator will take place on December 20th from 9 AM to 3 PM. Please use the stairs during this time.
+                </div>
+            </div>
+            <div class="announcement-item">
+                <div class="announcement-date">December 12, 2024</div>
+                <div class="announcement-text">
+                    New parking regulations will be implemented starting January 1st, 2025. All tenants must register their vehicles with the management office.
+                </div>
+            </div>
+            <div class="announcement-item">
+                <div class="announcement-date">December 10, 2024</div>
+                <div class="announcement-text">
+                    Holiday office hours: The management office will be closed on December 25th and January 1st. Emergency contact numbers remain available 24/7.
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

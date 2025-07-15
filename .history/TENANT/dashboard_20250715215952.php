@@ -190,42 +190,6 @@ if ($lease) {
             margin: 0 auto;
             padding: 2.5rem;
         }
-        
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 2rem;
-            min-height: calc(100vh - 200px);
-        }
-        
-        .left-column, .right-column {
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-            height: 100%;
-        }
-        
-        .calendar-widget {
-            flex: 2;
-            min-height: 500px;
-        }
-        
-        .left-column .bills-section {
-            flex: 1;
-            min-height: 300px;
-        }
-        
-        .right-column .bills-section {
-            flex: 2;
-            min-height: 500px;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        
-        .actions-section {
-            flex: 1;
-            min-height: 200px;
-        }
 
         .bills-section {
             background: #ffffff;
@@ -233,6 +197,7 @@ if ($lease) {
             padding: 2rem;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
             border: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
         }
 
         .filter-section {
@@ -286,14 +251,14 @@ if ($lease) {
         }
 
         .bill-item {
-            border-radius: 12px;
+            border-radius: 16px;
             background: #ffffff;
             border: 1px solid #e2e8f0;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1.25rem;
-            margin-bottom: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
             transition: all 0.2s ease;
         }
 
@@ -398,6 +363,7 @@ if ($lease) {
             background: linear-gradient(135deg, #1666ba 0%, #368ce7 100%);
             border-radius: 12px;
             padding: 1.25rem;
+            margin-bottom: 1rem;
             color: #ffffff;
             box-shadow: 0 4px 6px -1px rgba(22, 102, 186, 0.1), 0 2px 4px -1px rgba(22, 102, 186, 0.05);
         }
@@ -425,24 +391,20 @@ if ($lease) {
 
         .actions-grid {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 1rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
         }
 
         .action-card {
             background: #1666ba;
             border-radius: 12px;
-            padding: 1rem;
+            padding: 1.5rem;
             border: none;
             cursor: pointer;
             transition: all 0.3s ease;
             text-align: center;
             color: #ffffff;
             box-shadow: 0 4px 6px -1px rgba(22, 102, 186, 0.1), 0 2px 4px -1px rgba(22, 102, 186, 0.06);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
         }
 
         .action-card:hover {
@@ -452,12 +414,13 @@ if ($lease) {
         }
 
         .action-icon {
-            font-size: 1.25rem;
+            font-size: 2rem;
             color: #ffffff;
+            margin-bottom: 1rem;
         }
 
         .action-title {
-            font-size: 0.95rem;
+            font-size: 1.125rem;
             font-weight: 600;
             color: #ffffff;
             letter-spacing: -0.025em;
@@ -478,6 +441,7 @@ if ($lease) {
             padding: 2rem;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
             border: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
         }
         
         .calendar-header {
@@ -543,7 +507,7 @@ if ($lease) {
         .calendar-day {
             background: white;
             height: 80px;
-            padding: 6px;
+            padding: 5px;
             position: relative;
             transition: all 0.2s ease;
             display: flex;
@@ -655,11 +619,6 @@ if ($lease) {
             .content-wrapper {
                 padding: 1rem;
             }
-            
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
 
             .section-header {
                 flex-direction: column;
@@ -704,230 +663,217 @@ if ($lease) {
     <?php include '../includes/navbar/tenant-navbar.php'; ?>
 
     <div class="content-wrapper">
-        <div class="section-header">
-            <h2 class="section-title">Dashboard</h2>
-            <div class="welcome-text">Welcome back, <?php echo htmlspecialchars($userName); ?>!</div>
+        <div class="bills-section">
+            <div class="section-header">
+                <h2 class="section-title">Payment Status</h2>
+                <div class="welcome-text">Welcome back, <?php echo htmlspecialchars($userName); ?>!</div>
+            </div>
+
+            <!-- Filter buttons -->
+            <div class="filter-section">
+                <button class="filter-btn <?= $filter === 'all' ? 'active' : '' ?>" onclick="setFilter('all')">All</button>
+                <button class="filter-btn <?= $filter === 'paid' ? 'active' : '' ?>" onclick="setFilter('paid')">Paid</button>
+                <button class="filter-btn <?= $filter === 'unpaid' ? 'active' : '' ?>" onclick="setFilter('unpaid')">Unpaid</button>
+                <button class="filter-btn <?= $filter === 'pending' ? 'active' : '' ?>" onclick="setFilter('pending')">Pending</button>
+                <button class="filter-btn <?= $filter === 'rejected' ? 'active' : '' ?>" onclick="setFilter('rejected')">Rejected</button>
+                <button class="filter-btn <?= $filter === 'overdue' ? 'active' : '' ?>" onclick="setFilter('overdue')">Overdue</button>
+            </div>
+
+            <?php if (empty($bills)): ?>
+                <div class="no-bills">No bills found for this filter</div>
+            <?php else: ?>
+                <?php foreach ($bills as $bill): ?>
+                    <div class="bill-item">
+                        <div class="bill-info">
+                            <span class="bill-type <?= strtolower($bill['bill_type']) ?>">
+                                <?= ucfirst($bill['bill_type']) ?>
+                            </span>
+                            <div class="bill-amount">₱<?= number_format($bill['amount'], 2) ?></div>
+                            <div class="bill-due">Due: <?= date('M d, Y', strtotime($bill['due_date'])) ?></div>
+                            <?php if ($bill['billing_period_start'] && $bill['billing_period_end']): ?>
+                                <div class="bill-period">
+                                    Period: <?= date('M d', strtotime($bill['billing_period_start'])) . ' - ' .
+                                                date('M d, Y', strtotime($bill['billing_period_end'])) ?>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($bill['description']): ?>
+                                <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b; font-weight: 500;">
+                                    <?= htmlspecialchars($bill['description']) ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="bill-status 
+                            <?php if ($bill['payment_status'] === 'rejected'): ?>
+                                status-rejected">Payment Rejected
+                        <?php elseif ($bill['payment_status'] === 'pending'): ?>
+                            status-pending">Payment Pending
+                        <?php elseif ($bill['payment_status'] === 'verified'): ?>
+                            status-paid">Payment Verified
+                        <?php elseif ($bill['bill_status'] === 'overdue'): ?>
+                            status-overdue">Overdue
+                        <?php elseif ($bill['bill_status'] === 'paid'): ?>
+                            status-paid">Paid
+                        <?php else: ?>
+                            status-unpaid">Unpaid
+                        <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
-        
-        <div class="dashboard-grid">
-            <div class="left-column">
-                <div class="calendar-widget">
-                    <div class="section-header">
-                        <h2 class="section-title">Calendar</h2>
-                    </div>
-                    
-                    <?php
-                    // Get current month and year for calendar
-                    $currentMonth = isset($_GET['month']) ? intval($_GET['month']) : date('n');
-                    $currentYear = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
-                    
-                    // Handle month navigation
-                    if (isset($_GET['prev'])) {
-                        $currentMonth--;
-                        if ($currentMonth < 1) {
-                            $currentMonth = 12;
-                            $currentYear--;
-                        }
-                    } elseif (isset($_GET['next'])) {
-                        $currentMonth++;
-                        if ($currentMonth > 12) {
-                            $currentMonth = 1;
-                            $currentYear++;
-                        }
-                    }
-                    
-                    $monthNames = [
-                        1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April', 
-                        5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August', 
-                        9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'
-                    ];
-                    $currentMonthName = $monthNames[$currentMonth];
-                    
-                    function getDaysInMonth($month, $year) {
-                        return date('t', strtotime("$year-$month-01"));
-                    }
-                    
-                    function getFirstDayOfMonth($month, $year) {
-                        return date('w', strtotime("$year-$month-01"));
-                    }
-                    ?>
-                    
-                    <div class="calendar-header">
-                        <div class="month-nav">
-                            <a href="?prev=1&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?= $filter ?>">
-                                <button><i class="fas fa-chevron-left"></i></button>
-                            </a>
-                            <div class="month-title"><?php echo $currentMonthName . ' ' . $currentYear; ?></div>
-                            <a href="?next=1&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?= $filter ?>">
-                                <button><i class="fas fa-chevron-right"></i></button>
-                            </a>
+
+        <div class="bills-section">
+            <div class="section-header">
+                <h2 class="section-title">Notices</h2>
+                <span onclick="viewAllNotices()" style="color: #1666ba; cursor: pointer; font-weight: 500;">
+                    View All
+                </span>
+            </div>
+            
+            <div class="notice-section">
+            <?php if (!empty($announcements)): ?>
+                <?php foreach ($announcements as $index => $announcement): ?>
+                    <div style="<?= $index > 0 ? 'border-top: 1px solid rgba(255,255,255,0.2); padding-top: 1rem; margin-top: 1rem;' : '' ?>">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                            <h3 style="font-size: 1.125rem; font-weight: 600; margin: 0; color: #ffffff;"><?= htmlspecialchars($announcement['title']) ?></h3>
+                            <span style="background: rgba(255,255,255,0.2); padding: 0.2rem 0.6rem; border-radius: 8px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">
+                                <?= ucfirst($announcement['priority']) ?>
+                            </span>
+                        </div>
+                        <p style="font-size: 0.9rem; line-height: 1.5; opacity: 0.95; margin: 0 0 0.5rem 0; color: #ffffff;"><?= htmlspecialchars($announcement['content']) ?></p>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">
+                            Posted: <?= date('M d, Y', strtotime($announcement['created_at'])) ?>
                         </div>
                     </div>
-                    
-                    <div class="calendar-table">
-                        <div class="day-header">Sun</div>
-                        <div class="day-header">Mon</div>
-                        <div class="day-header">Tue</div>
-                        <div class="day-header">Wed</div>
-                        <div class="day-header">Thu</div>
-                        <div class="day-header">Fri</div>
-                        <div class="day-header">Sat</div>
-                        
-                        <?php
-                        $daysInMonth = getDaysInMonth($currentMonth, $currentYear);
-                        $firstDay = getFirstDayOfMonth($currentMonth, $currentYear);
-                        
-                        // Create empty cells for days before the first day of the month
-                        for ($i = 0; $i < $firstDay; $i++) {
-                            echo '<div class="calendar-day empty"></div>';
-                        }
-                        
-                        // Create cells for each day of the month
-                        $today = date('Y-m-d');
-                        for ($day = 1; $day <= $daysInMonth; $day++) {
-                            $dateStr = sprintf("%04d-%02d-%02d", $currentYear, $currentMonth, $day);
-                            $isToday = ($dateStr == date('Y-m-d')) ? 'today' : '';
-                            
-                            echo "<div class='calendar-day $isToday'>";
-                            echo "<div class='calendar-day-number'>$day</div>";
-                            
-                            // Display events
-                            echo "<div class='calendar-events'>";
-                            if (isset($events[$dateStr])) {
-                                foreach ($events[$dateStr] as $index => $event) {
-                                    $paidClass = (isset($event['paid']) && $event['paid']) ? 'paid' : '';
-                                    $statusClass = isset($event['status']) && $event['status'] === 'rejected' ? 'rejected' : 
-                                                 (isset($event['status']) && $event['status'] === 'pending' ? 'pending' : $event['type']);
-                                    $eventData = htmlspecialchars(json_encode($event));
-                                    echo "<div class='calendar-event $statusClass $paidClass' title='{$event['title']}' onclick='showEventDetail($eventData)'>";
-                                    echo htmlspecialchars($event['title']);
-                                    echo "</div>";
-                                }
-                            }
-                            echo "</div>";
-                            echo "</div>";
-                        }
-                        ?>
-                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div>
+                    <h3 style="font-size: 1.125rem; font-weight: 600; margin: 0 0 0.5rem 0; color: #ffffff;">Welcome</h3>
+                    <p style="font-size: 0.9rem; line-height: 1.5; opacity: 0.95; margin: 0; color: #ffffff;">No announcements at this time. Check back later for updates from your landlord.</p>
                 </div>
-                
-                <div class="bills-section">
-                    <div class="section-header">
-                        <h2 class="section-title">Notices</h2>
-                        <span onclick="viewAllNotices()" style="color: #1666ba; cursor: pointer; font-weight: 500;">
-                            View All
-                        </span>
-                    </div>
-                    
-                    <div class="notice-section">
-                    <?php if (!empty($announcements)): ?>
-                        <?php foreach ($announcements as $index => $announcement): ?>
-                            <div style="<?= $index > 0 ? 'border-top: 1px solid rgba(255,255,255,0.2); padding-top: 1rem; margin-top: 1rem;' : '' ?>">
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                                    <h3 style="font-size: 1.125rem; font-weight: 600; margin: 0; color: #ffffff;"><?= htmlspecialchars($announcement['title']) ?></h3>
-                                    <span style="background: rgba(255,255,255,0.2); padding: 0.2rem 0.6rem; border-radius: 8px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">
-                                        <?= ucfirst($announcement['priority']) ?>
-                                    </span>
-                                </div>
-                                <p style="font-size: 0.9rem; line-height: 1.5; opacity: 0.95; margin: 0 0 0.5rem 0; color: #ffffff;"><?= htmlspecialchars($announcement['content']) ?></p>
-                                <div style="font-size: 0.8rem; opacity: 0.8;">
-                                    Posted: <?= date('M d, Y', strtotime($announcement['created_at'])) ?>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div>
-                            <h3 style="font-size: 1.125rem; font-weight: 600; margin: 0 0 0.5rem 0; color: #ffffff;">Welcome</h3>
-                            <p style="font-size: 0.9rem; line-height: 1.5; opacity: 0.95; margin: 0; color: #ffffff;">No announcements at this time. Check back later for updates from your landlord.</p>
-                        </div>
-                    <?php endif; ?>
-                    </div>
+            <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="calendar-widget">
+            <div class="section-header">
+                <h2 class="section-title">Calendar</h2>
+            </div>
+            
+            <?php
+            // Get current month and year for calendar
+            $currentMonth = isset($_GET['month']) ? intval($_GET['month']) : date('n');
+            $currentYear = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
+            
+            // Handle month navigation
+            if (isset($_GET['prev'])) {
+                $currentMonth--;
+                if ($currentMonth < 1) {
+                    $currentMonth = 12;
+                    $currentYear--;
+                }
+            } elseif (isset($_GET['next'])) {
+                $currentMonth++;
+                if ($currentMonth > 12) {
+                    $currentMonth = 1;
+                    $currentYear++;
+                }
+            }
+            
+            $monthNames = [
+                1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April', 
+                5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August', 
+                9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'
+            ];
+            $currentMonthName = $monthNames[$currentMonth];
+            
+            function getDaysInMonth($month, $year) {
+                return date('t', strtotime("$year-$month-01"));
+            }
+            
+            function getFirstDayOfMonth($month, $year) {
+                return date('w', strtotime("$year-$month-01"));
+            }
+            ?>
+            
+            <div class="calendar-header">
+                <div class="month-nav">
+                    <a href="?prev=1&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?= $filter ?>">
+                        <button><i class="fas fa-chevron-left"></i></button>
+                    </a>
+                    <div class="month-title"><?php echo $currentMonthName . ' ' . $currentYear; ?></div>
+                    <a href="?next=1&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?= $filter ?>">
+                        <button><i class="fas fa-chevron-right"></i></button>
+                    </a>
                 </div>
             </div>
             
-            <div class="right-column">
-                <div class="bills-section">
-                    <div class="section-header">
-                        <h2 class="section-title">Payment Status</h2>
-                    </div>
-
-                    <!-- Filter buttons -->
-                    <div class="filter-section">
-                        <button class="filter-btn <?= $filter === 'all' ? 'active' : '' ?>" onclick="setFilter('all')">All</button>
-                        <button class="filter-btn <?= $filter === 'paid' ? 'active' : '' ?>" onclick="setFilter('paid')">Paid</button>
-                        <button class="filter-btn <?= $filter === 'unpaid' ? 'active' : '' ?>" onclick="setFilter('unpaid')">Unpaid</button>
-                        <button class="filter-btn <?= $filter === 'pending' ? 'active' : '' ?>" onclick="setFilter('pending')">Pending</button>
-                        <button class="filter-btn <?= $filter === 'rejected' ? 'active' : '' ?>" onclick="setFilter('rejected')">Rejected</button>
-                        <button class="filter-btn <?= $filter === 'overdue' ? 'active' : '' ?>" onclick="setFilter('overdue')">Overdue</button>
-                    </div>
-
-                    <?php if (empty($bills)): ?>
-                        <div class="no-bills">No bills found for this filter</div>
-                    <?php else: ?>
-                        <?php foreach ($bills as $bill): ?>
-                            <div class="bill-item">
-                                <div class="bill-info">
-                                    <span class="bill-type <?= strtolower($bill['bill_type']) ?>">
-                                        <?= ucfirst($bill['bill_type']) ?>
-                                    </span>
-                                    <div class="bill-amount">₱<?= number_format($bill['amount'], 2) ?></div>
-                                    <div class="bill-due">Due: <?= date('M d, Y', strtotime($bill['due_date'])) ?></div>
-                                    <?php if ($bill['billing_period_start'] && $bill['billing_period_end']): ?>
-                                        <div class="bill-period">
-                                            Period: <?= date('M d', strtotime($bill['billing_period_start'])) . ' - ' .
-                                                        date('M d, Y', strtotime($bill['billing_period_end'])) ?>
-                                        </div>
-                                    <?php endif; ?>
-                                    <?php if ($bill['description']): ?>
-                                        <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b; font-weight: 500;">
-                                            <?= htmlspecialchars($bill['description']) ?>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="bill-status 
-                                    <?php if ($bill['payment_status'] === 'rejected'): ?>
-                                        status-rejected">Payment Rejected
-                                <?php elseif ($bill['payment_status'] === 'pending'): ?>
-                                    status-pending">Payment Pending
-                                <?php elseif ($bill['payment_status'] === 'verified'): ?>
-                                    status-paid">Payment Verified
-                                <?php elseif ($bill['bill_status'] === 'overdue'): ?>
-                                    status-overdue">Overdue
-                                <?php elseif ($bill['bill_status'] === 'paid'): ?>
-                                    status-paid">Paid
-                                <?php else: ?>
-                                    status-unpaid">Unpaid
-                                <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
+            <div class="calendar-table">
+                <div class="day-header">Sun</div>
+                <div class="day-header">Mon</div>
+                <div class="day-header">Tue</div>
+                <div class="day-header">Wed</div>
+                <div class="day-header">Thu</div>
+                <div class="day-header">Fri</div>
+                <div class="day-header">Sat</div>
                 
-                <div class="actions-section">
-                    <div class="section-header">
-                        <h2 class="section-title">Quick Actions</h2>
+                <?php
+                $daysInMonth = getDaysInMonth($currentMonth, $currentYear);
+                $firstDay = getFirstDayOfMonth($currentMonth, $currentYear);
+                
+                // Create empty cells for days before the first day of the month
+                for ($i = 0; $i < $firstDay; $i++) {
+                    echo '<div class="calendar-day empty"></div>';
+                }
+                
+                // Create cells for each day of the month
+                $today = date('Y-m-d');
+                for ($day = 1; $day <= $daysInMonth; $day++) {
+                    $dateStr = sprintf("%04d-%02d-%02d", $currentYear, $currentMonth, $day);
+                    $isToday = ($dateStr == date('Y-m-d')) ? 'today' : '';
+                    
+                    echo "<div class='calendar-day $isToday'>";
+                    echo "<div class='calendar-day-number'>$day</div>";
+                    
+                    // Display events
+                    echo "<div class='calendar-events'>";
+                    if (isset($events[$dateStr])) {
+                        foreach ($events[$dateStr] as $index => $event) {
+                            $paidClass = (isset($event['paid']) && $event['paid']) ? 'paid' : '';
+                            $statusClass = isset($event['status']) && $event['status'] === 'rejected' ? 'rejected' : 
+                                         (isset($event['status']) && $event['status'] === 'pending' ? 'pending' : $event['type']);
+                            $eventData = htmlspecialchars(json_encode($event));
+                            echo "<div class='calendar-event $statusClass $paidClass' title='{$event['title']}' onclick='showEventDetail($eventData)'>";
+                            echo htmlspecialchars($event['title']);
+                            echo "</div>";
+                        }
+                    }
+                    echo "</div>";
+                    echo "</div>";
+                }
+                ?>
+            </div>
+        </div>
+        
+        <div class="actions-section">
+            <div class="actions-grid">
+                <div class="action-card" onclick="maintenanceRequest()">
+                    <div class="action-icon">
+                        <i class="fas fa-tools"></i>
                     </div>
-                    <div class="actions-grid">
-                        <div class="action-card" onclick="maintenanceRequest()">
-                            <div class="action-icon">
-                                <i class="fas fa-tools"></i>
-                            </div>
-                            <div class="action-title">Maintenance Request</div>
-                        </div>
-                        <div class="action-card" onclick="viewPaymentHistory()">
-                            <div class="action-icon">
-                                <i class="fas fa-history"></i>
-                            </div>
-                            <div class="action-title">Payments</div>
-                        </div>
-                        <div class="action-card" onclick="viewLease()">
-                            <div class="action-icon">
-                                <i class="fas fa-file-contract"></i>
-                            </div>
-                            <div class="action-title">Lease Details</div>
-                        </div>
+                    <div class="action-title">Maintenance Request</div>
+                </div>
+                <div class="action-card" onclick="viewPaymentHistory()">
+                    <div class="action-icon">
+                        <i class="fas fa-history"></i>
                     </div>
+                    <div class="action-title">Payments</div>
+                </div>
+                <div class="action-card" onclick="viewLease()">
+                    <div class="action-icon">
+                        <i class="fas fa-file-contract"></i>
+                    </div>
+                    <div class="action-title">Lease Details</div>
                 </div>
             </div>
         </div>
@@ -969,7 +915,7 @@ if ($lease) {
             
             title.textContent = event.title;
             
-            let detailsHtml = `<p><strong>Due Date:</strong> ${event.date}</p>`;
+            let detailsHtml = `<p><strong>Date:</strong> ${event.date}</p>`;
             
             if (event.type === 'lease') {
                 detailsHtml += `<p><strong>Property Type:</strong> ${event.property_type || 'N/A'}</p>`;
