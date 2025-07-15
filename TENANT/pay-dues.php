@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     SELECT b.bill_id, b.amount, b.description, b.bill_type, b.status
                     FROM BILL b
                     JOIN LEASE l ON b.lease_id = l.lease_id
-                    WHERE l.tenant_id = ? AND b.status = 'unpaid' AND NOT EXISTS (
+                    WHERE l.tenant_id = ? AND b.status IN ('unpaid', 'overdue') AND NOT EXISTS (
                         SELECT 1 FROM PAYMENT p WHERE p.bill_id = b.bill_id AND p.status = 'verified'
                     )
                     ORDER BY b.due_date ASC
@@ -158,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)
                     ";
 
-                    // Set payment status and normalize payment method
+                    // Set payment status to pending - all payments need verification
                     $payment_status = 'pending';
                     $payment_method_lower = strtolower(trim($payment_method));
                     
@@ -190,24 +190,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         throw new Exception("Execute failed: " . $stmt->error);
                     }
 
-                    // Update bill status based on payment
-                    // Only set to 'paid' if fully paid, otherwise keep as current status
-                    $new_status = ($amount >= $bill_amount) ? 'paid' : $bill_status;
-
-                    $update_bill_query = "UPDATE BILL SET status = ? WHERE bill_id = ?";
-                    $update_stmt = $conn->prepare($update_bill_query);
-                    if (!$update_stmt) {
-                        throw new Exception("Prepare failed: " . $conn->error);
-                    }
-
-                    if (!$update_stmt->bind_param("si", $new_status, $target_bill_id)) {
-                        throw new Exception("Bind failed: " . $update_stmt->error);
-                    }
-
-                    if (!$update_stmt->execute()) {
-                        throw new Exception("Execute failed: " . $update_stmt->error);
-                    }
-
+                    // DO NOT UPDATE BILL STATUS HERE
+                    // Bill status should remain unchanged until payment is verified
+                    // The bill status will be updated when the landlord verifies the payment
+                    
                     // Commit transaction if all succeeds
                     $conn->commit();
 

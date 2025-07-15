@@ -51,37 +51,40 @@ if ($lease) {
     $billResult = $stmt->get_result();
 
     while ($row = $billResult->fetch_assoc()) {
-        // Use bill_type from database if available, otherwise categorize by description
-        $category = 'OTHER';
-        
-        if (!empty($row['bill_type'])) {
-            switch (strtolower($row['bill_type'])) {
-                case 'rent':
+        // Only include bills that have a remaining balance or are unpaid
+        if ($row['balance'] > 0 || $row['status'] == 'unpaid') {
+            // Use bill_type from database if available, otherwise categorize by description
+            $category = 'OTHER';
+            
+            if (!empty($row['bill_type'])) {
+                switch (strtolower($row['bill_type'])) {
+                    case 'rent':
+                        $category = 'RENT';
+                        break;
+                    case 'utility':
+                        $category = 'UTILITIES';
+                        break;
+                    default:
+                        $category = 'OTHER';
+                        break;
+                }
+            } else {
+                // Fallback to description-based categorization
+                $description = strtolower($row['description']);
+                if (strpos($description, 'rent') !== false) {
                     $category = 'RENT';
-                    break;
-                case 'utility':
+                } elseif (
+                    strpos($description, 'electric') !== false ||
+                    strpos($description, 'water') !== false ||
+                    strpos($description, 'utility') !== false
+                ) {
                     $category = 'UTILITIES';
-                    break;
-                default:
-                    $category = 'OTHER';
-                    break;
+                }
             }
-        } else {
-            // Fallback to description-based categorization
-            $description = strtolower($row['description']);
-            if (strpos($description, 'rent') !== false) {
-                $category = 'RENT';
-            } elseif (
-                strpos($description, 'electric') !== false ||
-                strpos($description, 'water') !== false ||
-                strpos($description, 'utility') !== false
-            ) {
-                $category = 'UTILITIES';
-            }
-        }
 
-        $categories[$category][] = $row;
-        $bills[] = $row;
+            $categories[$category][] = $row;
+            $bills[] = $row;
+        }
     }
 }
 
@@ -130,8 +133,7 @@ $statsResult = $stmt->get_result();
 $stats = $statsResult->fetch_assoc();
 
 // Format currency
-function formatCurrency($amount)
-{
+function formatCurrency($amount) {
     return '₱' . number_format($amount, 2);
 }
 
