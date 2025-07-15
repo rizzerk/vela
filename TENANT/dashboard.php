@@ -23,18 +23,46 @@ $debug_info = "User ID: $userId, ";
 
 if ($lease) {
     $debug_info .= "Lease ID: {$lease['lease_id']}, ";
-    
-    $billQuery = "SELECT bill_id, amount, due_date, status, description, 
-                         billing_period_start, billing_period_end, bill_type
-                  FROM BILL 
-                  WHERE lease_id = ? AND status != 'paid'
-                  ORDER BY due_date ASC";
-    
+
+    // Base query
+    $billQuery = "SELECT b.bill_id, b.amount, b.due_date, b.status as bill_status, 
+                         b.description, b.billing_period_start, b.billing_period_end, 
+                         b.bill_type, p.status as payment_status
+                  FROM BILL b
+                  LEFT JOIN PAYMENT p ON b.bill_id = p.bill_id
+                  WHERE b.lease_id = ? ";
+
+    // Add filter conditions
+    switch ($filter) {
+        case 'paid':
+            $billQuery .= "AND (b.status = 'paid' OR p.status = 'verified') ";
+            break;
+        case 'unpaid':
+            $billQuery .= "AND b.status = 'unpaid' AND (p.status IS NULL OR p.status != 'verified') ";
+            break;
+        case 'pending':
+            $billQuery .= "AND p.status = 'pending' ";
+            break;
+        case 'rejected':
+            $billQuery .= "AND p.status = 'rejected' ";
+            break;
+        case 'overdue':
+            // Show bills that are unpaid and past their due date
+            $billQuery .= "AND (b.status = 'overdue' OR (b.due_date < CURDATE() AND b.status = 'unpaid' AND (p.status IS NULL OR p.status != 'verified'))) ";
+            break;
+        case 'all':
+        default:
+            // No additional filter
+            break;
+    }
+
+    $billQuery .= "GROUP BY b.bill_id ORDER BY b.due_date ASC";
+
     $billStmt = $conn->prepare($billQuery);
     $billStmt->bind_param("i", $lease['lease_id']);
     $billStmt->execute();
     $billResult = $billStmt->get_result();
-    
+
     while ($row = $billResult->fetch_assoc()) {
         // For overdue filter, mark bills as overdue if they meet the criteria
         if ($filter === 'overdue' && $row['bill_status'] === 'unpaid' && strtotime($row['due_date']) < time()) {
@@ -50,6 +78,7 @@ if ($lease) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -325,14 +354,16 @@ if ($lease) {
             .content-wrapper {
                 padding: 1rem;
             }
-            
+
             .section-header {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 0.5rem;
             }
 
-            .bills-section, .actions-section, .notice-section {
+            .bills-section,
+            .actions-section,
+            .notice-section {
                 padding: 1.5rem;
             }
 
@@ -362,6 +393,7 @@ if ($lease) {
         }
     </style>
 </head>
+
 <body>
     <?php include '../includes/navbar/tenant-navbar.php'; ?>
 
@@ -395,8 +427,8 @@ if ($lease) {
                             <div class="bill-due">Due: <?= date('M d, Y', strtotime($bill['due_date'])) ?></div>
                             <?php if ($bill['billing_period_start'] && $bill['billing_period_end']): ?>
                                 <div class="bill-period">
-                                    Period: <?= date('M d', strtotime($bill['billing_period_start'])) . ' - ' . 
-                                              date('M d, Y', strtotime($bill['billing_period_end'])) ?>
+                                    Period: <?= date('M d', strtotime($bill['billing_period_start'])) . ' - ' .
+                                                date('M d, Y', strtotime($bill['billing_period_end'])) ?>
                                 </div>
                             <?php endif; ?>
                             <?php if ($bill['description']): ?>
@@ -408,17 +440,17 @@ if ($lease) {
                         <div class="bill-status 
                             <?php if ($bill['payment_status'] === 'rejected'): ?>
                                 status-rejected">Payment Rejected
-                            <?php elseif ($bill['payment_status'] === 'pending'): ?>
-                                status-pending">Payment Pending
-                            <?php elseif ($bill['payment_status'] === 'verified'): ?>
-                                status-paid">Payment Verified
-                            <?php elseif ($bill['bill_status'] === 'overdue'): ?>
-                                status-overdue">Overdue
-                            <?php elseif ($bill['bill_status'] === 'paid'): ?>
-                                status-paid">Paid
-                            <?php else: ?>
-                                status-unpaid">Unpaid
-                            <?php endif; ?>
+                        <?php elseif ($bill['payment_status'] === 'pending'): ?>
+                            status-pending">Payment Pending
+                        <?php elseif ($bill['payment_status'] === 'verified'): ?>
+                            status-paid">Payment Verified
+                        <?php elseif ($bill['bill_status'] === 'overdue'): ?>
+                            status-overdue">Overdue
+                        <?php elseif ($bill['bill_status'] === 'paid'): ?>
+                            status-paid">Paid
+                        <?php else: ?>
+                            status-unpaid">Unpaid
+                        <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -428,7 +460,7 @@ if ($lease) {
         <div class="notice-section">
             <h2 class="notice-title">Important Notice</h2>
             <p class="notice-text">
-                Your monthly rent payment is due on the 5th of each month. Please ensure timely payment to avoid late fees. 
+                Your monthly rent payment is due on the 5th of each month. Please ensure timely payment to avoid late fees.
                 For any maintenance requests or concerns, use the button below or contact our support team.
             </p>
         </div>
@@ -465,15 +497,16 @@ if ($lease) {
         function maintenanceRequest() {
             window.location.href = 'maintenance.php';
         }
-        
+
         function viewPaymentHistory() {
             window.location.href = 'pay-dues.php';
         }
-        
+
         function viewLease() {
             window.location.href = 'lease-details.php';
         }
     </script>
 </body>
+
 </html>
 <?php $conn->close(); ?>
