@@ -25,7 +25,7 @@ $debug_info = "User ID: $userId, ";
 if ($lease) {
     $announcementQuery = "SELECT title, content, priority, created_at FROM ANNOUNCEMENT 
                          WHERE visible_to IN ('tenant', 'all') 
-                         ORDER BY FIELD(priority, 'high', 'medium', 'low'), created_at DESC LIMIT 2";
+                         ORDER BY FIELD(priority, 'high', 'medium', 'low'), created_at DESC LIMIT 3";
     $announcementStmt = $conn->prepare($announcementQuery);
     $announcementStmt->execute();
     $announcementResult = $announcementStmt->get_result();
@@ -57,7 +57,6 @@ if ($lease) {
             $billQuery .= "AND p.status = 'rejected' ";
             break;
         case 'overdue':
-            // show bills that are unpaid and past their due date
             $billQuery .= "AND (b.status = 'overdue' OR (b.due_date < CURDATE() AND b.status = 'unpaid' AND (p.status IS NULL OR p.status != 'verified'))) ";
             break;
         case 'all':
@@ -704,7 +703,6 @@ if ($lease) {
     <?php include '../includes/navbar/tenant-navbar.php'; ?>
 
     <div class="content-wrapper">
-<<<<<<< Updated upstream
         <div class="section-header">
             <h2 class="section-title">Dashboard</h2>
             <div class="welcome-text">Welcome back, <?php echo htmlspecialchars($userName); ?>!</div>
@@ -843,80 +841,6 @@ if ($lease) {
                         </div>
                     <?php endif; ?>
                     </div>
-=======
-        <div class="bills-section">
-            <div class="section-header">
-                <h2 class="section-title">Payment Status</h2>
-                <div class="welcome-text">Welcome back, <?php echo htmlspecialchars($userName); ?>!</div>
-            </div>
-            <!-- Debug: <?= $debug_info ?> -->
-            <?php if (empty($bills)): ?>
-                <div class="no-bills">No bills found</div>
-            <?php else: ?>
-                <?php foreach ($bills as $bill): ?>
-
-
-
-<div class="bill-item <?php echo $bill['status']; ?>">
-    <div class="bill-info">
-        <div class="bill-type"><?php echo ucfirst($bill['bill_type']); ?></div>
-        <div class="bill-amount">₱<?php echo number_format($bill['amount'], 2); ?></div>
-        <div class="bill-due">Due: <?php echo date('M d, Y', strtotime($bill['due_date'])); ?></div>
-        <?php if ($bill['bill_type'] === 'rent' && $bill['billing_period_start']): ?>
-            <div class="bill-period">
-                Period: <?php echo date('M d', strtotime($bill['billing_period_start'])) . ' - ' . 
-                              date('M d, Y', strtotime($bill['billing_period_end'])); ?>
-            </div>
-        <?php endif; ?>
-        <?php if ($bill['description']): ?>
-            <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b; font-weight: 500;">
-                <?php echo htmlspecialchars($bill['description']); ?>
-            </div>
-        <?php endif; ?>
-    </div>
-    <div class="bill-status status-<?php echo $bill['status']; ?>">
-        <?php echo ucfirst($bill['status']); ?>
-    </div>
-</div>
-
-
-
-
-
-
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-
-        <div class="notice-section">
-            <div class="notice-content">
-                <h2 class="notice-title">Important Notice</h2>
-                <p class="notice-text">
-                    Your monthly rent payment is due on the 5th of each month. Please ensure timely payment to avoid late fees. 
-                    For any maintenance requests or concerns, use the button below or contact our support team.
-                </p>
-            </div>
-        </div>
-
-            <div class="actions-grid">
-                <div class="action-card" onclick="maintenanceRequest()">
-                    <div class="action-icon">
-                        <i class="fas fa-tools"></i>
-                    </div>
-                    <div class="action-title">Maintenance Request</div>
-                </div>
-                <div class="action-card" onclick="viewPaymentHistory()">
-                    <div class="action-icon">
-                        <i class="fas fa-history"></i>
-                    </div>
-                    <div class="action-title">Payment History</div>
-                </div>
-                <div class="action-card" onclick="viewLease()">
-                    <div class="action-icon">
-                        <i class="fas fa-file-contract"></i>
-                    </div>
-                    <div class="action-title">Lease Details</div>
->>>>>>> Stashed changes
                 </div>
             </div>
             
