@@ -192,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Set payment status to pending - all payments need verification
                     $payment_status = 'pending';
                     $payment_method_lower = strtolower(trim($payment_method));
-                    
+
                     // Validate payment method against allowed ENUM values
                     $allowed_modes = ['cash', 'bpi', 'gcash', 'bdo'];
                     if (!in_array($payment_method_lower, $allowed_modes)) {
@@ -224,7 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // DO NOT UPDATE BILL STATUS HERE
                     // Bill status should remain unchanged until payment is verified
                     // The bill status will be updated when the landlord verifies the payment
-                    
+
                     // Commit transaction if all succeeds
                     $conn->commit();
 
@@ -592,6 +592,94 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
             color: #ff6b35;
         }
 
+        /* Simplified file preview styles */
+        .file-preview-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: white;
+        }
+
+        .preview-header {
+            background-color: #1666ba;
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-header h4 {
+            margin: 0;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .remove-file-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .remove-file-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .preview-image {
+            padding: 15px;
+            text-align: center;
+        }
+
+        .preview-image img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 4px;
+            object-fit: contain;
+        }
+
+        /* Upload states */
+        .file-upload-box.upload-success {
+            background-color: #e8f5e8;
+            border-color: #4caf50;
+            border-style: solid;
+        }
+
+        .file-upload-box.upload-success i {
+            color: #4caf50;
+        }
+
+        .file-upload-box.upload-success p {
+            color: #2e7d32;
+        }
+
+        .file-upload-box.upload-error {
+            background-color: #ffebee;
+            border-color: #f44336;
+            border-style: solid;
+        }
+
+        .file-upload-box.upload-error i {
+            color: #f44336;
+        }
+
+        .file-upload-box.upload-error p {
+            color: #d32f2f;
+        }
+
+        .file-upload-box.drag-over {
+            background-color: #d0e5f5;
+            border-color: #0d4a8a;
+        }
+
+        /* Responsive adjustments */
         @media (max-width: 768px) {
             .page-title {
                 font-size: 1.8rem;
@@ -674,16 +762,16 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
                             <select id="bill-id" name="bill-id" onchange="updateBillInfo()">
                                 <option value="">Auto-select next unpaid bill</option>
                                 <?php foreach ($unpaid_bills as $bill): ?>
-                                    <option value="<?= $bill['bill_id'] ?>" 
-                                            data-amount="<?= $bill['amount'] ?>"
-                                            data-description="<?= htmlspecialchars($bill['description']) ?>"
-                                            data-type="<?= $bill['bill_type'] ?>"
-                                            data-due-date="<?= $bill['due_date'] ?>"
-                                            data-status="<?= $bill['status'] ?>"
-                                            data-rejected-count="<?= $bill['rejected_count'] ?>"
-                                            <?= $bill['rejected_count'] > 0 ? 'class="rejected-option"' : '' ?>>
-                                        Bill #<?= $bill['bill_id'] ?> - <?= ucfirst($bill['bill_type']) ?> 
-                                        (₱<?= number_format($bill['amount'], 2) ?>) 
+                                    <option value="<?= $bill['bill_id'] ?>"
+                                        data-amount="<?= $bill['amount'] ?>"
+                                        data-description="<?= htmlspecialchars($bill['description']) ?>"
+                                        data-type="<?= $bill['bill_type'] ?>"
+                                        data-due-date="<?= $bill['due_date'] ?>"
+                                        data-status="<?= $bill['status'] ?>"
+                                        data-rejected-count="<?= $bill['rejected_count'] ?>"
+                                        <?= $bill['rejected_count'] > 0 ? 'class="rejected-option"' : '' ?>>
+                                        Bill #<?= $bill['bill_id'] ?> - <?= ucfirst($bill['bill_type']) ?>
+                                        (₱<?= number_format($bill['amount'], 2) ?>)
                                         <?= $bill['status'] == 'overdue' ? '- OVERDUE' : '' ?>
                                         <?= $bill['rejected_count'] > 0 ? '- ' . $bill['rejected_count'] . ' REJECTED' : '' ?>
                                     </option>
@@ -709,11 +797,6 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
                             <p>Drag & drop your file here or click to browse</p>
                             <input type="file" id="proof" name="proof" required accept="image/png, image/jpeg">
                             <small>Accepted formats: JPG, PNG (Max 5MB)</small>
-                        </div>
-
-                        <div class="form-grp">
-                            <label for="payment-description">Payment Description:</label>
-                            <textarea id="payment-description" name="payment-description" placeholder="e.g., Monthly Rent - January 2025, Utility Bill, Security Deposit, etc. (Optional - will auto-generate if left empty)"></textarea>
                         </div>
 
                         <div class="row">
@@ -759,30 +842,175 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
     </div>
 
     <script>
+        // Enhanced file upload functionality with preview (image only)
+        function setupFileUpload() {
+            const fileInput = document.getElementById('proof');
+            const uploadBox = document.querySelector('.file-upload-box');
+            const uploadIcon = uploadBox.querySelector('i');
+            const uploadText = uploadBox.querySelector('p');
+            const submitBtn = document.querySelector('.submit-btn');
+
+            // Create preview container
+            const previewContainer = document.createElement('div');
+            previewContainer.className = 'file-preview-container';
+            previewContainer.style.display = 'none';
+            uploadBox.parentNode.insertBefore(previewContainer, uploadBox.nextSibling);
+
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+
+                if (file) {
+                    // Validate file type
+                    const allowedTypes = ['image/jpeg', 'image/png'];
+                    if (!allowedTypes.includes(file.type)) {
+                        showError('Only JPG and PNG files are allowed');
+                        resetUpload();
+                        return;
+                    }
+
+                    // Validate file size (5MB = 5000000 bytes)
+                    if (file.size > 5000000) {
+                        showError('File is too large. Maximum size is 5MB');
+                        resetUpload();
+                        return;
+                    }
+
+                    // Show success state
+                    showSuccess();
+
+                    // Show preview
+                    showPreview(file);
+                } else {
+                    resetUpload();
+                }
+            });
+
+            // Drag and drop functionality
+            uploadBox.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadBox.classList.add('drag-over');
+            });
+
+            uploadBox.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadBox.classList.remove('drag-over');
+            });
+
+            uploadBox.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadBox.classList.remove('drag-over');
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    fileInput.dispatchEvent(new Event('change'));
+                }
+            });
+
+            function showSuccess() {
+                uploadBox.classList.add('upload-success');
+                uploadIcon.className = 'fas fa-check-circle';
+                uploadText.textContent = 'File uploaded successfully!';
+            }
+
+            function showError(message) {
+                uploadBox.classList.add('upload-error');
+                uploadIcon.className = 'fas fa-exclamation-triangle';
+                uploadText.innerHTML = `<strong>Error:</strong> ${message}`;
+
+                // Reset after 3 seconds
+                setTimeout(resetUpload, 3000);
+            }
+
+            function resetUpload() {
+                uploadBox.classList.remove('upload-success', 'upload-error', 'drag-over');
+                uploadIcon.className = 'fas fa-cloud-upload-alt';
+                uploadText.innerHTML = 'Drag & drop your file here or click to browse';
+                previewContainer.style.display = 'none';
+                previewContainer.innerHTML = '';
+                fileInput.value = '';
+            }
+
+            function showPreview(file) {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    previewContainer.innerHTML = `
+                        <div class="preview-content">
+                            <div class="preview-header">
+                                <h4><i class="fas fa-image"></i> Image Preview</h4>
+                                <button type="button" class="remove-file-btn" onclick="removeFile()">
+                                    <i class="fas fa-times"></i> Remove
+                                </button>
+                            </div>
+                            <div class="preview-image">
+                                <img src="${e.target.result}" alt="Preview" />
+                            </div>
+                        </div>
+                    `;
+                    previewContainer.style.display = 'block';
+                };
+
+                reader.readAsDataURL(file);
+            }
+
+            // Global function to remove file
+            window.removeFile = function() {
+                resetUpload();
+            };
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFileUpload();
+            
+            // Form validation enhancement
+            const form = document.getElementById('payment-form');
+            const fileInput = document.getElementById('proof');
+            const submitBtn = document.querySelector('.submit-btn');
+
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    if (!fileInput.files || fileInput.files.length === 0) {
+                        e.preventDefault();
+                        alert('Please select a file to upload as proof of payment.');
+                        return false;
+                    }
+
+                    // Add loading state to submit button
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+                    submitBtn.disabled = true;
+                });
+            }
+        });
+
+        // Update bill information when selected
         function updateBillInfo() {
             const billSelect = document.getElementById('bill-id');
             const billInfo = document.getElementById('bill-info');
             const amountInput = document.getElementById('amount');
             const rejectedWarning = document.getElementById('rejected-warning');
             const rejectedCount = document.getElementById('rejected-count');
-            
+
             if (billSelect.value) {
                 const selectedOption = billSelect.options[billSelect.selectedIndex];
-                
+
                 // Show bill info
                 billInfo.style.display = 'block';
-                
+
                 // Update bill details
                 document.getElementById('selected-bill-id').textContent = selectedOption.value;
                 document.getElementById('selected-bill-type').textContent = selectedOption.dataset.type;
                 document.getElementById('selected-bill-description').textContent = selectedOption.dataset.description || 'No description';
-                document.getElementById('selected-bill-amount').textContent = '₱' + parseFloat(selectedOption.dataset.amount).toLocaleString('en-US', {minimumFractionDigits: 2});
+                document.getElementById('selected-bill-amount').textContent = '₱' + parseFloat(selectedOption.dataset.amount).toLocaleString('en-US', {
+                    minimumFractionDigits: 2
+                });
                 document.getElementById('selected-bill-due-date').textContent = selectedOption.dataset.dueDate;
-                
+
                 const statusSpan = document.getElementById('selected-bill-status');
                 statusSpan.textContent = selectedOption.dataset.status.toUpperCase();
                 statusSpan.className = selectedOption.dataset.status === 'overdue' ? 'overdue' : '';
-                
+
                 // Show rejected warning if applicable
                 const rejectedCountValue = parseInt(selectedOption.dataset.rejectedCount);
                 if (rejectedCountValue > 0) {
@@ -791,7 +1019,7 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
                 } else {
                     rejectedWarning.style.display = 'none';
                 }
-                
+
                 // Pre-fill amount
                 amountInput.value = selectedOption.dataset.amount;
             } else {
