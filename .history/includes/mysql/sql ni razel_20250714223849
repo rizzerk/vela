@@ -1,0 +1,132 @@
+CREATE TABLE `ANNOUNCEMENT` (
+ `announcement_id` int(11) NOT NULL AUTO_INCREMENT,
+ `title` varchar(255) DEFAULT NULL,
+ `content` text DEFAULT NULL,
+ `visible_to` enum('tenant','landlord','all') NOT NULL,
+ `priority` enum('low','medium','high') NOT NULL,
+ `created_by` int(11) DEFAULT NULL,
+ `created_at` datetime DEFAULT NULL,
+ PRIMARY KEY (`announcement_id`),
+ KEY `created_by` (`created_by`),
+ CONSTRAINT `announcement_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `USERS` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+
+APPLICATIONS	
+
+CREATE TABLE `APPLICATIONS` (
+ `application_id` int(11) NOT NULL AUTO_INCREMENT,
+ `property_id` int(11) DEFAULT NULL,
+ `applicant_id` int(11) DEFAULT NULL,
+ `status` enum('pending','approved','rejected') DEFAULT NULL,
+ `submitted_at` datetime DEFAULT NULL,
+ `approved_at` datetime DEFAULT NULL,
+ `num_of_tenants` int(11) DEFAULT NULL,
+ `co_tenants` varchar(255) DEFAULT NULL,
+ `occupation` varchar(100) DEFAULT NULL,
+ `monthly_income` int(11) DEFAULT NULL,
+ PRIMARY KEY (`application_id`),
+ KEY `property_id` (`property_id`),
+ KEY `applicant_id` (`applicant_id`),
+ CONSTRAINT `applications_ibfk_1` FOREIGN KEY (`property_id`) REFERENCES `PROPERTY` (`property_id`),
+ CONSTRAINT `applications_ibfk_2` FOREIGN KEY (`applicant_id`) REFERENCES `USERS` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+
+BILL	
+
+CREATE TABLE `BILL` (
+ `bill_id` int(11) NOT NULL AUTO_INCREMENT,
+ `amount` decimal(10,2) DEFAULT NULL,
+ `due_date` date DEFAULT NULL,
+ `lease_id` int(11) DEFAULT NULL,
+ `status` enum('unpaid','paid','overdue') DEFAULT NULL,
+ `description` varchar(255) DEFAULT NULL,
+ `billing_period_start` date DEFAULT NULL,
+ `billing_period_end` date DEFAULT NULL,
+ `bill_type` enum('rent','utility','penalty','other') NOT NULL DEFAULT 'rent',
+ `generated_at` datetime DEFAULT current_timestamp(),
+ PRIMARY KEY (`bill_id`),
+ KEY `lease_id` (`lease_id`),
+ CONSTRAINT `bill_ibfk_1` FOREIGN KEY (`lease_id`) REFERENCES `LEASE` (`lease_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+LEASE	
+CREATE TABLE `LEASE` (
+ `lease_id` int(11) NOT NULL AUTO_INCREMENT,
+ `tenant_id` int(11) DEFAULT NULL,
+ `property_id` int(11) DEFAULT NULL,
+ `start_date` date DEFAULT NULL,
+ `end_date` date DEFAULT NULL,
+ `active` tinyint(1) DEFAULT NULL,
+ PRIMARY KEY (`lease_id`),
+ KEY `tenant_id` (`tenant_id`),
+ KEY `property_id` (`property_id`),
+ CONSTRAINT `lease_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `USERS` (`user_id`),
+ CONSTRAINT `lease_ibfk_2` FOREIGN KEY (`property_id`) REFERENCES `PROPERTY` (`property_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+MAINTENANCE_REQUEST	
+CREATE TABLE `MAINTENANCE_REQUEST` (
+ `request_id` int(11) NOT NULL AUTO_INCREMENT,
+ `lease_id` int(11) DEFAULT NULL,
+ `description` text DEFAULT NULL,
+ `status` enum('pending','in_progress','resolved') DEFAULT NULL,
+ `requested_at` datetime DEFAULT NULL,
+ `updated_at` datetime DEFAULT NULL,
+ PRIMARY KEY (`request_id`),
+ KEY `lease_id` (`lease_id`),
+ CONSTRAINT `maintenance_request_ibfk_1` FOREIGN KEY (`lease_id`) REFERENCES `LEASE` (`lease_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+PAYMENT	
+CREATE TABLE `PAYMENT` (
+ `payment_id` int(11) NOT NULL AUTO_INCREMENT,
+ `bill_id` int(11) DEFAULT NULL,
+ `amount_paid` decimal(10,2) DEFAULT NULL,
+ `proof_of_payment` varchar(255) DEFAULT NULL,
+ `submitted_at` datetime DEFAULT NULL,
+ `reference_num` varchar(100) DEFAULT NULL,
+ `mode` enum('cash','bpi','gcash','bdo') DEFAULT NULL,
+ `status` enum('pending','verified','rejected') DEFAULT NULL,
+ `message` text DEFAULT NULL,
+ `reply` text DEFAULT NULL,
+ PRIMARY KEY (`payment_id`),
+ KEY `bill_id` (`bill_id`),
+ CONSTRAINT `payment_ibfk_1` FOREIGN KEY (`bill_id`) REFERENCES `BILL` (`bill_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+PROPERTY	
+CREATE TABLE `PROPERTY` (
+ `property_id` int(11) NOT NULL AUTO_INCREMENT,
+ `title` varchar(100) DEFAULT NULL,
+ `address` varchar(255) DEFAULT NULL,
+ `status` enum('vacant','occupied') NOT NULL,
+ `description` varchar(255) DEFAULT NULL,
+ `monthly_rent` decimal(10,2) DEFAULT NULL,
+ `property_type` enum('apartment','house','condo','studio','commercial','others') NOT NULL,
+ PRIMARY KEY (`property_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+PROPERTY_PHOTO	
+CREATE TABLE `PROPERTY_PHOTO` (
+ `photo_id` int(11) NOT NULL AUTO_INCREMENT,
+ `property_id` int(11) DEFAULT NULL,
+ `file_path` varchar(255) DEFAULT NULL,
+ `uploaded_at` datetime DEFAULT current_timestamp(),
+ PRIMARY KEY (`photo_id`),
+ KEY `property_id` (`property_id`),
+ CONSTRAINT `property_photo_ibfk_1` FOREIGN KEY (`property_id`) REFERENCES `PROPERTY` (`property_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+USERS	
+CREATE TABLE `USERS` (
+ `user_id` int(11) NOT NULL AUTO_INCREMENT,
+ `name` varchar(100) DEFAULT NULL,
+ `email` varchar(100) DEFAULT NULL,
+ `phone` varchar(20) DEFAULT NULL,
+ `password` varchar(255) DEFAULT NULL,
+ `role` enum('tenant','landlord','general_user') NOT NULL,
+ PRIMARY KEY (`user_id`),
+ UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci

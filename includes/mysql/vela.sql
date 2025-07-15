@@ -4,8 +4,7 @@ CREATE TABLE USERS (
     email VARCHAR(100) UNIQUE,
     phone VARCHAR(20),
     password VARCHAR(255),
-    role ENUM('tenant', 'landlord') NOT NULL,
-    notifications BOOLEAN DEFAULT TRUE
+    role ENUM('tenant', 'landlord', 'general_user') NOT NULL,
 );
 
 CREATE TABLE PROPERTY (
@@ -33,7 +32,8 @@ CREATE TABLE APPLICATIONS (
     status ENUM('pending', 'approved', 'rejected'),
     submitted_at DATETIME,
     approved_at DATETIME,
-    documents VARCHAR(255),
+    occupation VARCHAR(100),
+    monthly_income INT,
     num_of_tenants INT,
     co_tenants VARCHAR(255),
     FOREIGN KEY (property_id) REFERENCES PROPERTY(property_id),

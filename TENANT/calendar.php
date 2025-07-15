@@ -28,34 +28,42 @@ while ($row = $leaseResult->fetch_assoc()) {
     $events[$row['start_date']][] = [
         'title' => "Lease Start: " . $row['property_name'],
         'type' => 'lease',
-        'date' => $row['start_date']
+        'date' => $row['start_date'],
+        'paid' => false
     ];
     $events[$row['end_date']][] = [
         'title' => "Lease End: " . $row['property_name'],
         'type' => 'lease',
-        'date' => $row['end_date']
+        'date' => $row['end_date'],
+        'paid' => false
     ];
 }
 
-// Get bill events
-$billQuery = "SELECT b.due_date, b.amount, b.description, l.lease_id 
+// Get bill events with payment status
+$billQuery = "SELECT b.bill_id, b.due_date, b.amount, b.description, b.status, 
+                     l.lease_id, p.payment_id, p.status as payment_status
               FROM BILL b 
               JOIN LEASE l ON b.lease_id = l.lease_id 
+              LEFT JOIN PAYMENT p ON b.bill_id = p.bill_id
               WHERE l.tenant_id = ?";
 $stmt = $conn->prepare($billQuery);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $billResult = $stmt->get_result();
 while ($row = $billResult->fetch_assoc()) {
+    $isPaid = ($row['status'] == 'paid') || 
+              ($row['payment_status'] == 'verified');
+    
     $events[$row['due_date']][] = [
         'title' => "Payment Due: " . $row['description'] . " ($" . $row['amount'] . ")",
         'type' => 'bill',
-        'date' => $row['due_date']
+        'date' => $row['due_date'],
+        'paid' => $isPaid
     ];
 }
 
 // Get maintenance events
-$maintenanceQuery = "SELECT mr.requested_at, mr.description, l.lease_id 
+$maintenanceQuery = "SELECT mr.requested_at, mr.description, l.lease_id, mr.status
                      FROM MAINTENANCE_REQUEST mr 
                      JOIN LEASE l ON mr.lease_id = l.lease_id 
                      WHERE l.tenant_id = ?";
@@ -65,9 +73,10 @@ $stmt->execute();
 $maintenanceResult = $stmt->get_result();
 while ($row = $maintenanceResult->fetch_assoc()) {
     $events[$row['requested_at']][] = [
-        'title' => "Maintenance: " . $row['description'],
+        'title' => "Maintenance: " . $row['description'] . " (" . ucfirst(str_replace('_', ' ', $row['status'])) . ")",
         'type' => 'maintenance',
-        'date' => $row['requested_at']
+        'date' => $row['requested_at'],
+        'paid' => false
     ];
 }
 
@@ -85,21 +94,9 @@ while ($row = $announcementResult->fetch_assoc()) {
     $events[$date][] = [
         'title' => "Announcement: " . $row['title'],
         'type' => 'announcement',
-        'date' => $date
+        'date' => $date,
+        'paid' => false
     ];
-}
-
-// Prepare events for JavaScript
-$js_events = json_encode($events);
-
-// Function to get days in month
-function getDaysInMonth($month, $year) {
-    return date('t', strtotime("$year-$month-01"));
-}
-
-// Function to get first day of month
-function getFirstDayOfMonth($month, $year) {
-    return date('w', strtotime("$year-$month-01"));
 }
 
 // Get current month and year
@@ -116,7 +113,7 @@ if (isset($_GET['prev'])) {
 } elseif (isset($_GET['next'])) {
     $currentMonth++;
     if ($currentMonth > 12) {
-        $currentMonth = 0;
+        $currentMonth = 1;
         $currentYear++;
     }
 }
@@ -128,6 +125,16 @@ $monthNames = [
     9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'
 ];
 $currentMonthName = $monthNames[$currentMonth];
+
+// Function to get days in month
+function getDaysInMonth($month, $year) {
+    return date('t', strtotime("$year-$month-01"));
+}
+
+// Function to get first day of month
+function getFirstDayOfMonth($month, $year) {
+    return date('w', strtotime("$year-$month-01"));
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -175,6 +182,29 @@ $currentMonthName = $monthNames[$currentMonth];
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .view-dues-btn {
+            background: #1666ba;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .view-dues-btn:hover {
+            background: #0d4a8a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .view-dues-btn i {
+            font-size: 1rem;
         }
 
         .calendar-wrapper {
@@ -258,10 +288,14 @@ $currentMonthName = $monthNames[$currentMonth];
 
         .calendar-day {
             background: white;
-            min-height: 120px;
-            padding: 10px;
+            height: 120px;
+            width: 100%;
+            padding: 8px;
             position: relative;
             transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         .calendar-day:hover {
@@ -274,7 +308,7 @@ $currentMonthName = $monthNames[$currentMonth];
 
         .calendar-day-number {
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1rem;
             margin-bottom: 5px;
             color: #495057;
         }
@@ -282,8 +316,8 @@ $currentMonthName = $monthNames[$currentMonth];
         .calendar-day.today .calendar-day-number {
             background: #1666ba;
             color: white;
-            width: 30px;
-            height: 30px;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -296,20 +330,32 @@ $currentMonthName = $monthNames[$currentMonth];
         }
 
         .calendar-events {
-            max-height: 80px;
-            overflow-y: auto;
-            padding-right: 5px;
+            flex-grow: 1;
+            overflow: hidden;
         }
 
         .calendar-event {
-            font-size: 0.75rem;
-            padding: 5px 8px;
-            border-radius: 4px;
-            margin-bottom: 5px;
+            font-size: 0.7rem;
+            padding: 4px 6px;
+            border-radius: 3px;
+            margin-bottom: 3px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             cursor: pointer;
+            position: relative;
+        }
+
+        .calendar-event.paid {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+
+        .calendar-event.paid::after {
+            content: "✓";
+            color: #28a745;
+            margin-left: 5px;
+            font-weight: bold;
         }
 
         .calendar-event.lease {
@@ -330,6 +376,66 @@ $currentMonthName = $monthNames[$currentMonth];
         .calendar-event.announcement {
             background: #cce5ff;
             border-left: 3px solid #1666ba;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow: auto;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 25px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            font-size: 1.5rem;
+            color: #aaa;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .modal-header {
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1666ba;
+        }
+
+        .modal-body {
+            padding: 15px 0;
+        }
+
+        .modal-footer {
+            padding-top: 15px;
+            margin-top: 15px;
+            border-top: 1px solid #eee;
+            text-align: right;
         }
 
         /* Events Sidebar */
@@ -433,6 +539,19 @@ $currentMonthName = $monthNames[$currentMonth];
             cursor: pointer;
         }
 
+        .event-card.paid {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+
+        .event-card.paid::after {
+            content: "✓ Paid";
+            color: #28a745;
+            margin-left: 10px;
+            font-weight: bold;
+            float: right;
+        }
+
         .event-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -502,7 +621,7 @@ $currentMonthName = $monthNames[$currentMonth];
             display: flex;
             justify-content: center;
             gap: 4px;
-            display: none; /* Hidden by default */
+            display: none;
         }
         
         .event-indicator {
@@ -534,7 +653,7 @@ $currentMonthName = $monthNames[$currentMonth];
             }
             
             .calendar-day {
-                min-height: 100px;
+                height: 100px;
             }
         }
 
@@ -555,6 +674,11 @@ $currentMonthName = $monthNames[$currentMonth];
                 gap: 15px;
             }
             
+            .view-dues-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
             .calendar-table {
                 grid-template-columns: repeat(7, 1fr);
             }
@@ -565,7 +689,7 @@ $currentMonthName = $monthNames[$currentMonth];
             }
             
             .calendar-day {
-                min-height: 80px;
+                height: 80px;
                 padding: 5px;
             }
             
@@ -639,7 +763,7 @@ $currentMonthName = $monthNames[$currentMonth];
             }
             
             .calendar-day {
-                min-height: 70px;
+                height: 70px;
                 border: 1px solid #e0e0e0;
                 border-radius: 4px;
                 margin: 1px;
@@ -676,11 +800,17 @@ $currentMonthName = $monthNames[$currentMonth];
             .calendar-events {
                 display: none;
             }
+
+            /* Modal adjustments for mobile */
+            .modal-content {
+                width: 95%;
+                margin: 20% auto;
+            }
         }
 
         @media (max-width: 400px) {
             .calendar-day {
-                min-height: 60px;
+                height: 60px;
             }
             
             .calendar-day-number {
@@ -711,6 +841,9 @@ $currentMonthName = $monthNames[$currentMonth];
             <div class="page-title">
                 <i class="fas fa-calendar-alt"></i> Tenant Calendar
             </div>
+            <a href="view-dues.php" class="view-dues-btn">
+                <i class="fas fa-receipt"></i> View Dues
+            </a>
         </div>
 
         <div class="calendar-wrapper">
@@ -771,7 +904,12 @@ $currentMonthName = $monthNames[$currentMonth];
                         echo "<div class='calendar-events'>";
                         if (isset($events[$dateStr])) {
                             foreach ($events[$dateStr] as $event) {
-                                echo "<div class='calendar-event {$event['type']}' title='{$event['title']}'>{$event['title']}</div>";
+                                $paidClass = $event['paid'] ? 'paid' : '';
+                                echo "<div class='calendar-event {$event['type']} $paidClass' 
+                                      title='{$event['title']}'
+                                      onclick='showEventModal(\"{$event['title']}\", \"{$event['type']}\", \"{$event['date']}\")'>
+                                      {$event['title']}
+                                  </div>";
                             }
                         }
                         echo "</div>";
@@ -837,13 +975,15 @@ $currentMonthName = $monthNames[$currentMonth];
                         } else {
                             foreach ($todayEvents as $event) {
                                 $date = date('M j, Y', strtotime($event['date']));
-                                echo "<div class='event-card {$event['type']}'>";
-                                echo "<div class='event-header'>";
-                                echo "<div class='event-type'>{$event['type']}</div>";
-                                echo "<div class='event-date-display'>$date</div>";
-                                echo "</div>";
-                                echo "<div class='event-content'>{$event['title']}</div>";
-                                echo "</div>";
+                                $paidClass = $event['paid'] ? 'paid' : '';
+                                echo "<div class='event-card {$event['type']} $paidClass' 
+                                      onclick='showEventModal(\"{$event['title']}\", \"{$event['type']}\", \"{$event['date']}\")'>
+                                      <div class='event-header'>
+                                          <div class='event-type'>{$event['type']}</div>
+                                          <div class='event-date-display'>$date</div>
+                                      </div>
+                                      <div class='event-content'>{$event['title']}</div>
+                                  </div>";
                             }
                         }
                         ?>
@@ -853,7 +993,54 @@ $currentMonthName = $monthNames[$currentMonth];
         </div>
     </div>
 
+    <!-- Event Modal -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalEventType"></h2>
+            </div>
+            <div class="modal-body">
+                <p id="modalEventContent"></p>
+                <p><strong>Date:</strong> <span id="modalEventDate"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Get the modal
+        const modal = document.getElementById("eventModal");
+        
+        // Function to show modal with event details
+        function showEventModal(title, type, date) {
+            document.getElementById("modalEventType").textContent = type.charAt(0).toUpperCase() + type.slice(1);
+            document.getElementById("modalEventContent").textContent = title;
+            document.getElementById("modalEventDate").textContent = new Date(date).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            modal.style.display = "block";
+        }
+        
+        // Function to close modal
+        function closeModal() {
+            modal.style.display = "none";
+        }
+        
+        // Close modal when clicking on X
+        document.querySelector(".close").addEventListener('click', closeModal);
+        
+        // Close modal when clicking outside of it
+        window.addEventListener('click', function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        });
+        
         // Highlight today in the calendar
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date();
@@ -874,19 +1061,6 @@ $currentMonthName = $monthNames[$currentMonth];
                     
                     // Add selected class to clicked day
                     this.classList.add('selected');
-                    
-                    // Get the date
-                    const selectedDate = this.getAttribute('data-date');
-                    
-                    // In a real application, you could load events for this date
-                    console.log("Selected date:", selectedDate);
-                });
-            });
-            
-            // Simulate event click
-            document.querySelectorAll('.calendar-event').forEach(event => {
-                event.addEventListener('click', function() {
-                    alert('Event details: ' + this.title);
                 });
             });
             
