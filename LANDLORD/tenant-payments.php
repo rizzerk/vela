@@ -1,4 +1,4 @@
-<?php
+<?php 
 session_start();
 require_once '../connection.php';
 require_once '../vendor/autoload.php'; // Make sure PHPMailer is installed via Composer
@@ -343,8 +343,7 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
             font-style: italic;
         }
 
-        .no-payments {
-            padding: 2rem;
+        .no-record {
             text-align: center;
             color: #64748b;
             background: white;
@@ -451,14 +450,18 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     <div class="main-content">
         <h1>Payments</h1>
 
-        <?php if (empty($payments)): ?>
-            <div class="no-payments">
-                <i class="fas fa-file-invoice-dollar" style="font-size:2rem;"></i>
-                <p>No payment records found.</p>
-            </div>
-        <?php else: ?>
-            <table>
-                <thead>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tenant</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Proof of Payment</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($payments)): ?>
                     <tr>
                         <th>Tenant</th>
                         <th>Bill Info</th>
@@ -470,8 +473,7 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                         <th>Proof</th>
                         <th>Actions</th>
                     </tr>
-                </thead>
-                <tbody>
+                <?php else: ?>
                     <?php foreach ($payments as $payment): ?>
                         <tr class="<?= $payment['status'] === 'pending' ? 'pending-payment' : '' ?>">
                             <td><?= htmlspecialchars($payment['tenant_name']) ?></td>
@@ -496,9 +498,11 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                             </td>
                             <td><?= date('M d, Y H:i', strtotime($payment['submitted_at'])) ?></td>
                             <td>
-                                <span class="status <?= strtolower($payment['status']) ?>">
-                                    <?= ucfirst($payment['status']) ?>
-                                </span>
+                                <select class="status-dropdown" onchange="updatePaymentStatus(<?= $payment['payment_id'] ?>, this.value)">
+                                    <option value="pending" <?= $payment['status'] === 'pending' ? 'selected' : '' ?>>Pending</option>
+                                    <option value="confirmed" <?= $payment['status'] === 'confirmed' ? 'selected' : '' ?>>Confirmed</option>
+                                    <option value="rejected" <?= $payment['status'] === 'rejected' ? 'selected' : '' ?>>Rejected</option>
+                                </select>
                             </td>
                             <td>₱<?= number_format($payment['amount_paid'], 2) ?></td>
                             <td><?= ucfirst($payment['mode']) ?></td>
@@ -509,7 +513,7 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                                         <i class="fas fa-eye"></i> View
                                     </button>
                                 <?php else: ?>
-                                    <em style="color:#94a3b8;">No file</em>
+                                    <em style="color:#aaa;">No file</em>
                                 <?php endif; ?>
                             </td>
                             <td>
@@ -534,9 +538,9 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                             </td>
                         </tr>
                     <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
     </div>
 
     <!-- Modal for viewing proof of payment -->

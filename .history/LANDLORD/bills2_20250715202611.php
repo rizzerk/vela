@@ -186,9 +186,9 @@ $bills = $billsResult->fetch_all(MYSQLI_ASSOC);
     </style>
 </head>
 <body>
-<?php include ('../includes/navbar/landlord-sidebar.html'); ?>
-
-<div class="container">
+    <?php include "includes/navbar/navbarIN.html" ?>
+    
+    <div class="container">
         <h1>Manage Bills</h1>
         
         <?php if (isset($success)): ?>
