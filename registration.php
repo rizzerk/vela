@@ -1,8 +1,53 @@
 <?php
 require_once 'connection.php';
+require_once 'vendor/autoload.php'; // Load PHPMailer (adjust path as needed)
 
 $errors = [];
 $success = false;
+
+// Function to send welcome email
+function sendWelcomeEmail($email, $name) {
+    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    
+    try {
+        // SMTP Configuration (same as your billing system)
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'velacinco5@gmail.com'; // Your Gmail
+        $mail->Password   = 'aycm atee woxl lmvj';  // App Password
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port       = 465;
+
+        // Recipients
+        $mail->setFrom('velacinco5@gmail.com', 'VELA Cinco Rentals');
+        $mail->addAddress($email, $name);
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = 'Welcome to VELA Cinco Rentals';
+        
+        $mail->Body = "
+            <h2>Welcome, {$name}!</h2>
+            <p>Thank you for registering with VELA Cinco Rentals. Your account has been successfully created.</p>
+            <p>You can now <a href=\"http://localhost/vela/index.php\">log in to your account</a> using the credentials you provided during registration.</p>
+            <p>If you have any questions, please don't hesitate to contact our support team.</p>
+            <p>Thank you,<br>VELA Cinco Rentals Team</p>
+        ";
+
+        $mail->AltBody = "Welcome, {$name}!\n\n" .
+            "Thank you for registering with VELA Cinco Rentals. Your account has been successfully created.\n\n" .
+            "You can now log in to your account at http://localhost/vela/index.php using the credentials you provided during registration.\n\n" .
+            "If you have any questions, please don't hesitate to contact our support team.\n\n" .
+            "Thank you,\nVELA Cinco Rentals Team";
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Email error for {$email}: " . $e->getMessage());
+        return false;
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
 
@@ -85,7 +130,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                     $stmt->bind_param("sssss", $full_name, $email, $phonenumber, $hashed_password, $role);
                     
                     if ($stmt->execute()) {
-                        $success = true;
+                        // Send welcome email
+                        if (sendWelcomeEmail($email, $full_name)) {
+                            $success = true;
+                        } else {
+                            // Email failed but registration succeeded
+                            $success = true;
+                            $errors[] = "Registration successful but welcome email failed to send";
+                        }
                     } else {
                         $errors[] = "Registration failed. Please try again.";
                     }
@@ -98,6 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">

@@ -1,8 +1,98 @@
 <?php
 session_start();
 require_once '../connection.php';
+require_once '../vendor/autoload.php'; // Load PHPMailer
+
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
+
+// Function to send approval email
+function sendApprovalEmail($applicant_name, $applicant_email, $property_title) {
+    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    
+    try {
+        // SMTP Configuration
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'velacinco5@gmail.com';
+        $mail->Password   = 'aycm atee woxl lmvj';
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port       = 465;
+
+        // Recipients
+        $mail->setFrom('velacinco5@gmail.com', 'VELA Cinco Rentals');
+        $mail->addAddress($applicant_email, $applicant_name);
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = 'Your Application Has Been Approved';
+        
+        $mail->Body = "
+            <h2>Congratulations, {$applicant_name}!</h2>
+            <p>We're pleased to inform you that your application for <strong>{$property_title}</strong> has been approved.</p>
+            <p>You are now officially a tenant. Please log in to your account to view your lease details and next steps.</p>
+            <p>If you have any questions, please don't hesitate to contact us.</p>
+            <p>Welcome to VELA Cinco Rentals!</p>
+        ";
+
+        $mail->AltBody = "Congratulations, {$applicant_name}!\n\n" .
+            "We're pleased to inform you that your application for {$property_title} has been approved.\n\n" .
+            "You are now officially a tenant. Please log in to your account to view your lease details and next steps.\n\n" .
+            "If you have any questions, please don't hesitate to contact us.\n\n" .
+            "Welcome to VELA Cinco Rentals!";
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Approval email error for {$applicant_email}: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Function to send rejection email
+function sendRejectionEmail($applicant_name, $applicant_email, $property_title) {
+    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    
+    try {
+        // SMTP Configuration
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'velacinco5@gmail.com';
+        $mail->Password   = 'aycm atee woxl lmvj';
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port       = 465;
+
+        // Recipients
+        $mail->setFrom('velacinco5@gmail.com', 'VELA Cinco Rentals');
+        $mail->addAddress($applicant_email, $applicant_name);
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = 'Update on Your Application for ' . $property_title;
+        
+        $mail->Body = "
+            <h2>Application Update</h2>
+            <p>Dear {$applicant_name},</p>
+            <p>We regret to inform you that your application for <strong>{$property_title}</strong> has not been approved at this time.</p>
+            <p>We appreciate your interest and encourage you to apply for other properties in our system that may better match your requirements.</p>
+            <p>Thank you for considering VELA Cinco Rentals.</p>
+        ";
+
+        $mail->AltBody = "Application Update\n\n" .
+            "Dear {$applicant_name},\n\n" .
+            "We regret to inform you that your application for {$property_title} has not been approved at this time.\n\n" .
+            "We appreciate your interest and encourage you to apply for other properties in our system that may better match your requirements.\n\n" .
+            "Thank you for considering VELA Cinco Rentals.";
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Rejection email error for {$applicant_email}: " . $e->getMessage());
+        return false;
+    }
+}
 
 // Check if user is logged in and is landlord
 if (!isset($_SESSION['loggedin'])) {
@@ -31,13 +121,25 @@ while ($row = $result->fetch_assoc()) {
 $stmt->close();
 
 // Handle application status update
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
-  $application_id = $_POST['application_id'];
-  $status = $_POST['update_status']; // use the button value here
+    $application_id = $_POST['application_id'];
+    $status = $_POST['update_status'];
+    
     try {
         // Start transaction
         $conn->begin_transaction();
+        
+        // First get application details for email
+        $appStmt = $conn->prepare("SELECT a.*, p.title, u.name as applicant_name, u.email 
+                                 FROM APPLICATIONS a
+                                 JOIN PROPERTY p ON a.property_id = p.property_id
+                                 JOIN USERS u ON a.applicant_id = u.user_id
+                                 WHERE a.application_id = ?");
+        $appStmt->bind_param("i", $application_id);
+        $appStmt->execute();
+        $appResult = $appStmt->get_result();
+        $application = $appResult->fetch_assoc();
+        $appStmt->close();
         
         // Update application status
         $stmt = $conn->prepare("UPDATE APPLICATIONS SET status = ?, approved_at = ? WHERE application_id = ?");
@@ -48,14 +150,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
         
         // If approved, create lease and update user role
         if ($status == 'approved') {
-            // Get application details
-            $appStmt = $conn->prepare("SELECT property_id, applicant_id FROM APPLICATIONS WHERE application_id = ?");
-            $appStmt->bind_param("i", $application_id);
-            $appStmt->execute();
-            $appResult = $appStmt->get_result();
-            $application = $appResult->fetch_assoc();
-            $appStmt->close();
-            
             // Create lease (1 year by default)
             $start_date = date('Y-m-d');
             $end_date = date('Y-m-d', strtotime('+1 year'));
@@ -79,42 +173,52 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
             $userStmt->execute();
             $userStmt->close();
             
-       
-  
-  // Create initial bill with billing period
-  $rentStmt = $conn->prepare("SELECT monthly_rent FROM PROPERTY WHERE property_id = ?");
-  $rentStmt->bind_param("i", $application['property_id']);
-  $rentStmt->execute();
-  $rentResult = $rentStmt->get_result();
-  $rent = $rentResult->fetch_assoc();
-  $rentStmt->close();
-  
-  $billStmt = $conn->prepare("INSERT INTO BILL 
-    (lease_id, amount, due_date, status, description, 
-     billing_period_start, billing_period_end, bill_type) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-
-$status = 'unpaid';
-$description = 'Monthly Rent';
-$bill_type = 'rent';
-
-$due_date = date('Y-m-d', strtotime('+5 days'));
-    $period_start = date('Y-m-d'); // Start from today
-    $period_end = date('Y-m-d', strtotime('+1 month'));
-
-$billStmt->bind_param("idssssss", 
-    $lease_id, 
-    $rent['monthly_rent'], 
-    $due_date,
-    $status,
-    $description,
-    $period_start,
-    $period_end,
-    $bill_type
-);
-  $billStmt->execute();
-  $billStmt->close();
-
+            // Create initial bill with billing period
+            $rentStmt = $conn->prepare("SELECT monthly_rent FROM PROPERTY WHERE property_id = ?");
+            $rentStmt->bind_param("i", $application['property_id']);
+            $rentStmt->execute();
+            $rentResult = $rentStmt->get_result();
+            $rent = $rentResult->fetch_assoc();
+            $rentStmt->close();
+            
+            $billStmt = $conn->prepare("INSERT INTO BILL 
+                (lease_id, amount, due_date, status, description, 
+                 billing_period_start, billing_period_end, bill_type) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            
+            $bill_status = 'unpaid';
+            $description = 'Monthly Rent';
+            $bill_type = 'rent';
+            $due_date = date('Y-m-d', strtotime('+5 days'));
+            $period_start = date('Y-m-d');
+            $period_end = date('Y-m-d', strtotime('+1 month'));
+            
+            $billStmt->bind_param("idssssss", 
+                $lease_id, 
+                $rent['monthly_rent'], 
+                $due_date,
+                $bill_status,
+                $description,
+                $period_start,
+                $period_end,
+                $bill_type
+            );
+            $billStmt->execute();
+            $billStmt->close();
+            
+            // Send approval email
+            sendApprovalEmail(
+                $application['applicant_name'],
+                $application['email'],
+                $application['title']
+            );
+        } else if ($status == 'rejected') {
+            // Send rejection email
+            sendRejectionEmail(
+                $application['applicant_name'],
+                $application['email'],
+                $application['title']
+            );
         }
         
         // Commit transaction

@@ -1,10 +1,90 @@
 <?php
 session_start();
 require_once '../connection.php';
+require_once '../vendor/autoload.php'; // Load PHPMailer
+
+// Function to send bill notification email
+function sendBillEmail($tenantEmail, $tenantName, $billDetails) {
+    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    
+    try {
+        // SMTP Configuration
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'velacinco5@gmail.com'; // Your Gmail
+        $mail->Password   = 'aycm atee woxl lmvj';      // App Password
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port       = 465;
+
+        // Recipients
+        $mail->setFrom('velacinco5@gmail.com', 'VELA Cinco Rentals');
+        $mail->addAddress($tenantEmail, $tenantName);
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = 'New Bill Generated - ' . $billDetails['property_title'];
+        
+        $mail->Body = "
+            <h2>Hello {$tenantName},</h2>
+            <p>A new bill has been generated for your property <strong>{$billDetails['property_title']}</strong>:</p>
+            
+            <table border='1' cellpadding='10' style='border-collapse: collapse;'>
+                <tr>
+                    <th style='text-align: left;'>Bill Type</th>
+                    <td>" . ucfirst($billDetails['bill_type']) . "</td>
+                </tr>
+                <tr>
+                    <th style='text-align: left;'>Amount Due</th>
+                    <td>₱" . number_format($billDetails['amount'], 2) . "</td>
+                </tr>
+                <tr>
+                    <th style='text-align: left;'>Due Date</th>
+                    <td>{$billDetails['due_date']}</td>
+                </tr>
+        ";
+        
+        if ($billDetails['bill_type'] === 'rent') {
+            $mail->Body .= "
+                <tr>
+                    <th style='text-align: left;'>Billing Period</th>
+                    <td>{$billDetails['period_start']} to {$billDetails['period_end']}</td>
+                </tr>
+            ";
+        }
+        
+        $mail->Body .= "
+            </table>
+            
+            <p>Description: {$billDetails['description']}</p>
+            
+            <p>Please make payment before the due date.</p>
+            <p>Thank you,<br>VELA Cinco Rentals</p>
+        ";
+
+        $mail->AltBody = "Hello {$tenantName},\n\n" .
+            "A new bill has been generated for your property {$billDetails['property_title']}:\n\n" .
+            "Bill Type: " . ucfirst($billDetails['bill_type']) . "\n" .
+            "Amount Due: ₱" . number_format($billDetails['amount'], 2) . "\n" .
+            "Due Date: {$billDetails['due_date']}\n" .
+            ($billDetails['bill_type'] === 'rent' ? 
+                "Billing Period: {$billDetails['period_start']} to {$billDetails['period_end']}\n" : "") .
+            "Description: {$billDetails['description']}\n\n" .
+            "Please make payment before the due date.\n\n" .
+            "Thank you,\nProperty Management Team";
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Email error for {$tenantEmail}: " . $e->getMessage());
+        return false;
+    }
+}
 
 // Get all active leases with tenant and property info
 $leasesQuery = "SELECT l.lease_id, p.title as property_title, 
-                       u.name as tenant_name, u.user_id as tenant_id
+                       u.name as tenant_name, u.user_id as tenant_id,
+                       u.email as tenant_email
                 FROM LEASE l
                 JOIN PROPERTY p ON l.property_id = p.property_id
                 JOIN USERS u ON l.tenant_id = u.user_id
@@ -20,6 +100,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bill_type = $_POST['bill_type'];
     $period_start = !empty($_POST['period_start']) ? $_POST['period_start'] : NULL;
     $period_end = !empty($_POST['period_end']) ? $_POST['period_end'] : NULL;
+
+    // Get lease details for email
+    $leaseDetails = [];
+    foreach ($leases as $lease) {
+        if ($lease['lease_id'] == $lease_id) {
+            $leaseDetails = $lease;
+            break;
+        }
+    }
 
     $stmt = $conn->prepare("INSERT INTO BILL 
         (lease_id, amount, due_date, status, description, 
@@ -37,7 +126,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     );
     
     if ($stmt->execute()) {
-        $success = "Bill created successfully!";
+        // Prepare bill details for email
+        $billDetails = [
+            'property_title' => $leaseDetails['property_title'],
+            'bill_type' => $bill_type,
+            'amount' => $amount,
+            'due_date' => date('M j, Y', strtotime($due_date)),
+            'period_start' => $period_start ? date('M j, Y', strtotime($period_start)) : '',
+            'period_end' => $period_end ? date('M j, Y', strtotime($period_end)) : '',
+            'description' => $description
+        ];
+        
+        // Send email notification
+        if (sendBillEmail(
+            $leaseDetails['tenant_email'],
+            $leaseDetails['tenant_name'],
+            $billDetails
+        )) {
+            $success = "Bill created successfully and notification email sent!";
+        } else {
+            $success = "Bill created successfully but email notification failed to send.";
+        }
     } else {
         $error = "Error creating bill: " . $conn->error;
     }

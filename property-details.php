@@ -1,6 +1,55 @@
 <?php
 session_start();
 require_once 'connection.php';
+require_once 'vendor/autoload.php'; // Add this line for PHPMailer
+
+// Function to send application confirmation email to applicant
+function sendApplicationConfirmation($property_title, $name, $email) {
+    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    
+    try {
+        // SMTP Configuration
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'velacinco5@gmail.com'; // Your Gmail
+        $mail->Password   = 'aycm atee woxl lmvj';  // App Password
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port       = 465;
+
+        // Recipients
+        $mail->setFrom('velacinco5@gmail.com', 'VELA Cinco Rentals');
+        $mail->addAddress($email, $name);
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = 'Application Received for ' . $property_title;
+        
+        $mail->Body = "
+            <h2>Application Received</h2>
+            <p>Dear {$name},</p>
+            <p>Thank you for submitting your application for <strong>{$property_title}</strong>.</p>
+            <p>We have received your application and it is now being processed. You will be notified once your application has been reviewed.</p>
+            <p>You can view your application status by logging into your account at <a href=\"http://localhost/vela/index.php\">VELA Cinco Rentals</a>.</p>
+            <p>If you have any questions, please don't hesitate to contact us.</p>
+            <p>Thank you,<br>VELA Cinco Rentals Team</p>
+        ";
+
+        $mail->AltBody = "Application Received\n\n" .
+            "Dear {$name},\n\n" .
+            "Thank you for submitting your application for {$property_title}.\n\n" .
+            "We have received your application and it is now being processed. You will be notified once your application has been reviewed.\n\n" .
+            "You can view your application status by logging into your account at http://localhost/vela/index.php\n\n" .
+            "If you have any questions, please don't hesitate to contact us.\n\n" .
+            "Thank you,\nVELA Cinco Rentals Team";
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Confirmation email error for {$email}: " . $e->getMessage());
+        return false;
+    }
+}
 
 // Check if property ID is provided
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
@@ -57,7 +106,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_application']))
                 $stmt->bind_param("iisiis", $property_id, $_SESSION['user_id'], $occupation, $monthly_income, $num_of_tenants, $co_tenants);
                 
                 if ($stmt->execute()) {
-                    $success = "Your application has been submitted successfully!";
+                    // Get applicant details
+                    $stmt_applicant = $conn->prepare("SELECT name, email FROM USERS WHERE user_id = ?");
+                    $stmt_applicant->bind_param("i", $_SESSION['user_id']);
+                    $stmt_applicant->execute();
+                    $applicant = $stmt_applicant->get_result()->fetch_assoc();
+                    $stmt_applicant->close();
+                    
+                    // Send confirmation email to applicant
+                    if ($applicant) {
+                        sendApplicationConfirmation(
+                            $property['title'],
+                            $applicant['name'],
+                            $applicant['email']
+                        );
+                    }
+                    
+                    $success = "Your application has been submitted successfully! You will receive a confirmation email shortly.";
                 } else {
                     $error = "There was an error submitting your application. Please try again.";
                 }
