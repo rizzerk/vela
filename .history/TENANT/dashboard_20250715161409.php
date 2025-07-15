@@ -468,9 +468,9 @@ if ($lease) {
         <div class="bills-section">
             <div class="section-header">
                 <h2 class="section-title">Notices</h2>
-                <span onclick="viewAllNotices()" style="color: #1666ba; cursor: pointer; font-weight: 500;">
-                    View All
-                </span>
+                <button class="filter-btn" onclick="viewAllNotices()" style="background: #1666ba; color: white; border-color: #1666ba;">
+                    <i class="fas fa-eye"></i> View All
+                </button>
             </div>
             
             <div class="notice-section">

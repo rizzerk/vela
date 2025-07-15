@@ -3,20 +3,6 @@ session_start();
 require_once '../connection.php';
 
 $landlord_id = $_SESSION['user_id'] ?? 1;
-
-if ($_POST['action'] ?? '' === 'add_announcement') {
-    $title = $_POST['title'];
-    $content = $_POST['content'];
-    $visible_to = $_POST['visible_to'];
-    $priority = $_POST['priority'];
-    
-    $stmt = $conn->prepare("INSERT INTO ANNOUNCEMENT (title, content, visible_to, priority, created_by, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
-    $stmt->bind_param("ssssi", $title, $content, $visible_to, $priority, $landlord_id);
-    $stmt->execute();
-    header("Location: dashboard.php");
-    exit;
-}
-
 $properties = [];
 $total_properties = 0;
 $total_vacant = 0;
@@ -910,7 +896,7 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
                 <button class="action-btn" onclick="window.location.href='maintenance-req.php'">
                     <i class="fas fa-tools"></i> Maintenance Requests
                 </button>
-                <button class="action-btn" onclick="window.location.href='#'">
+                <button class="action-btn" onclick="window.location.href='applications.php'">
                     <i class="fas fa-user-plus"></i> Tenant Applications
                 </button>
                 <button class="action-btn" onclick="window.location.href='view-dues.php'">
@@ -942,7 +928,7 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             <div class="card announcements-card">
                 <h2 class="card-title">
                     Latest Announcement
-                    <button class="add-btn" onclick="openAnnouncementModal()">
+                    <button class="add-btn" onclick="window.location.href='add-announcement.php'">
                         <i class="fas fa-plus"></i> Add
                     </button>
                 </h2>
@@ -969,46 +955,7 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
         </div>
     </div>
 
-    <!-- Add Announcement Modal -->
-    <div class="modal" id="announcementModal">
-        <div class="modal-content">
-            <h3 style="color: #1666ba; margin-bottom: 1.5rem;">Add Announcement</h3>
-            <form method="POST">
-                <input type="hidden" name="action" value="add_announcement">
-                
-                <div class="form-group">
-                    <label for="title">Title</label>
-                    <input type="text" id="title" name="title" required>
-                </div>
 
-                <div class="form-group">
-                    <label for="content">Content</label>
-                    <textarea id="content" name="content" required></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="visible_to">Visible To</label>
-                    <select id="visible_to" name="visible_to" required>
-                        <option value="all">All Users</option>
-                        <option value="tenant">Tenants Only</option>
-                        <option value="landlord">Landlords Only</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="priority">Priority</label>
-                    <select id="priority" name="priority" required>
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                    </select>
-                </div>
-
-                <button type="submit" class="btn-primary">Add Announcement</button>
-                <button type="button" class="btn-secondary" onclick="closeAnnouncementModal()">Cancel</button>
-            </form>
-        </div>
-    </div>
 
     <script>
         let yearlyChart;
@@ -1084,21 +1031,6 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             const overlay = document.getElementById('mobileOverlay');
             sidebar.classList.remove('active');
             overlay.classList.remove('active');
-        }
-        
-        function openAnnouncementModal() {
-            document.getElementById('announcementModal').style.display = 'block';
-        }
-        
-        function closeAnnouncementModal() {
-            document.getElementById('announcementModal').style.display = 'none';
-        }
-        
-        window.onclick = function(event) {
-            const modal = document.getElementById('announcementModal');
-            if (event.target == modal) {
-                closeAnnouncementModal();
-            }
         }
     </script>
 </body>
