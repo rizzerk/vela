@@ -70,11 +70,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Determine which bill to process
             if ($bill_id) {
                 // Specific bill ID provided - validate it belongs to this tenant
+                // AND ensure no pending/verified payments exist for this bill (but allow rejected payments)
                 $bill_query = "
                     SELECT b.bill_id, b.amount, b.description, b.bill_type, b.status
                     FROM BILL b
                     JOIN LEASE l ON b.lease_id = l.lease_id
-                    WHERE l.tenant_id = ? AND b.bill_id = ?
+                    WHERE l.tenant_id = ? 
+                    AND b.bill_id = ?
+                    AND b.status IN ('unpaid', 'overdue')
+                    AND NOT EXISTS (
+                        SELECT 1 FROM PAYMENT p 
+                        WHERE p.bill_id = b.bill_id 
+                        AND p.status IN ('verified', 'pending')
+                    )
                 ";
                 $stmt = $conn->prepare($bill_query);
                 if (!$stmt) {
@@ -92,16 +100,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($bill_result->num_rows === 0) {
                     unlink($full_file_path);
-                    die("Bill not found or you don't have permission to pay this bill.");
+                    die("Bill not found, already paid, or has a pending payment. Please refresh the page and try again.");
                 }
             } else {
                 // No specific bill ID - get the next unpaid bill for this tenant
+                // Exclude bills with pending/verified payments (but allow rejected payments)
                 $bill_query = "
                     SELECT b.bill_id, b.amount, b.description, b.bill_type, b.status
                     FROM BILL b
                     JOIN LEASE l ON b.lease_id = l.lease_id
-                    WHERE l.tenant_id = ? AND b.status IN ('unpaid', 'overdue') AND NOT EXISTS (
-                        SELECT 1 FROM PAYMENT p WHERE p.bill_id = b.bill_id AND p.status = 'verified'
+                    WHERE l.tenant_id = ? 
+                    AND b.status IN ('unpaid', 'overdue') 
+                    AND NOT EXISTS (
+                        SELECT 1 FROM PAYMENT p 
+                        WHERE p.bill_id = b.bill_id 
+                        AND p.status IN ('verified', 'pending')
                     )
                     ORDER BY b.due_date ASC
                     LIMIT 1
@@ -128,6 +141,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $bill_description = $bill['description'];
                 $bill_type = $bill['bill_type'];
                 $bill_status = $bill['status'];
+
+                // Additional check: Count rejected payments for this bill to prevent abuse
+                $rejected_count_query = "
+                    SELECT COUNT(*) as rejected_count 
+                    FROM PAYMENT 
+                    WHERE bill_id = ? AND status = 'rejected'
+                ";
+                $stmt = $conn->prepare($rejected_count_query);
+                $stmt->bind_param("i", $target_bill_id);
+                $stmt->execute();
+                $rejected_result = $stmt->get_result();
+                $rejected_count = $rejected_result->fetch_assoc()['rejected_count'];
+
+                // Limit to 3 rejected attempts per bill
+                if ($rejected_count >= 3) {
+                    unlink($full_file_path);
+                    die("Too many rejected payment attempts for this bill. Please contact the landlord for assistance.");
+                }
 
                 // Create a comprehensive payment description
                 $final_payment_description = $payment_description;
@@ -207,9 +238,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 unlink($full_file_path);
                 if ($bill_id) {
-                    die("Bill ID " . $bill_id . " not found or you don't have permission to pay this bill.");
+                    die("Bill ID " . $bill_id . " not found, already paid, or has a pending payment.");
                 } else {
-                    die("No unpaid bill found for you.");
+                    die("No unpaid bills available for payment. All bills may already be paid or have pending payments.");
                 }
             }
         } else {
@@ -221,11 +252,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch tenant's unpaid bills for the dropdown
+// Only exclude bills with pending or verified payments, but include those with rejected payments
 $bills_query = "
-    SELECT b.bill_id, b.amount, b.description, b.bill_type, b.due_date, b.status
+    SELECT b.bill_id, b.amount, b.description, b.bill_type, b.due_date, b.status,
+           COALESCE((
+               SELECT COUNT(*) 
+               FROM PAYMENT p 
+               WHERE p.bill_id = b.bill_id 
+               AND p.status = 'rejected'
+           ), 0) as rejected_count
     FROM BILL b
     JOIN LEASE l ON b.lease_id = l.lease_id
-    WHERE l.tenant_id = ? AND b.status IN ('unpaid', 'overdue')
+    WHERE l.tenant_id = ? 
+    AND b.status IN ('unpaid', 'overdue')
+    AND NOT EXISTS (
+        SELECT 1 FROM PAYMENT p2 
+        WHERE p2.bill_id = b.bill_id 
+        AND p2.status IN ('verified', 'pending')
+    )
     ORDER BY b.due_date ASC
 ";
 $stmt = $conn->prepare($bills_query);
@@ -524,6 +568,30 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
             font-weight: 600;
         }
 
+        .bill-info .rejected-warning {
+            color: #ff6b35;
+            font-weight: 600;
+            background-color: #fff3e0;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        .no-bills-message {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .rejected-option {
+            background-color: #fff3e0;
+            color: #ff6b35;
+        }
+
         @media (max-width: 768px) {
             .page-title {
                 font-size: 1.8rem;
@@ -591,75 +659,89 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
             </div>
 
             <div class="payment-form-container">
-                <form id="payment-form" action="pay-dues.php" method="post" enctype="multipart/form-data">
-                    <h2>PROOF OF PAYMENT</h2>
-
-                    <div class="form-grp">
-                        <label for="bill-id">Select Bill to Pay (Optional):</label>
-                        <select id="bill-id" name="bill-id" onchange="updateBillInfo()">
-                            <option value="">Auto-select next unpaid bill</option>
-                            <?php foreach ($unpaid_bills as $bill): ?>
-                                <option value="<?= $bill['bill_id'] ?>" 
-                                        data-amount="<?= $bill['amount'] ?>"
-                                        data-description="<?= htmlspecialchars($bill['description']) ?>"
-                                        data-type="<?= $bill['bill_type'] ?>"
-                                        data-due-date="<?= $bill['due_date'] ?>"
-                                        data-status="<?= $bill['status'] ?>">
-                                    Bill #<?= $bill['bill_id'] ?> - <?= ucfirst($bill['bill_type']) ?> 
-                                    (₱<?= number_format($bill['amount'], 2) ?>) 
-                                    <?= $bill['status'] == 'overdue' ? '- OVERDUE' : '' ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                <?php if (empty($unpaid_bills)): ?>
+                    <div class="no-bills-message">
+                        <h3>No Bills Available for Payment</h3>
+                        <p>All your bills are either paid or have pending payments awaiting verification.</p>
+                        <p>Please check your <a href="payment-history.php">payment history</a> or <a href="view-dues.php">view dues</a> for more details.</p>
                     </div>
-
-                    <div id="bill-info" class="bill-info" style="display: none;">
-                        <h4>Bill Details</h4>
-                        <p><strong>Bill ID:</strong> <span id="selected-bill-id"></span></p>
-                        <p><strong>Type:</strong> <span id="selected-bill-type"></span></p>
-                        <p><strong>Description:</strong> <span id="selected-bill-description"></span></p>
-                        <p><strong>Amount:</strong> <span id="selected-bill-amount" class="amount"></span></p>
-                        <p><strong>Due Date:</strong> <span id="selected-bill-due-date"></span></p>
-                        <p><strong>Status:</strong> <span id="selected-bill-status"></span></p>
-                    </div>
-
-                    <div class="file-upload-box">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Drag & drop your file here or click to browse</p>
-                        <input type="file" id="proof" name="proof" required accept="image/png, image/jpeg">
-                        <small>Accepted formats: JPG, PNG (Max 5MB)</small>
-                    </div>
-
-                    <div class="form-grp">
-                        <label for="payment-description">Payment Description:</label>
-                        <textarea id="payment-description" name="payment-description" placeholder="e.g., Monthly Rent - January 2025, Utility Bill, Security Deposit, etc. (Optional - will auto-generate if left empty)"></textarea>
-                    </div>
-
-                    <div class="row">
-                        <div class="form-grp">
-                            <label for="amount">Amount:</label>
-                            <input type="number" id="amount" name="amount" step="0.01" min="0" required>
-                        </div>
+                <?php else: ?>
+                    <form id="payment-form" action="pay-dues.php" method="post" enctype="multipart/form-data">
+                        <h2>PROOF OF PAYMENT</h2>
 
                         <div class="form-grp">
-                            <label for="payment-method">Payment Method:</label>
-                            <select id="payment-method" name="payment-method" required>
-                                <option value=""></option>
-                                <option value="Gcash">GCash</option>
-                                <option value="BDO">Bank Transfer - BDO</option>
-                                <option value="BPI">Bank Transfer - BPI</option>
-                                <option value="Cash">Cash</option>
+                            <label for="bill-id">Select Bill to Pay (Optional):</label>
+                            <select id="bill-id" name="bill-id" onchange="updateBillInfo()">
+                                <option value="">Auto-select next unpaid bill</option>
+                                <?php foreach ($unpaid_bills as $bill): ?>
+                                    <option value="<?= $bill['bill_id'] ?>" 
+                                            data-amount="<?= $bill['amount'] ?>"
+                                            data-description="<?= htmlspecialchars($bill['description']) ?>"
+                                            data-type="<?= $bill['bill_type'] ?>"
+                                            data-due-date="<?= $bill['due_date'] ?>"
+                                            data-status="<?= $bill['status'] ?>"
+                                            data-rejected-count="<?= $bill['rejected_count'] ?>"
+                                            <?= $bill['rejected_count'] > 0 ? 'class="rejected-option"' : '' ?>>
+                                        Bill #<?= $bill['bill_id'] ?> - <?= ucfirst($bill['bill_type']) ?> 
+                                        (₱<?= number_format($bill['amount'], 2) ?>) 
+                                        <?= $bill['status'] == 'overdue' ? '- OVERDUE' : '' ?>
+                                        <?= $bill['rejected_count'] > 0 ? '- ' . $bill['rejected_count'] . ' REJECTED' : '' ?>
+                                    </option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
-                    </div>
 
-                    <div class="form-grp">
-                        <label for="ref-num">Reference Number:</label>
-                        <input type="text" id="ref-num" name="ref-num" required>
-                    </div>
+                        <div id="bill-info" class="bill-info" style="display: none;">
+                            <h4>Bill Details</h4>
+                            <p><strong>Bill ID:</strong> <span id="selected-bill-id"></span></p>
+                            <p><strong>Type:</strong> <span id="selected-bill-type"></span></p>
+                            <p><strong>Description:</strong> <span id="selected-bill-description"></span></p>
+                            <p><strong>Amount:</strong> <span id="selected-bill-amount" class="amount"></span></p>
+                            <p><strong>Due Date:</strong> <span id="selected-bill-due-date"></span></p>
+                            <p><strong>Status:</strong> <span id="selected-bill-status"></span></p>
+                            <div id="rejected-warning" class="rejected-warning" style="display: none;">
+                                <strong>Note:</strong> This bill has <span id="rejected-count"></span> rejected payment(s). Please ensure all payment details are correct before resubmitting.
+                            </div>
+                        </div>
 
-                    <button type="submit" class="submit-btn">SUBMIT</button>
-                </form>
+                        <div class="file-upload-box">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Drag & drop your file here or click to browse</p>
+                            <input type="file" id="proof" name="proof" required accept="image/png, image/jpeg">
+                            <small>Accepted formats: JPG, PNG (Max 5MB)</small>
+                        </div>
+
+                        <div class="form-grp">
+                            <label for="payment-description">Payment Description:</label>
+                            <textarea id="payment-description" name="payment-description" placeholder="e.g., Monthly Rent - January 2025, Utility Bill, Security Deposit, etc. (Optional - will auto-generate if left empty)"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="form-grp">
+                                <label for="amount">Amount:</label>
+                                <input type="number" id="amount" name="amount" step="0.01" min="0" required>
+                            </div>
+
+                            <div class="form-grp">
+                                <label for="payment-method">Payment Method:</label>
+                                <select id="payment-method" name="payment-method" required>
+                                    <option value=""></option>
+                                    <option value="Gcash">GCash</option>
+                                    <option value="BDO">Bank Transfer - BDO</option>
+                                    <option value="BPI">Bank Transfer - BPI</option>
+                                    <option value="Cash">Cash</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-grp">
+                            <label for="ref-num">Reference Number:</label>
+                            <input type="text" id="ref-num" name="ref-num" required>
+                        </div>
+
+                        <button type="submit" class="submit-btn">SUBMIT</button>
+                    </form>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -681,6 +763,8 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
             const billSelect = document.getElementById('bill-id');
             const billInfo = document.getElementById('bill-info');
             const amountInput = document.getElementById('amount');
+            const rejectedWarning = document.getElementById('rejected-warning');
+            const rejectedCount = document.getElementById('rejected-count');
             
             if (billSelect.value) {
                 const selectedOption = billSelect.options[billSelect.selectedIndex];
@@ -699,11 +783,21 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
                 statusSpan.textContent = selectedOption.dataset.status.toUpperCase();
                 statusSpan.className = selectedOption.dataset.status === 'overdue' ? 'overdue' : '';
                 
+                // Show rejected warning if applicable
+                const rejectedCountValue = parseInt(selectedOption.dataset.rejectedCount);
+                if (rejectedCountValue > 0) {
+                    rejectedWarning.style.display = 'block';
+                    rejectedCount.textContent = rejectedCountValue;
+                } else {
+                    rejectedWarning.style.display = 'none';
+                }
+                
                 // Pre-fill amount
                 amountInput.value = selectedOption.dataset.amount;
             } else {
                 billInfo.style.display = 'none';
                 amountInput.value = '';
+                rejectedWarning.style.display = 'none';
             }
         }
     </script>

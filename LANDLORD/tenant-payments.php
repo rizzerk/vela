@@ -8,19 +8,19 @@ $landlord_id = $_SESSION['user_id'] ?? 1;
 if (isset($_POST['update_status'])) {
     $payment_id = $_POST['payment_id'];
     $new_status = $_POST['status'];
-    
+
     // Validate status
     $allowed_statuses = ['pending', 'verified', 'rejected'];
     if (!in_array($new_status, $allowed_statuses)) {
         echo json_encode(['success' => false, 'message' => 'Invalid status']);
         exit;
     }
-    
+
     // Update payment status
     $update_query = "UPDATE PAYMENT SET status = ? WHERE payment_id = ?";
     $stmt = $conn->prepare($update_query);
     $stmt->bind_param("si", $new_status, $payment_id);
-    
+
     if ($stmt->execute()) {
         // If payment is verified, update the bill status to paid
         if ($new_status === 'verified') {
@@ -34,7 +34,7 @@ if (isset($_POST['update_status'])) {
             $bill_stmt->bind_param("i", $payment_id);
             $bill_stmt->execute();
         }
-        
+
         echo json_encode(['success' => true]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Database error']);
@@ -42,6 +42,7 @@ if (isset($_POST['update_status'])) {
     exit;
 }
 
+// Modified query to sort pending payments first
 $query = "
     SELECT 
         u.name AS tenant_name,
@@ -66,7 +67,14 @@ $query = "
     WHERE prop.property_id IN (
         SELECT property_id FROM PROPERTY WHERE property_id = prop.property_id
     )
-    ORDER BY p.submitted_at DESC
+    ORDER BY 
+        CASE 
+            WHEN p.status = 'pending' THEN 1
+            WHEN p.status = 'verified' THEN 2
+            WHEN p.status = 'rejected' THEN 3
+            ELSE 4
+        END,
+        p.submitted_at DESC
 ";
 
 $result = $conn->query($query);
@@ -75,6 +83,7 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Payments - VELA</title>
@@ -106,7 +115,8 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
             box-shadow: 0 8px 16px rgba(22, 102, 186, 0.1);
         }
 
-        th, td {
+        th,
+        td {
             padding: 0.8rem;
             text-align: left;
             font-size: 0.9rem;
@@ -122,6 +132,16 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
             background-color: #f9fafb;
         }
 
+        /* Highlight pending payments */
+        tr.pending-payment {
+            background-color: #fef3c7 !important;
+            border-left: 4px solid #f59e0b;
+        }
+
+        tr.pending-payment:nth-child(even) {
+            background-color: #fef3c7 !important;
+        }
+
         .status {
             padding: 0.4rem 0.8rem;
             border-radius: 20px;
@@ -131,9 +151,20 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
             display: inline-block;
         }
 
-        .pending { background-color: #fcd34d; color: #92400e; }
-        .verified { background-color: #4ade80; color: #065f46; }
-        .rejected { background-color: #f87171; color: #7f1d1d; }
+        .pending {
+            background-color: #fcd34d;
+            color: #92400e;
+        }
+
+        .verified {
+            background-color: #4ade80;
+            color: #065f46;
+        }
+
+        .rejected {
+            background-color: #f87171;
+            color: #7f1d1d;
+        }
 
         .bill-type {
             padding: 0.3rem 0.6rem;
@@ -144,10 +175,25 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
             display: inline-block;
         }
 
-        .bill-type.rent { background-color: #dbeafe; color: #1e40af; }
-        .bill-type.utility { background-color: #fef3c7; color: #d97706; }
-        .bill-type.penalty { background-color: #fecaca; color: #dc2626; }
-        .bill-type.other { background-color: #e5e7eb; color: #374151; }
+        .bill-type.rent {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .bill-type.utility {
+            background-color: #fef3c7;
+            color: #d97706;
+        }
+
+        .bill-type.penalty {
+            background-color: #fecaca;
+            color: #dc2626;
+        }
+
+        .bill-type.other {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
 
         .bill-info {
             display: flex;
@@ -202,7 +248,7 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
             color: white;
         }
 
-        .approve-btn:hover {
+        .approve-btn:hover:not(:disabled) {
             background-color: #059669;
         }
 
@@ -211,13 +257,20 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
             color: white;
         }
 
-        .reject-btn:hover {
+        .reject-btn:hover:not(:disabled) {
             background-color: #dc2626;
         }
 
         .action-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            background-color: #9ca3af !important;
+        }
+
+        .action-completed {
+            font-size: 0.8rem;
+            color: #6b7280;
+            font-style: italic;
         }
 
         .no-payments {
@@ -226,7 +279,7 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
             color: #64748b;
             background: white;
             border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
         }
 
         /* Modal styles */
@@ -238,7 +291,7 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.8);
+            background-color: rgba(0, 0, 0, 0.8);
         }
 
         .modal-content {
@@ -279,19 +332,51 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                 margin-left: 0;
                 padding: 1rem;
             }
-            
+
             table {
                 font-size: 0.85rem;
             }
-            
-            th, td {
+
+            th,
+            td {
                 padding: 0.6rem;
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid #1666ba;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
             }
         }
     </style>
 </head>
+
 <body>
-    <?php include ('../includes/navbar/landlord-sidebar.html'); ?>
+    <?php include('../includes/navbar/landlord-sidebar.html'); ?>
 
     <div class="main-content">
         <h1>Payments</h1>
@@ -318,7 +403,7 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                 </thead>
                 <tbody>
                     <?php foreach ($payments as $payment): ?>
-                        <tr>
+                        <tr class="<?= $payment['status'] === 'pending' ? 'pending-payment' : '' ?>">
                             <td><?= htmlspecialchars($payment['tenant_name']) ?></td>
                             <td>
                                 <div class="bill-info">
@@ -333,7 +418,7 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                                     <?php endif; ?>
                                     <?php if ($payment['billing_period_start'] && $payment['billing_period_end']): ?>
                                         <div class="bill-details">
-                                            Period: <?= date('M d', strtotime($payment['billing_period_start'])) ?> - 
+                                            Period: <?= date('M d', strtotime($payment['billing_period_start'])) ?> -
                                             <?= date('M d, Y', strtotime($payment['billing_period_end'])) ?>
                                         </div>
                                     <?php endif; ?>
@@ -358,18 +443,24 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <div class="action-buttons">
-                                    <button class="action-btn approve-btn" 
+                                <?php if ($payment['status'] === 'pending'): ?>
+                                    <div class="action-buttons">
+                                        <button class="action-btn approve-btn"
                                             onclick="updateStatus(<?= $payment['payment_id'] ?>, 'verified')"
-                                            <?= $payment['status'] === 'verified' ? 'disabled' : '' ?>>
-                                        <i class="fas fa-check"></i> Approve
-                                    </button>
-                                    <button class="action-btn reject-btn" 
+                                            id="approve-btn-<?= $payment['payment_id'] ?>">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                        <button class="action-btn reject-btn"
                                             onclick="updateStatus(<?= $payment['payment_id'] ?>, 'rejected')"
-                                            <?= $payment['status'] === 'rejected' ? 'disabled' : '' ?>>
-                                        <i class="fas fa-times"></i> Reject
-                                    </button>
-                                </div>
+                                            id="reject-btn-<?= $payment['payment_id'] ?>">
+                                            <i class="fas fa-times"></i> Reject
+                                        </button>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="action-completed">
+                                        <?= $payment['status'] === 'verified' ? 'Payment approved' : 'Payment rejected' ?>
+                                    </div>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -411,28 +502,115 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                 return;
             }
 
+            // Disable buttons and show loading state
+            const approveBtn = document.getElementById(`approve-btn-${paymentId}`);
+            const rejectBtn = document.getElementById(`reject-btn-${paymentId}`);
+            const actionContainer = approveBtn.parentElement;
+
+            approveBtn.disabled = true;
+            rejectBtn.disabled = true;
+            actionContainer.classList.add('loading');
+
             const formData = new FormData();
             formData.append('update_status', '1');
             formData.append('payment_id', paymentId);
             formData.append('status', status);
 
             fetch('', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload(); // Refresh the page to show updated status
-                } else {
-                    alert('Error updating status: ' + (data.message || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while updating the status.');
-            });
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update the UI immediately instead of reloading
+                        const row = approveBtn.closest('tr');
+                        const statusCell = row.querySelector('.status');
+                        const actionsCell = row.querySelector('.action-buttons').parentElement;
+
+                        // Update status display
+                        statusCell.className = `status ${status}`;
+                        statusCell.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+
+                        // Replace action buttons with completion message
+                        actionsCell.innerHTML = `
+                        <div class="action-completed">
+                            ${status === 'verified' ? 'Payment approved' : 'Payment rejected'}
+                        </div>
+                    `;
+
+                        // Remove pending highlight if present
+                        if (row.classList.contains('pending-payment')) {
+                            row.classList.remove('pending-payment');
+                        }
+
+                        // Show success message
+                        showNotification(`Payment ${status === 'verified' ? 'approved' : 'rejected'} successfully!`, 'success');
+
+                        // Optionally refresh after a delay to update sorting
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        // Re-enable buttons on error
+                        approveBtn.disabled = false;
+                        rejectBtn.disabled = false;
+                        actionContainer.classList.remove('loading');
+                        showNotification('Error updating status: ' + (data.message || 'Unknown error'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Re-enable buttons on error
+                    approveBtn.disabled = false;
+                    rejectBtn.disabled = false;
+                    actionContainer.classList.remove('loading');
+                    showNotification('An error occurred while updating the status.', 'error');
+                });
         }
+
+        // Simple notification function
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                background-color: ${type === 'success' ? '#10b981' : '#ef4444'};
+                color: white;
+                border-radius: 8px;
+                z-index: 1001;
+                font-size: 0.9rem;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                animation: slideIn 0.3s ease-out;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Add CSS animations for notifications
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
+
 </html>
