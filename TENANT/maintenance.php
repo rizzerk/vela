@@ -7,17 +7,36 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION
     exit();
 }
 
+
+if (isset($_GET['check_updates']) && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    $lastUpdate = $_GET['last_update'] ?? '';
+    $stmt = $conn->prepare("SELECT COUNT(*) AS count, MAX(updated_at) AS newest 
+            FROM MAINTENANCE_REQUEST MR
+            JOIN LEASE L ON MR.lease_id = L.lease_id
+            WHERE L.tenant_id = ? AND MR.updated_at > ?");
+    $stmt->bind_param("is", $_SESSION['user_id'], $lastUpdate);
+    $stmt->execute();
+    $result = $stmt->get_result()->fetch_assoc();
+    
+    header('Content-Type: application/json');
+    echo json_encode([
+        'updated' => ($result['count'] > 0),
+        'new_timestamp' => $result['newest'] ?? $lastUpdate
+    ]);
+    exit;
+}
+
 $userName = $_SESSION['name'] ?? 'Tenant';
 $userId = $_SESSION['user_id'] ?? 0;
 
-$message = ''; // Will hold success/error messages
+$message = ''; 
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $issueType = trim($_POST["issueType"]);
     $description = trim($_POST["description"]);
     $imagePath = null;
 
-    // Find active lease ID for this user
+    
     $leaseStmt = $conn->prepare("SELECT lease_id FROM LEASE WHERE tenant_id = ? AND active = 1 LIMIT 1");
     $leaseStmt->bind_param("i", $userId);
     $leaseStmt->execute();
@@ -26,7 +45,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if ($leaseResult && $leaseRow = $leaseResult->fetch_assoc()) {
         $leaseId = $leaseRow['lease_id'];
 
-        // Handle image upload if any
         if (!empty($_FILES['imageUpload']['name'])) {
             $uploadDir = "../uploads/maintenance/";
             if (!is_dir($uploadDir)) {
@@ -42,15 +60,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
         }
 
-        // Insert into MAINTENANCE_REQUEST table with image path
+        
         $insertStmt = $conn->prepare("
-            INSERT INTO MAINTENANCE_REQUEST (lease_id, description, status, requested_at, updated_at, image_path)
-            VALUES (?, ?, 'pending', NOW(), NOW(), ?)
+            INSERT INTO MAINTENANCE_REQUEST (lease_id, issue_type, description, status, requested_at, updated_at, image_path)
+            VALUES (?, ?, ?, 'pending', NOW(), NOW(), ?)
         ");
-        $insertStmt->bind_param("iss", $leaseId, $description, $imagePath);
+        $insertStmt->bind_param("isss", $leaseId, $issueType, $description, $imagePath);
 
         if ($insertStmt->execute()) {
-            $message = "<span class='success-message'>Request submitted successfully.</span>";
+            
+            header("Location: " . $_SERVER['PHP_SELF'] . "?success=1");
+            exit();
         } else {
             $message = "<span class='error-message'>Error submitting request.</span>";
         }
@@ -62,6 +82,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $leaseStmt->close();
 }
+
+
+if (isset($_GET['success']) && $_GET['success'] == 1) {
+    $message = "<span class='success-message'>Request submitted successfully.</span>";
+}
 ?>
 
 <!DOCTYPE html>
@@ -72,6 +97,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <style>
+        
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #ffffff 0%, #deecfb 100%);
@@ -79,13 +105,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             padding-top: 80px;
             color: #333;
         }
-
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 2rem;
         }
-
         h1.title {
             font-size: 2.5rem;
             font-weight: 800;
@@ -93,7 +117,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             text-align: center;
             margin-bottom: 2.5rem;
         }
-
         .maintenance-wrapper {
             display: flex;
             gap: 2rem;
@@ -101,7 +124,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             justify-content: space-between;
             align-items: flex-start;
         }
-
         .form-section, .request-section {
             flex: 1 1 48%;
             background: #fff;
@@ -113,21 +135,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             max-height: 600px;
             overflow-y: auto;
         }
-
         h2 {
             font-size: 1.5rem;
             color: #1666ba;
             margin-bottom: 1.5rem;
             font-weight: 700;
         }
-
         label {
             font-weight: 600;
             display: block;
             margin-top: 1rem;
             margin-bottom: 0.5rem;
         }
-
         input[type="text"],
         textarea,
         input[type="file"] {
@@ -139,12 +158,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             font-size: 0.95rem;
             box-sizing: border-box;
         }
-
         input[type="file"] {
             border-style: dashed;
             border-color: #999;
         }
-
         button {
             margin-top: 1.5rem;
             background: #1666ba;
@@ -156,36 +173,30 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             font-weight: 600;
             transition: background 0.3s ease;
         }
-
         button:hover {
             background: #104e91;
         }
-
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 1rem;
         }
-
         th, td {
             padding: 0.75rem 1rem;
             text-align: left;
             border-bottom: 1px solid #e0e0e0;
             font-size: 0.95rem;
         }
-
         th {
             background-color: #f0f6fd;
             color: #1666ba;
             font-weight: 600;
         }
-
         .message-box {
             margin-bottom: 1rem;
             font-weight: 600;
         }
-
-        /* Success message style */
+       
         .success-message {
             display: inline-block;
             padding: 0.75rem 1rem;
@@ -194,8 +205,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             border: 1px solid #badbcc;
             border-radius: 8px;
         }
-
-        /* Error message style */
+        
         .error-message {
             display: inline-block;
             padding: 0.75rem 1rem;
@@ -204,13 +214,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             border: 1px solid #f5c2c7;
             border-radius: 8px;
         }
-
         @media (max-width: 768px) {
             .maintenance-wrapper {
                 flex-wrap: wrap;
                 flex-direction: column;
             }
-
             .form-section, .request-section {
                 flex: 1 1 100%;
                 max-height: none;
@@ -227,7 +235,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <h1 class="title">Maintenance Request</h1>
 
         <div class="maintenance-wrapper">
-            <!-- Left: Maintenance Request Form -->
+          
             <section class="form-section" aria-labelledby="submit-request">
                 <h2 id="submit-request">Submit a Request</h2>
 
@@ -251,7 +259,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 </form>
             </section>
 
-            <!-- Right: User's Requests Table -->
+          
             <section class="request-section" aria-labelledby="my-requests">
                 <h2 id="my-requests">My Requests</h2>
                 <table>
@@ -268,7 +276,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         <?php
                         if ($userId > 0) {
                             $stmt = $conn->prepare("
-                                SELECT MR.request_id, MR.description, MR.requested_at, MR.status, MR.image_path
+                                SELECT MR.request_id, MR.issue_type, MR.description, MR.requested_at, MR.status, MR.image_path
                                 FROM MAINTENANCE_REQUEST MR
                                 JOIN LEASE L ON MR.lease_id = L.lease_id
                                 WHERE L.tenant_id = ?
@@ -284,7 +292,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                                 while ($row = $result->fetch_assoc()) {
                                     echo "<tr>
                                             <td>#".htmlspecialchars($row['request_id'])."</td>
-                                            <td>".htmlspecialchars($row['description'])."</td>
+                                            <td>".htmlspecialchars($row['issue_type'])."</td>
                                             <td>".htmlspecialchars(date('Y-m-d', strtotime($row['requested_at'])))."</td>
                                             <td>".ucfirst(str_replace('_', ' ', htmlspecialchars($row['status'])))."</td>";
 
@@ -307,5 +315,44 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             </section>
         </div>
     </div>
+
+<script>
+  
+  document.querySelector('form').addEventListener('submit', function(e) {
+      const btn = this.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+  });
+
+  
+  window.addEventListener('DOMContentLoaded', () => {
+    const msgBox = document.querySelector('.message-box');
+    if (msgBox) {
+      setTimeout(() => {
+        msgBox.style.transition = "opacity 0.5s ease";
+        msgBox.style.opacity = 0;
+        setTimeout(() => msgBox.remove(), 600);
+      }, 3000);
+    }
+  });
+</script>
+
+<script>
+ 
+  let lastUpdate = "<?= date('Y-m-d H:i:s') ?>";
+
+  setInterval(() => {
+      fetch(`?check_updates=1&last_update=${lastUpdate}`)
+      .then(res => res.json())
+      .then(data => {
+          if (data.updated) {
+              const shouldReload = confirm("Your requests have updates. Reload page?");
+              if (shouldReload) location.reload();
+          }
+          lastUpdate = data.new_timestamp || lastUpdate;
+      });
+  }, 60000); 
+</script>
+
 </body>
 </html>

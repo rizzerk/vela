@@ -2,20 +2,17 @@
 session_start();
 require_once '../connection.php';
 
-// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit();
 }
 
-// Get events from database
 $events = [];
 $currentYear = date('Y');
 $currentMonth = date('n');
 $user_id = $_SESSION['user_id'];
 $user_role = $_SESSION['role'];
 
-// Get lease events
 $leaseQuery = "SELECT l.lease_id, l.start_date, l.end_date, p.title AS property_name 
                FROM LEASE l 
                JOIN PROPERTY p ON l.property_id = p.property_id 
@@ -41,7 +38,6 @@ while ($row = $leaseResult->fetch_assoc()) {
     ];
 }
 
-// Get bill events with payment status
 $billQuery = "SELECT b.bill_id, b.due_date, b.amount, b.description, b.status, 
                      l.lease_id, p.payment_id, p.status as payment_status
               FROM BILL b 
@@ -58,7 +54,6 @@ while ($row = $billResult->fetch_assoc()) {
     
     $status = $row['payment_status'] ?? $row['status'];
     
-    // Customize title based on payment status
     $title = "Payment Due: " . $row['description'] . " ($" . $row['amount'] . ")";
     if ($row['payment_status'] === 'rejected') {
         $title = "Payment Rejected: " . $row['description'] . " ($" . $row['amount'] . ")";
@@ -77,7 +72,6 @@ while ($row = $billResult->fetch_assoc()) {
     ];
 }
 
-// Get maintenance events
 $maintenanceQuery = "SELECT mr.requested_at, mr.description, l.lease_id, mr.status
                      FROM MAINTENANCE_REQUEST mr 
                      JOIN LEASE l ON mr.lease_id = l.lease_id 
@@ -96,7 +90,6 @@ while ($row = $maintenanceResult->fetch_assoc()) {
     ];
 }
 
-// Get announcements
 $announcementQuery = "SELECT title, content, created_at 
                       FROM ANNOUNCEMENT 
                       WHERE visible_to IN ('all', ?) 
@@ -116,11 +109,9 @@ while ($row = $announcementResult->fetch_assoc()) {
     ];
 }
 
-// Get current month and year
 $currentMonth = isset($_GET['month']) ? intval($_GET['month']) : date('n');
 $currentYear = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
 
-// Handle month navigation
 if (isset($_GET['prev'])) {
     $currentMonth--;
     if ($currentMonth < 1) {
@@ -135,7 +126,6 @@ if (isset($_GET['prev'])) {
     }
 }
 
-// Get month name
 $monthNames = [
     1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April', 
     5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August', 
@@ -143,12 +133,10 @@ $monthNames = [
 ];
 $currentMonthName = $monthNames[$currentMonth];
 
-// Function to get days in month
 function getDaysInMonth($month, $year) {
     return date('t', strtotime("$year-$month-01"));
 }
 
-// Function to get first day of month
 function getFirstDayOfMonth($month, $year) {
     return date('w', strtotime("$year-$month-01"));
 }
@@ -174,7 +162,6 @@ function getFirstDayOfMonth($month, $year) {
             min-height: 100vh;
         }
 
-        /* Main content */
         .main-content {
             padding: 25px;
             max-width: 1400px;
@@ -730,7 +717,6 @@ function getFirstDayOfMonth($month, $year) {
             color: #ced4da;
         }
         
-        /* Event indicators for mobile */
         .event-indicators {
             position: absolute;
             bottom: 5px;
@@ -772,9 +758,7 @@ function getFirstDayOfMonth($month, $year) {
             background: #ffc107;
         }
 
-        
-
-        /* Responsive Design */
+    
         @media (max-width: 1200px) {
             .calendar-wrapper {
                 flex-direction: column;
@@ -855,12 +839,10 @@ function getFirstDayOfMonth($month, $year) {
                 padding: 8px 0;
             }
             
-            /* Show event indicators on mobile */
             .event-indicators {
                 display: flex;
             }
             
-            /* Hide full event text on mobile */
             .calendar-events {
                 display: none;
             }
@@ -929,7 +911,6 @@ function getFirstDayOfMonth($month, $year) {
                 font-size: 0.85rem;
             }
 
-            /* Modal adjustments for mobile */
             .modal-content {
                 width: 95%;
                 margin: 20% auto;
@@ -990,7 +971,6 @@ function getFirstDayOfMonth($month, $year) {
                 </div>
 
                 <div class="calendar-table">
-                    <!-- Day headers -->
                     <div class="day-header">Sun</div>
                     <div class="day-header">Mon</div>
                     <div class="day-header">Tue</div>
@@ -999,17 +979,14 @@ function getFirstDayOfMonth($month, $year) {
                     <div class="day-header">Fri</div>
                     <div class="day-header">Sat</div>
 
-                    <!-- Calendar days -->
                     <?php
                     $daysInMonth = getDaysInMonth($currentMonth, $currentYear);
                     $firstDay = getFirstDayOfMonth($currentMonth, $currentYear);
                     
-                    // Create empty cells for days before the first day of the month
                     for ($i = 0; $i < $firstDay; $i++) {
                         echo '<div class="calendar-day empty"></div>';
                     }
                     
-                    // Create cells for each day of the month
                     $today = date('Y-m-d');
                     for ($day = 1; $day <= $daysInMonth; $day++) {
                         $dateStr = sprintf("%04d-%02d-%02d", $currentYear, $currentMonth, $day);
@@ -1019,7 +996,6 @@ function getFirstDayOfMonth($month, $year) {
                         echo "<div class='calendar-day $isToday $hasEvents' data-date='$dateStr'>";
                         echo "<div class='calendar-day-number'>$day</div>";
                         
-                        // Display event indicators
                         echo "<div class='event-indicators'>";
                         if (isset($events[$dateStr])) {
                             foreach ($events[$dateStr] as $event) {
@@ -1030,7 +1006,6 @@ function getFirstDayOfMonth($month, $year) {
                         }
                         echo "</div>";
                         
-                        // Display events
                         echo "<div class='calendar-events'>";
                         if (isset($events[$dateStr])) {
                             foreach ($events[$dateStr] as $event) {
@@ -1160,17 +1135,14 @@ function getFirstDayOfMonth($month, $year) {
     </div>
 
     <script>
-        // Get the modal
         const modal = document.getElementById("eventModal");
         
-        // Function to show modal with event details
         function showEventModal(title, type, date, status) {
             document.getElementById("modalEventType").textContent = 
                 type.charAt(0).toUpperCase() + type.slice(1);
             
             document.getElementById("modalEventContent").textContent = title;
             
-            // Display status if available
             const statusElement = document.getElementById("modalEventStatus");
             if (status) {
                 statusElement.textContent = "Status: " + status.charAt(0).toUpperCase() + status.slice(1);
@@ -1188,22 +1160,18 @@ function getFirstDayOfMonth($month, $year) {
             modal.style.display = "block";
         }
         
-        // Function to close modal
         function closeModal() {
             modal.style.display = "none";
         }
         
-        // Close modal when clicking on X
         document.querySelector(".close").addEventListener('click', closeModal);
         
-        // Close modal when clicking outside of it
         window.addEventListener('click', function(event) {
             if (event.target == modal) {
                 closeModal();
             }
         });
         
-        // Highlight today in the calendar
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date();
             const todayStr = today.toISOString().split('T')[0];
@@ -1213,15 +1181,12 @@ function getFirstDayOfMonth($month, $year) {
                 todayCell.classList.add('selected');
             }
             
-            // Add click event to days
             document.querySelectorAll('.calendar-day:not(.empty)').forEach(day => {
                 day.addEventListener('click', function() {
-                    // Remove selected class from all days
                     document.querySelectorAll('.calendar-day').forEach(d => {
                         d.classList.remove('selected');
                     });
                     
-                    // Add selected class to clicked day
                     this.classList.add('selected');
                 });
             });
