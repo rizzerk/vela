@@ -873,10 +873,12 @@ function getStatusBadge($status) {
 
             <!-- Navigation Arrows -->
             <div class="navigation-arrows">
+                <?php if ($grandTotal > 0): ?>
                 <div class="nav-group" onclick="window.location.href='pay-dues.php'">
                     <p class="nav-text">Proceed to Payment</p>
                     <a href="pay-dues.php" class="arrow"><i class="fa-solid fa-arrow-right"></i></a>
                 </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

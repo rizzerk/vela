@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'connection.php';
+require_once '../connection.php';
 
 $landlord_id = $_SESSION['user_id'] ?? 1;
 $properties = [];
@@ -68,6 +68,7 @@ $yearly_maintenance = $monthly_maintenance * 12;
 $monthly_net = $monthly_rent - $monthly_maintenance;
 $yearly_net = $yearly_rent - $yearly_maintenance;
 
+// Get all properties for filter dropdown
 $property_list_query = "SELECT property_id, title FROM PROPERTY ORDER BY title";
 $property_list = $conn->query($property_list_query)->fetch_all(MYSQLI_ASSOC);
 

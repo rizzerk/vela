@@ -477,29 +477,38 @@ function getStatusBadge($status) {
             font-size: 1.3rem;
         }
 
-        /* Navigation Arrows */
+        /* Payment Button Styles */
         .navigation-arrows {
-            position: fixed;
-            bottom: 20px;
-            left: 0;
-            right: 0;
             display: flex;
-            justify-content: flex-end;
-            padding: 0 20px;
-            z-index: 100;
+            justify-content: space-between;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            gap: 20px;
         }
 
         .nav-group {
             display: flex;
             align-items: center;
             gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .nav-group:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
 
         .nav-text {
             color: #1666ba;
-            font-weight: 500;
+            font-weight: 600;
             text-decoration: none;
             transition: color 0.3s;
+            font-size: 1.1rem;
         }
 
         .arrow {
@@ -518,7 +527,7 @@ function getStatusBadge($status) {
         }
 
         .arrow:hover {
-            transform: translateY(-2px) scale(1.05);
+            transform: scale(1.05);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
         }
 
@@ -596,9 +605,7 @@ function getStatusBadge($status) {
             }
 
             .navigation-arrows {
-                position: fixed;
-                bottom: 10px;
-                padding: 0 10px;
+                margin-top: 30px;
             }
 
             .arrow {
@@ -608,11 +615,12 @@ function getStatusBadge($status) {
             }
 
             .nav-group {
-                gap: 8px;
+                gap: 10px;
+                padding: 8px 15px;
             }
 
             .nav-text {
-                font-size: 14px;
+                font-size: 0.9rem;
             }
 
             .grand-total-label {
@@ -660,14 +668,17 @@ function getStatusBadge($status) {
             }
 
             .navigation-arrows {
-                position: fixed;
-                bottom: 10px;
-                padding: 0 10px;
-                justify-content: space-between;
+                margin-top: 20px;
+                justify-content: center;
+            }
+
+            .nav-group {
+                width: 100%;
+                justify-content: center;
             }
 
             .nav-text {
-                font-size: 12px;
+                font-size: 1rem;
             }
 
             .payment-summary {
@@ -873,10 +884,16 @@ function getStatusBadge($status) {
 
             <!-- Navigation Arrows -->
             <div class="navigation-arrows">
+                <div class="nav-group" onclick="window.location.href='dashboard.php'">
+                    <a href="dashboard.php" class="arrow"><i class="fa-solid fa-arrow-left"></i></a>
+                    <p class="nav-text">Back to Dashboard</p>
+                </div>
+                <?php if ($grandTotal > 0): ?>
                 <div class="nav-group" onclick="window.location.href='pay-dues.php'">
                     <p class="nav-text">Proceed to Payment</p>
                     <a href="pay-dues.php" class="arrow"><i class="fa-solid fa-arrow-right"></i></a>
                 </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

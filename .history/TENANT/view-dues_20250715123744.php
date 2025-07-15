@@ -484,7 +484,7 @@ function getStatusBadge($status) {
             left: 0;
             right: 0;
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
             padding: 0 20px;
             z-index: 100;
         }
@@ -873,10 +873,16 @@ function getStatusBadge($status) {
 
             <!-- Navigation Arrows -->
             <div class="navigation-arrows">
+                <div class="nav-group" onclick="window.location.href='dashboard.php'">
+                    <a href="dashboard.php" class="arrow"><i class="fa-solid fa-arrow-left"></i></a>
+                    <p class="nav-text">Back to Dashboard</p>
+                </div>
+                <?php if ($grandTotal > 0): ?>
                 <div class="nav-group" onclick="window.location.href='pay-dues.php'">
                     <p class="nav-text">Proceed to Payment</p>
                     <a href="pay-dues.php" class="arrow"><i class="fa-solid fa-arrow-right"></i></a>
                 </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

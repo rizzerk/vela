@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'connection.php';
+require_once '../connection.php';
 
 $landlord_id = $_SESSION['user_id'] ?? 1;
 $properties = [];
@@ -8,10 +8,12 @@ $total_properties = 0;
 $total_vacant = 0;
 $total_occupied = 0;
 
+
 $check_column = "SHOW COLUMNS FROM PROPERTY LIKE 'property_type'";
 $column_result = $conn->query($check_column);
 
 if ($column_result && $column_result->num_rows > 0) {
+
     $property_query = "SELECT property_type, COUNT(*) as count, 
                              SUM(CASE WHEN status = 'vacant' THEN 1 ELSE 0 END) as vacant,
                              SUM(CASE WHEN status = 'occupied' THEN 1 ELSE 0 END) as occupied
@@ -22,6 +24,7 @@ if ($column_result && $column_result->num_rows > 0) {
         $properties = $result->fetch_all(MYSQLI_ASSOC);
     }
 } else {
+
     $basic_query = "SELECT 'All Properties' as property_type, COUNT(*) as count,
                            SUM(CASE WHEN status = 'vacant' THEN 1 ELSE 0 END) as vacant,
                            SUM(CASE WHEN status = 'occupied' THEN 1 ELSE 0 END) as occupied
@@ -32,11 +35,15 @@ if ($column_result && $column_result->num_rows > 0) {
     }
 }
 
+
 if (!empty($properties)) {
     $total_properties = array_sum(array_column($properties, 'count'));
     $total_vacant = array_sum(array_column($properties, 'vacant'));
     $total_occupied = array_sum(array_column($properties, 'occupied'));
 }
+
+
+
 
 if ($_POST['action'] ?? '' === 'add_announcement') {
     $title = $_POST['title'];
@@ -51,16 +58,21 @@ if ($_POST['action'] ?? '' === 'add_announcement') {
     $stmt->execute();
 }
 
+
+// Financial data
 $current_month = date('Y-m');
 $current_year = date('Y');
 
+// Monthly revenue from rent (simplified for existing schema)
 $monthly_rent_query = "SELECT COALESCE(SUM(monthly_rent), 0) as monthly_rent FROM PROPERTY WHERE status = 'occupied'";
 $result = $conn->query($monthly_rent_query);
 $monthly_rent = $result ? $result->fetch_assoc()['monthly_rent'] : 0;
 
-$monthly_utilities = $monthly_rent * 0.15; 
-$monthly_maintenance = $monthly_rent * 0.1; 
+// Sample data for utilities and maintenance
+$monthly_utilities = $monthly_rent * 0.15; // 15% of rent
+$monthly_maintenance = $monthly_rent * 0.1; // 10% of rent
 
+// Yearly calculations
 $yearly_rent = $monthly_rent * 12;
 $yearly_utilities = $monthly_utilities * 12;
 $yearly_maintenance = $monthly_maintenance * 12;
@@ -68,6 +80,7 @@ $yearly_maintenance = $monthly_maintenance * 12;
 $monthly_net = $monthly_rent - $monthly_maintenance;
 $yearly_net = $yearly_rent - $yearly_maintenance;
 
+// Get all properties for filter dropdown
 $property_list_query = "SELECT property_id, title FROM PROPERTY ORDER BY title";
 $property_list = $conn->query($property_list_query)->fetch_all(MYSQLI_ASSOC);
 
@@ -79,6 +92,7 @@ $announcement_query = "SELECT title, content, created_at
 $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
 
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -319,16 +333,7 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             display: grid;
             grid-template-columns: 1fr;
             gap: 2rem;
-            margin-bottom: 2rem;
-        }
-        
-        .financial-grid .card {
-            padding: 1.5rem;
-        }
-        
-        #yearlyChart {
-            max-height: 200px;
-            width: 100% !important;
+            margin-bottom: 3rem;
         }
         
         .filter-section {
@@ -713,7 +718,7 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
                 padding: 1rem;
             }
             
-            #yearlyChart {
+            .financial-grid canvas {
                 max-height: 200px;
             }
         }
@@ -915,27 +920,9 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
                     <i class="fas fa-credit-card"></i> View Payments
                 </button>
             </div>
+
         </div>
         
-        <!-- Financial Summary Section - Moved above announcements -->
-        <div class="filter-section">
-            <label for="propertyFilter" style="color: #1666ba; font-weight: 600;">Filter by Property:</label>
-            <select id="propertyFilter" onchange="updateCharts()">
-                <option value="all">All Properties</option>
-                <?php foreach ($property_list as $property): ?>
-                    <option value="<?= $property['property_id'] ?>"><?= htmlspecialchars($property['title']) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        
-        <div class="financial-grid">
-            <div class="card">
-                <h2 class="card-title">Financial Summary</h2>
-                <canvas id="yearlyChart" width="400" height="200"></canvas>
-            </div>
-        </div>
-        
-        <!-- Announcements Section -->
         <div class="full-width-section">
             <div class="card announcements-card">
                 <h2 class="card-title">
@@ -960,6 +947,24 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
                 <?php endif; ?>
             </div>
         </div>
+        
+        <div class="filter-section">
+            <label for="propertyFilter" style="color: #1666ba; font-weight: 600;">Filter by Property:</label>
+            <select id="propertyFilter" onchange="updateCharts()">
+                <option value="all">All Properties</option>
+                <?php foreach ($property_list as $property): ?>
+                    <option value="<?= $property['property_id'] ?>"><?= htmlspecialchars($property['title']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div class="financial-grid">
+            <div class="card">
+                <h2 class="card-title">Financial Summary</h2>
+                <canvas id="yearlyChart" width="400" height="120"></canvas>
+            </div>
+        </div>
+
     </div>
 
     <!-- Announcement Modal -->
@@ -1008,6 +1013,8 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
         
         function updateCharts() {
             const filter = document.getElementById('propertyFilter').value;
+            // In a real implementation, you would fetch filtered data via AJAX
+            // For now, we'll use the same data
             
             if (yearlyChart) {
                 yearlyChart.destroy();
@@ -1017,50 +1024,54 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
         }
         
         function createYearlyChart() {
+
             const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
             yearlyChart = new Chart(yearlyCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                    datasets: [{
-                        label: 'Rent',
-                        data: [<?= $monthly_rent ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent * 0.9 ?>, <?= $monthly_rent * 1.2 ?>, <?= $monthly_rent ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent * 1.3 ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent ?>, <?= $monthly_rent * 1.2 ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent ?>],
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        fill: false,
-                        tension: 0.4
-                    }, {
-                        label: 'Utilities',
-                        data: [<?= $monthly_utilities ?>, <?= $monthly_utilities * 1.2 ?>, <?= $monthly_utilities * 0.8 ?>, <?= $monthly_utilities * 1.1 ?>, <?= $monthly_utilities ?>, <?= $monthly_utilities * 1.3 ?>, <?= $monthly_utilities * 1.4 ?>, <?= $monthly_utilities * 1.2 ?>, <?= $monthly_utilities * 0.9 ?>, <?= $monthly_utilities * 1.1 ?>, <?= $monthly_utilities * 1.2 ?>, <?= $monthly_utilities ?>],
-                        borderColor: '#f59e0b',
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        fill: false,
-                        tension: 0.4
-                    }, {
-                        label: 'Maintenance',
-                        data: [<?= $monthly_maintenance ?>, <?= $monthly_maintenance * 0.8 ?>, <?= $monthly_maintenance * 1.5 ?>, <?= $monthly_maintenance * 0.6 ?>, <?= $monthly_maintenance * 1.2 ?>, <?= $monthly_maintenance * 0.9 ?>, <?= $monthly_maintenance * 1.8 ?>, <?= $monthly_maintenance * 1.1 ?>, <?= $monthly_maintenance * 0.7 ?>, <?= $monthly_maintenance * 1.3 ?>, <?= $monthly_maintenance * 0.9 ?>, <?= $monthly_maintenance ?>],
-                        borderColor: '#ef4444',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        fill: false,
-                        tension: 0.4
-                    }]
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [{
+                    label: 'Rent',
+                    data: [<?= $monthly_rent ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent * 0.9 ?>, <?= $monthly_rent * 1.2 ?>, <?= $monthly_rent ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent * 1.3 ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent ?>, <?= $monthly_rent * 1.2 ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent ?>],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: false,
+                    tension: 0.4
+                }, {
+                    label: 'Utilities',
+                    data: [<?= $monthly_utilities ?>, <?= $monthly_utilities * 1.2 ?>, <?= $monthly_utilities * 0.8 ?>, <?= $monthly_utilities * 1.1 ?>, <?= $monthly_utilities ?>, <?= $monthly_utilities * 1.3 ?>, <?= $monthly_utilities * 1.4 ?>, <?= $monthly_utilities * 1.2 ?>, <?= $monthly_utilities * 0.9 ?>, <?= $monthly_utilities * 1.1 ?>, <?= $monthly_utilities * 1.2 ?>, <?= $monthly_utilities ?>],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    fill: false,
+                    tension: 0.4
+                }, {
+                    label: 'Maintenance',
+                    data: [<?= $monthly_maintenance ?>, <?= $monthly_maintenance * 0.8 ?>, <?= $monthly_maintenance * 1.5 ?>, <?= $monthly_maintenance * 0.6 ?>, <?= $monthly_maintenance * 1.2 ?>, <?= $monthly_maintenance * 0.9 ?>, <?= $monthly_maintenance * 1.8 ?>, <?= $monthly_maintenance * 1.1 ?>, <?= $monthly_maintenance * 0.7 ?>, <?= $monthly_maintenance * 1.3 ?>, <?= $monthly_maintenance * 0.9 ?>, <?= $monthly_maintenance ?>],
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    fill: false,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
                 },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
+                scales: {
+                    y: {
+                        beginAtZero: true
                     }
                 }
+            }
             });
         }
         
+
+        
+        // Initialize chart
         createYearlyChart();
 
         function openModal() {
@@ -1078,6 +1089,7 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             }
         }
         
+        // Mobile menu functionality
         function toggleMobileMenu() {
             const sidebar = document.getElementById('mobileSidebar');
             const overlay = document.getElementById('mobileOverlay');
@@ -1092,5 +1104,6 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             overlay.classList.remove('active');
         }
     </script>
+
 </body>
 </html>

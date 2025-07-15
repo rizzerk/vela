@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'connection.php';
+require_once '../connection.php';
 
 $landlord_id = $_SESSION['user_id'] ?? 1;
 $properties = [];
@@ -51,16 +51,20 @@ if ($_POST['action'] ?? '' === 'add_announcement') {
     $stmt->execute();
 }
 
+// Financial data
 $current_month = date('Y-m');
 $current_year = date('Y');
 
+// Monthly revenue from rent (simplified for existing schema)
 $monthly_rent_query = "SELECT COALESCE(SUM(monthly_rent), 0) as monthly_rent FROM PROPERTY WHERE status = 'occupied'";
 $result = $conn->query($monthly_rent_query);
 $monthly_rent = $result ? $result->fetch_assoc()['monthly_rent'] : 0;
 
-$monthly_utilities = $monthly_rent * 0.15; 
-$monthly_maintenance = $monthly_rent * 0.1; 
+// Sample data for utilities and maintenance
+$monthly_utilities = $monthly_rent * 0.15; // 15% of rent
+$monthly_maintenance = $monthly_rent * 0.1; // 10% of rent
 
+// Yearly calculations
 $yearly_rent = $monthly_rent * 12;
 $yearly_utilities = $monthly_utilities * 12;
 $yearly_maintenance = $monthly_maintenance * 12;
@@ -68,6 +72,7 @@ $yearly_maintenance = $monthly_maintenance * 12;
 $monthly_net = $monthly_rent - $monthly_maintenance;
 $yearly_net = $yearly_rent - $yearly_maintenance;
 
+// Get all properties for filter dropdown
 $property_list_query = "SELECT property_id, title FROM PROPERTY ORDER BY title";
 $property_list = $conn->query($property_list_query)->fetch_all(MYSQLI_ASSOC);
 
@@ -1008,6 +1013,8 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
         
         function updateCharts() {
             const filter = document.getElementById('propertyFilter').value;
+            // In a real implementation, you would fetch filtered data via AJAX
+            // For now, we'll use the same data
             
             if (yearlyChart) {
                 yearlyChart.destroy();
@@ -1061,6 +1068,7 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             });
         }
         
+        // Initialize chart
         createYearlyChart();
 
         function openModal() {
@@ -1078,6 +1086,7 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             }
         }
         
+        // Mobile menu functionality
         function toggleMobileMenu() {
             const sidebar = document.getElementById('mobileSidebar');
             const overlay = document.getElementById('mobileOverlay');

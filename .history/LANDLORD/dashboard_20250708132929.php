@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'connection.php';
+require_once '../connection.php';
 
 $landlord_id = $_SESSION['user_id'] ?? 1;
 $properties = [];
@@ -8,10 +8,12 @@ $total_properties = 0;
 $total_vacant = 0;
 $total_occupied = 0;
 
+
 $check_column = "SHOW COLUMNS FROM PROPERTY LIKE 'property_type'";
 $column_result = $conn->query($check_column);
 
 if ($column_result && $column_result->num_rows > 0) {
+
     $property_query = "SELECT property_type, COUNT(*) as count, 
                              SUM(CASE WHEN status = 'vacant' THEN 1 ELSE 0 END) as vacant,
                              SUM(CASE WHEN status = 'occupied' THEN 1 ELSE 0 END) as occupied
@@ -22,6 +24,7 @@ if ($column_result && $column_result->num_rows > 0) {
         $properties = $result->fetch_all(MYSQLI_ASSOC);
     }
 } else {
+
     $basic_query = "SELECT 'All Properties' as property_type, COUNT(*) as count,
                            SUM(CASE WHEN status = 'vacant' THEN 1 ELSE 0 END) as vacant,
                            SUM(CASE WHEN status = 'occupied' THEN 1 ELSE 0 END) as occupied
@@ -32,11 +35,15 @@ if ($column_result && $column_result->num_rows > 0) {
     }
 }
 
+
 if (!empty($properties)) {
     $total_properties = array_sum(array_column($properties, 'count'));
     $total_vacant = array_sum(array_column($properties, 'vacant'));
     $total_occupied = array_sum(array_column($properties, 'occupied'));
 }
+
+
+
 
 if ($_POST['action'] ?? '' === 'add_announcement') {
     $title = $_POST['title'];
@@ -51,16 +58,21 @@ if ($_POST['action'] ?? '' === 'add_announcement') {
     $stmt->execute();
 }
 
+
+// Financial data
 $current_month = date('Y-m');
 $current_year = date('Y');
 
+// Monthly revenue from rent (simplified for existing schema)
 $monthly_rent_query = "SELECT COALESCE(SUM(monthly_rent), 0) as monthly_rent FROM PROPERTY WHERE status = 'occupied'";
 $result = $conn->query($monthly_rent_query);
 $monthly_rent = $result ? $result->fetch_assoc()['monthly_rent'] : 0;
 
-$monthly_utilities = $monthly_rent * 0.15; 
-$monthly_maintenance = $monthly_rent * 0.1; 
+// Sample data for utilities and maintenance
+$monthly_utilities = $monthly_rent * 0.15; // 15% of rent
+$monthly_maintenance = $monthly_rent * 0.1; // 10% of rent
 
+// Yearly calculations
 $yearly_rent = $monthly_rent * 12;
 $yearly_utilities = $monthly_utilities * 12;
 $yearly_maintenance = $monthly_maintenance * 12;
@@ -68,6 +80,7 @@ $yearly_maintenance = $monthly_maintenance * 12;
 $monthly_net = $monthly_rent - $monthly_maintenance;
 $yearly_net = $yearly_rent - $yearly_maintenance;
 
+// Get all properties for filter dropdown
 $property_list_query = "SELECT property_id, title FROM PROPERTY ORDER BY title";
 $property_list = $conn->query($property_list_query)->fetch_all(MYSQLI_ASSOC);
 
@@ -79,6 +92,7 @@ $announcement_query = "SELECT title, content, created_at
 $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
 
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -102,165 +116,6 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             line-height: 1.6;
             min-height: 100vh;
         }
-        
-        .mobile-navbar {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            z-index: 1001;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .mobile-logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1666ba;
-            text-decoration: none;
-        }
-        
-        .mobile-menu-toggle {
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            color: #1666ba;
-            cursor: pointer;
-        }
-        
-        .mobile-sidebar {
-            position: fixed;
-            right: -280px;
-            top: 0;
-            width: 280px;
-            height: 100vh;
-            background: linear-gradient(180deg, #1666ba 0%, #368ce7 100%);
-            padding: 2rem 0;
-            z-index: 1002;
-            box-shadow: -2px 0 15px rgba(0, 0, 0, 0.1);
-            transition: right 0.3s ease;
-        }
-        
-        .mobile-sidebar.active {
-            right: 0;
-        }
-        
-        .mobile-sidebar-header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding: 0 1rem;
-            position: relative;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 1.5rem;
-        }
-        
-        .mobile-sidebar-header h2 {
-            color: white;
-            font-size: 1.8rem;
-            font-weight: 800;
-            letter-spacing: 2px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-        
-        .mobile-close-btn {
-            position: absolute;
-            top: 1rem;
-            left: 1rem;
-            color: white;
-            cursor: pointer;
-            font-size: 1.2rem;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 0.5rem;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-            border: none;
-        }
-        
-        .mobile-close-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: rotate(90deg);
-        }
-        
-        .mobile-nav-menu {
-            list-style: none;
-        }
-        
-        .mobile-nav-item {
-            margin-bottom: 0.5rem;
-        }
-        
-        .mobile-nav-link {
-            display: flex;
-            align-items: center;
-            padding: 1rem 1.5rem;
-            color: rgba(255, 255, 255, 0.9);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-size: 0.95rem;
-            font-weight: 500;
-            border-radius: 25px 0 0 25px;
-            margin-left: 1rem;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .mobile-nav-link:hover,
-        .mobile-nav-link.active {
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
-            transform: translateX(-5px);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .mobile-nav-link.active {
-            background: rgba(255, 255, 255, 0.2);
-            font-weight: 600;
-        }
-        
-        .mobile-nav-link::before {
-            content: '';
-            position: absolute;
-            right: 0;
-            top: 0;
-            height: 100%;
-            width: 3px;
-            background: white;
-            transform: scaleY(0);
-            transition: transform 0.3s ease;
-        }
-        
-        .mobile-nav-link.active::before,
-        .mobile-nav-link:hover::before {
-            transform: scaleY(1);
-        }
-        
-        .mobile-nav-link i {
-            margin-right: 1rem;
-            width: 18px;
-            font-size: 1.1rem;
-        }
-        
-        .mobile-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1001;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .mobile-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
 
         .main-content {
             margin-left: 250px;
@@ -274,13 +129,8 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
         }
         
         @media (max-width: 768px) {
-            .mobile-navbar {
-                display: flex;
-            }
-            
             .main-content {
                 margin-left: 0;
-                padding-top: 80px;
             }
         }
 
@@ -308,27 +158,11 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             margin-bottom: 2rem;
         }
         
-        .full-width-section {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        
         .financial-grid {
             display: grid;
             grid-template-columns: 1fr;
             gap: 2rem;
-            margin-bottom: 2rem;
-        }
-        
-        .financial-grid .card {
-            padding: 1.5rem;
-        }
-        
-        #yearlyChart {
-            max-height: 200px;
-            width: 100% !important;
+            margin-bottom: 3rem;
         }
         
         .filter-section {
@@ -497,6 +331,226 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
         }
         
         .announcements-card {
+            grid-column: span 2;
+            background: linear-gradient(135deg, #7ab3ef, #368ce7);
+            color: white;
+        }
+
+        .announcements-card .card-title {
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .add-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .add-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #1666ba;
+            font-weight: 600;
+        }
+        
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #bedaf7;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .form-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        .btn-primary {
+            background: #1666ba;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            margin-left: 0.5rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+        }
+        
+        .empty-state i {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #bedaf7;
+        }
+        
+        .empty-state p {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+        
+        .empty-state-white {
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .empty-state-white i {
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .empty-state-white p {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .announcement {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .announcement:last-child {
+            margin-bottom: 0;
+        }
+
+        .announcement-date {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .announcement-text {
+            font-size: 0.95rem;
+            color: white;
+            line-height: 1.6;
+        } 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric:last-child {
+            margin-bottom: 0;
+        }
+
+        .metric.total {
+            background: #1666ba;
+            color: white;
+            font-weight: 600;
+        }
+
+        .metric-label {
+            font-size: 0.95rem;
+            color: #64748b;
+        }
+
+        .metric.total .metric-label {
+            color: white;
+        }
+
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1666ba;
+        }
+
+        .metric.total .metric-value {
+            color: white;
+        }
+
+        .status-card {
+            background: linear-gradient(135deg, #368ce7, #1666ba);
+            color: white;
+        }
+
+        .status-card .card-title {
+            color: white;
+        }
+
+        .status-metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-metric:last-child {
+            margin-bottom: 0;
+        }
+
+        .status-label {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .status-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .properties-status-card {
+            background: linear-gradient(135deg, #368ce7, #1666ba);
+            color: white;
+        }
+        
+        .properties-status-card .card-title {
+            color: white;
+        }
+        
+        .announcements-card {
+            grid-column: span 2;
             background: linear-gradient(135deg, #7ab3ef, #368ce7);
             color: white;
         }
@@ -704,18 +758,6 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             .filter-section select {
                 width: 100%;
             }
-            
-            .financial-grid {
-                margin-bottom: 2rem;
-            }
-            
-            .financial-grid .card {
-                padding: 1rem;
-            }
-            
-            #yearlyChart {
-                max-height: 200px;
-            }
         }
 
         @media (max-width: 480px) {
@@ -801,74 +843,6 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
     </style>
 </head>
 <body>
-    <div class="mobile-navbar">
-        <a href="dashboard.php" class="mobile-logo">VELA</a>
-        <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
-            <i class="fas fa-bars"></i>
-        </button>
-    </div>
-    
-    <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileSidebar()"></div>
-    
-    <div class="mobile-sidebar" id="mobileSidebar">
-        <div class="mobile-sidebar-header">
-            <h2>VELA</h2>
-            <button class="mobile-close-btn" onclick="closeMobileSidebar()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <ul class="mobile-nav-menu">
-            <li class="mobile-nav-item">
-                <a href="dashboard.php" class="mobile-nav-link active">
-                    <i class="fas fa-tachometer-alt"></i>
-                    Dashboard
-                </a>
-            </li>
-            <li class="mobile-nav-item">
-                <a href="properties.php" class="mobile-nav-link">
-                    <i class="fas fa-building"></i>
-                    Properties
-                </a>
-            </li>
-            <li class="mobile-nav-item">
-                <a href="#" class="mobile-nav-link">
-                    <i class="fas fa-chart-line"></i>
-                    Financial Reports
-                </a>
-            </li>
-            <li class="mobile-nav-item">
-                <a href="maintenance-req.php" class="mobile-nav-link">
-                    <i class="fas fa-tools"></i>
-                    Maintenance Requests
-                </a>
-            </li>
-            <li class="mobile-nav-item">
-                <a href="#" class="mobile-nav-link">
-                    <i class="fas fa-file-alt"></i>
-                    Tenant Applications
-                </a>
-            </li>
-            <li class="mobile-nav-item">
-                <a href="tenant-payments.php" class="mobile-nav-link">
-                    <i class="fas fa-receipt"></i>
-                    Tenant Payments
-                </a>
-            </li>
-            <li class="mobile-nav-item">
-                <a href="tenant-payments.php" class="mobile-nav-link">
-                    <i class="fas fa-history"></i>
-                    Tenant History
-                </a>
-            </li>
-            <li class="mobile-nav-item">
-                <a href="#" class="mobile-nav-link">
-                    <i class="fas fa-user"></i>
-                    Landlord Profile
-                </a>
-            </li>
-        </ul>
-    </div>
-    
     <?php include ('../includes/navbar/landlord-sidebar.html'); ?>
 
     <div class="main-content">
@@ -915,9 +889,9 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
                     <i class="fas fa-credit-card"></i> View Payments
                 </button>
             </div>
+
         </div>
         
-        <!-- Financial Summary Section - Moved above announcements -->
         <div class="filter-section">
             <label for="propertyFilter" style="color: #1666ba; font-weight: 600;">Filter by Property:</label>
             <select id="propertyFilter" onchange="updateCharts()">
@@ -931,34 +905,31 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
         <div class="financial-grid">
             <div class="card">
                 <h2 class="card-title">Financial Summary</h2>
-                <canvas id="yearlyChart" width="400" height="200"></canvas>
+                <canvas id="yearlyChart" width="400" height="120"></canvas>
             </div>
         </div>
         
-        <!-- Announcements Section -->
-        <div class="full-width-section">
-            <div class="card announcements-card">
-                <h2 class="card-title">
-                    Recent Announcements
-                    <button class="add-btn" onclick="openModal()"><i class="fas fa-plus"></i> Add</button>
-                </h2>
-                <?php if (empty($announcements)): ?>
-                    <div class="empty-state empty-state-white">
-                        <i class="fas fa-bullhorn"></i>
-                        <p>No announcements</p>
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($announcements as $announcement): ?>
-                        <div class="announcement">
-                            <div class="announcement-date"><?= date('F j, Y', strtotime($announcement['created_at'])) ?></div>
-                            <div class="announcement-text">
-                                <strong><?= htmlspecialchars($announcement['title']) ?></strong><br>
-                                <?= htmlspecialchars($announcement['content']) ?>
-                            </div>
+        <div class="card announcements-card" style="grid-column: span 1;">
+            <h2 class="card-title">
+                Recent Announcements
+                <button class="add-btn" onclick="openModal()"><i class="fas fa-plus"></i> Add</button>
+            </h2>
+            <?php if (empty($announcements)): ?>
+                <div class="empty-state empty-state-white">
+                    <i class="fas fa-bullhorn"></i>
+                    <p>No announcements</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($announcements as $announcement): ?>
+                    <div class="announcement">
+                        <div class="announcement-date"><?= date('F j, Y', strtotime($announcement['created_at'])) ?></div>
+                        <div class="announcement-text">
+                            <strong><?= htmlspecialchars($announcement['title']) ?></strong><br>
+                            <?= htmlspecialchars($announcement['content']) ?>
                         </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -1008,6 +979,8 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
         
         function updateCharts() {
             const filter = document.getElementById('propertyFilter').value;
+            // In a real implementation, you would fetch filtered data via AJAX
+            // For now, we'll use the same data
             
             if (yearlyChart) {
                 yearlyChart.destroy();
@@ -1017,50 +990,54 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
         }
         
         function createYearlyChart() {
+
             const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
             yearlyChart = new Chart(yearlyCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                    datasets: [{
-                        label: 'Rent',
-                        data: [<?= $monthly_rent ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent * 0.9 ?>, <?= $monthly_rent * 1.2 ?>, <?= $monthly_rent ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent * 1.3 ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent ?>, <?= $monthly_rent * 1.2 ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent ?>],
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        fill: false,
-                        tension: 0.4
-                    }, {
-                        label: 'Utilities',
-                        data: [<?= $monthly_utilities ?>, <?= $monthly_utilities * 1.2 ?>, <?= $monthly_utilities * 0.8 ?>, <?= $monthly_utilities * 1.1 ?>, <?= $monthly_utilities ?>, <?= $monthly_utilities * 1.3 ?>, <?= $monthly_utilities * 1.4 ?>, <?= $monthly_utilities * 1.2 ?>, <?= $monthly_utilities * 0.9 ?>, <?= $monthly_utilities * 1.1 ?>, <?= $monthly_utilities * 1.2 ?>, <?= $monthly_utilities ?>],
-                        borderColor: '#f59e0b',
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        fill: false,
-                        tension: 0.4
-                    }, {
-                        label: 'Maintenance',
-                        data: [<?= $monthly_maintenance ?>, <?= $monthly_maintenance * 0.8 ?>, <?= $monthly_maintenance * 1.5 ?>, <?= $monthly_maintenance * 0.6 ?>, <?= $monthly_maintenance * 1.2 ?>, <?= $monthly_maintenance * 0.9 ?>, <?= $monthly_maintenance * 1.8 ?>, <?= $monthly_maintenance * 1.1 ?>, <?= $monthly_maintenance * 0.7 ?>, <?= $monthly_maintenance * 1.3 ?>, <?= $monthly_maintenance * 0.9 ?>, <?= $monthly_maintenance ?>],
-                        borderColor: '#ef4444',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        fill: false,
-                        tension: 0.4
-                    }]
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [{
+                    label: 'Rent',
+                    data: [<?= $monthly_rent ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent * 0.9 ?>, <?= $monthly_rent * 1.2 ?>, <?= $monthly_rent ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent * 1.3 ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent ?>, <?= $monthly_rent * 1.2 ?>, <?= $monthly_rent * 1.1 ?>, <?= $monthly_rent ?>],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: false,
+                    tension: 0.4
+                }, {
+                    label: 'Utilities',
+                    data: [<?= $monthly_utilities ?>, <?= $monthly_utilities * 1.2 ?>, <?= $monthly_utilities * 0.8 ?>, <?= $monthly_utilities * 1.1 ?>, <?= $monthly_utilities ?>, <?= $monthly_utilities * 1.3 ?>, <?= $monthly_utilities * 1.4 ?>, <?= $monthly_utilities * 1.2 ?>, <?= $monthly_utilities * 0.9 ?>, <?= $monthly_utilities * 1.1 ?>, <?= $monthly_utilities * 1.2 ?>, <?= $monthly_utilities ?>],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    fill: false,
+                    tension: 0.4
+                }, {
+                    label: 'Maintenance',
+                    data: [<?= $monthly_maintenance ?>, <?= $monthly_maintenance * 0.8 ?>, <?= $monthly_maintenance * 1.5 ?>, <?= $monthly_maintenance * 0.6 ?>, <?= $monthly_maintenance * 1.2 ?>, <?= $monthly_maintenance * 0.9 ?>, <?= $monthly_maintenance * 1.8 ?>, <?= $monthly_maintenance * 1.1 ?>, <?= $monthly_maintenance * 0.7 ?>, <?= $monthly_maintenance * 1.3 ?>, <?= $monthly_maintenance * 0.9 ?>, <?= $monthly_maintenance ?>],
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    fill: false,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
                 },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
+                scales: {
+                    y: {
+                        beginAtZero: true
                     }
                 }
+            }
             });
         }
         
+
+        
+        // Initialize chart
         createYearlyChart();
 
         function openModal() {
@@ -1078,19 +1055,20 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             }
         }
         
-        function toggleMobileMenu() {
-            const sidebar = document.getElementById('mobileSidebar');
-            const overlay = document.getElementById('mobileOverlay');
-            sidebar.classList.add('active');
-            overlay.classList.add('active');
-        }
+        // Mobile menu functionality
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
         
-        function closeMobileSidebar() {
-            const sidebar = document.getElementById('mobileSidebar');
-            const overlay = document.getElementById('mobileOverlay');
-            sidebar.classList.remove('active');
-            overlay.classList.remove('active');
-        }
+        mobileMenuBtn.addEventListener('click', function() {
+            mobileMenu.classList.toggle('active');
+        });
+        
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.landlord-navbar') && !e.target.closest('.mobile-menu')) {
+                mobileMenu.classList.remove('active');
+            }
+        });
     </script>
+
 </body>
 </html>
