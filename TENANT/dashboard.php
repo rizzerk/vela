@@ -25,7 +25,8 @@ if ($lease) {
                          billing_period_start, billing_period_end, bill_type
                   FROM BILL 
                   WHERE lease_id = ? AND status != 'paid'
-                  ORDER BY due_date ASC";
+                  ORDER BY due_date ASC
+                  LIMIT 2";
     
     $billStmt = $conn->prepare($billQuery);
     $billStmt->bind_param("i", $lease['lease_id']);
