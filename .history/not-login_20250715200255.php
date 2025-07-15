@@ -2,26 +2,6 @@
 session_start();
 require_once 'connection.php';
 
-if (!isset($_SESSION['loggedin'])) {
-    header("Location: not-login.php");
-    exit();
-}
-
-$applications = [];
-
-// Get user's applications
-$stmt = $conn->prepare("SELECT a.*, p.title, p.address, p.monthly_rent 
-                       FROM APPLICATIONS a 
-                       JOIN PROPERTY p ON a.property_id = p.property_id 
-                       WHERE a.applicant_id = ? 
-                       ORDER BY a.submitted_at DESC");
-$stmt->bind_param("i", $_SESSION['user_id']);
-$stmt->execute();
-$result = $stmt->get_result();
-while ($row = $result->fetch_assoc()) {
-    $applications[] = $row;
-}
-$stmt->close();
 ?>
 
 <!DOCTYPE html>

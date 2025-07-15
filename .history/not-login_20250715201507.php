@@ -2,26 +2,6 @@
 session_start();
 require_once 'connection.php';
 
-if (!isset($_SESSION['loggedin'])) {
-    header("Location: not-login.php");
-    exit();
-}
-
-$applications = [];
-
-// Get user's applications
-$stmt = $conn->prepare("SELECT a.*, p.title, p.address, p.monthly_rent 
-                       FROM APPLICATIONS a 
-                       JOIN PROPERTY p ON a.property_id = p.property_id 
-                       WHERE a.applicant_id = ? 
-                       ORDER BY a.submitted_at DESC");
-$stmt->bind_param("i", $_SESSION['user_id']);
-$stmt->execute();
-$result = $stmt->get_result();
-while ($row = $result->fetch_assoc()) {
-    $applications[] = $row;
-}
-$stmt->close();
 ?>
 
 <!DOCTYPE html>
@@ -171,50 +151,14 @@ $stmt->close();
     </style>
 </head>
 <body>
-    <?php include "includes/navbar/navbarIN.html" ?>
+    <?php include "includes/navbar/navbarOUT.html" ?>
     
     <div class="container">
-        <h1>My Applications</h1>
-        
-        <?php if (empty($applications)): ?>
             <div class="no-applications">
-                <p>You haven't submitted any applications yet.</p>
-                <a href="index.php">Browse Properties</a>
+                <p>Log In to view your applications</p>
+                <a href="index.php">Log In</a>
+                <p>No account yet? Register to Apply Property Reservations</p>
+                <a href="registration.php">Register</a>
             </div>
-        <?php else: ?>
-            <div class="applications-list">
-                <?php foreach ($applications as $application): ?>
-                    <div class="application-card">
-                        <div class="application-property">
-                            <h3><?php echo htmlspecialchars($application['title']); ?></h3>
-                            <p><?php echo htmlspecialchars($application['address']); ?></p>
-                            <p>₱<?php echo number_format($application['monthly_rent'], 2); ?> / month</p>
-                        </div>
-                        
-                        <div class="application-details">
-                            <h4>Application Details</h4>
-                            <p><strong>Occupation:</strong> <?php echo htmlspecialchars($application['occupation']); ?></p>
-                            <p><strong>Monthly Income:</strong> ₱<?php echo number_format($application['monthly_income'], 2); ?></p>
-                            <p><strong>Number of Tenants:</strong> <?php echo htmlspecialchars($application['num_of_tenants']); ?></p>
-                            <?php if (!empty($application['co_tenants'])): ?>
-                                <p><strong>Co-Tenants:</strong> <?php echo htmlspecialchars($application['co_tenants']); ?></p>
-                            <?php endif; ?>
-                            
-                            <span class="application-status status-<?php echo htmlspecialchars($application['status']); ?>">
-                                <?php echo ucfirst($application['status']); ?>
-                            </span>
-                        </div>
-                        
-                        <div class="application-meta">
-                            <span>Submitted: <?php echo date('M d, Y', strtotime($application['submitted_at'])); ?></span>
-                            <?php if ($application['status'] == 'approved' && $application['approved_at']): ?>
-                                <span>Approved: <?php echo date('M d, Y', strtotime($application['approved_at'])); ?></span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
     </div>
 </body>
-</html>
