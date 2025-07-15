@@ -468,34 +468,32 @@ if ($lease) {
         <div class="bills-section">
             <div class="section-header">
                 <h2 class="section-title">Notices</h2>
-                <span onclick="viewAllNotices()" style="color: #1666ba; cursor: pointer; font-weight: 500;">
-                    View All
-                </span>
+                <button class="filter-btn" onclick="viewAllNotices()" style="background: #1666ba; color: white; border-color: #1666ba;">
+                    <i class="fas fa-eye"></i> View All
+                </button>
             </div>
             
-            <div class="notice-section">
             <?php if (!empty($announcements)): ?>
-                <?php foreach ($announcements as $index => $announcement): ?>
-                    <div style="<?= $index > 0 ? 'border-top: 1px solid rgba(255,255,255,0.2); padding-top: 1rem; margin-top: 1rem;' : '' ?>">
+                <?php foreach ($announcements as $announcement): ?>
+                    <div class="notice-section">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                            <h3 style="font-size: 1.125rem; font-weight: 600; margin: 0; color: #ffffff;"><?= htmlspecialchars($announcement['title']) ?></h3>
+                            <h2 class="notice-title"><?= htmlspecialchars($announcement['title']) ?></h2>
                             <span style="background: rgba(255,255,255,0.2); padding: 0.2rem 0.6rem; border-radius: 8px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">
                                 <?= ucfirst($announcement['priority']) ?>
                             </span>
                         </div>
-                        <p style="font-size: 0.9rem; line-height: 1.5; opacity: 0.95; margin: 0 0 0.5rem 0; color: #ffffff;"><?= htmlspecialchars($announcement['content']) ?></p>
-                        <div style="font-size: 0.8rem; opacity: 0.8;">
+                        <p class="notice-text"><?= htmlspecialchars($announcement['content']) ?></p>
+                        <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 0.75rem;">
                             Posted: <?= date('M d, Y', strtotime($announcement['created_at'])) ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
-                <div>
-                    <h3 style="font-size: 1.125rem; font-weight: 600; margin: 0 0 0.5rem 0; color: #ffffff;">Welcome</h3>
-                    <p style="font-size: 0.9rem; line-height: 1.5; opacity: 0.95; margin: 0; color: #ffffff;">No announcements at this time. Check back later for updates from your landlord.</p>
+                <div class="notice-section">
+                    <h2 class="notice-title">Welcome</h2>
+                    <p class="notice-text">No announcements at this time. Check back later for updates from your landlord.</p>
                 </div>
             <?php endif; ?>
-            </div>
         </div>
 
         <div class="actions-section">

@@ -2,6 +2,7 @@
 session_start();
 require_once '../connection.php';
 
+// Handle lease toggle AJAX request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_lease'])) {
     header('Content-Type: application/json');
     
@@ -400,6 +401,7 @@ if ($result && $result->num_rows > 0) {
     <div class="main-content">
         <div class="header">
             <h1>Tenant History</h1>
+            <p>View the complete history of tenants for each property</p>
         </div>
 
         <div class="search-controls">

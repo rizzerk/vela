@@ -29,13 +29,15 @@ while ($row = $leaseResult->fetch_assoc()) {
         'title' => "Lease Start: " . $row['property_name'],
         'type' => 'lease',
         'date' => $row['start_date'],
-        'paid' => false
+        'paid' => false,
+        'status' => 'active'
     ];
     $events[$row['end_date']][] = [
         'title' => "Lease End: " . $row['property_name'],
         'type' => 'lease',
         'date' => $row['end_date'],
-        'paid' => false
+        'paid' => false,
+        'status' => 'active'
     ];
 }
 
@@ -54,11 +56,24 @@ while ($row = $billResult->fetch_assoc()) {
     $isPaid = ($row['status'] == 'paid') || 
               ($row['payment_status'] == 'verified');
     
+    $status = $row['payment_status'] ?? $row['status'];
+    
+    // Customize title based on payment status
+    $title = "Payment Due: " . $row['description'] . " ($" . $row['amount'] . ")";
+    if ($row['payment_status'] === 'rejected') {
+        $title = "Payment Rejected: " . $row['description'] . " ($" . $row['amount'] . ")";
+    } elseif ($row['payment_status'] === 'pending') {
+        $title = "Payment Pending: " . $row['description'] . " ($" . $row['amount'] . ")";
+    } elseif ($isPaid) {
+        $title = "Payment Verified: " . $row['description'] . " ($" . $row['amount'] . ")";
+    }
+    
     $events[$row['due_date']][] = [
-        'title' => "Payment Due: " . $row['description'] . " ($" . $row['amount'] . ")",
+        'title' => $title,
         'type' => 'bill',
         'date' => $row['due_date'],
-        'paid' => $isPaid
+        'paid' => $isPaid,
+        'status' => $status
     ];
 }
 
@@ -76,7 +91,8 @@ while ($row = $maintenanceResult->fetch_assoc()) {
         'title' => "Maintenance: " . $row['description'] . " (" . ucfirst(str_replace('_', ' ', $row['status'])) . ")",
         'type' => 'maintenance',
         'date' => $row['requested_at'],
-        'paid' => false
+        'paid' => false,
+        'status' => $row['status']
     ];
 }
 
@@ -95,7 +111,8 @@ while ($row = $announcementResult->fetch_assoc()) {
         'title' => "Announcement: " . $row['title'],
         'type' => 'announcement',
         'date' => $date,
-        'paid' => false
+        'paid' => false,
+        'status' => 'published'
     ];
 }
 
@@ -352,8 +369,32 @@ function getFirstDayOfMonth($month, $year) {
         }
 
         .calendar-event.paid::after {
-            content: "✓";
+            content: "✓ Paid";
             color: #28a745;
+            margin-left: 5px;
+            font-weight: bold;
+        }
+
+        .calendar-event.rejected {
+            background: #f8d7da;
+            border-left: 3px solid #dc3545;
+        }
+
+        .calendar-event.rejected::after {
+            content: "✗ Rejected";
+            color: #dc3545;
+            margin-left: 5px;
+            font-weight: bold;
+        }
+
+        .calendar-event.pending {
+            background: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
+
+        .calendar-event.pending::after {
+            content: "⏳ Pending";
+            color: #ffc107;
             margin-left: 5px;
             font-weight: bold;
         }
@@ -419,12 +460,37 @@ function getFirstDayOfMonth($month, $year) {
             padding-bottom: 15px;
             margin-bottom: 15px;
             border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .modal-title {
             font-size: 1.5rem;
             font-weight: 600;
             color: #1666ba;
+        }
+
+        .modal-status {
+            font-size: 0.9rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .modal-status.rejected {
+            background: #f8d7da;
+            color: #dc3545;
+        }
+
+        .modal-status.pending {
+            background: #fff3cd;
+            color: #ffc107;
+        }
+
+        .modal-status.paid {
+            background: #d4edda;
+            color: #28a745;
         }
 
         .modal-body {
@@ -436,6 +502,24 @@ function getFirstDayOfMonth($month, $year) {
             margin-top: 15px;
             border-top: 1px solid #eee;
             text-align: right;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #1666ba;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0d4a8a;
         }
 
         /* Events Sidebar */
@@ -511,6 +595,14 @@ function getFirstDayOfMonth($month, $year) {
             background: #1666ba;
         }
 
+        .color-indicator.rejected {
+            background: #dc3545;
+        }
+
+        .color-indicator.pending {
+            background: #ffc107;
+        }
+
         .event-details {
             flex-grow: 1;
         }
@@ -547,6 +639,32 @@ function getFirstDayOfMonth($month, $year) {
         .event-card.paid::after {
             content: "✓ Paid";
             color: #28a745;
+            margin-left: 10px;
+            font-weight: bold;
+            float: right;
+        }
+
+        .event-card.rejected {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+
+        .event-card.rejected::after {
+            content: "✗ Rejected";
+            color: #dc3545;
+            margin-left: 10px;
+            font-weight: bold;
+            float: right;
+        }
+
+        .event-card.pending {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+
+        .event-card.pending::after {
+            content: "⏳ Pending";
+            color: #ffc107;
             margin-left: 10px;
             font-weight: bold;
             float: right;
@@ -645,6 +763,16 @@ function getFirstDayOfMonth($month, $year) {
         .event-indicator.announcement {
             background: #1666ba;
         }
+        
+        .event-indicator.rejected {
+            background: #dc3545;
+        }
+        
+        .event-indicator.pending {
+            background: #ffc107;
+        }
+
+        
 
         /* Responsive Design */
         @media (max-width: 1200px) {
@@ -726,6 +854,16 @@ function getFirstDayOfMonth($month, $year) {
             .calendar-list-item {
                 padding: 8px 0;
             }
+            
+            /* Show event indicators on mobile */
+            .event-indicators {
+                display: flex;
+            }
+            
+            /* Hide full event text on mobile */
+            .calendar-events {
+                display: none;
+            }
         }
 
         @media (max-width: 576px) {
@@ -789,16 +927,6 @@ function getFirstDayOfMonth($month, $year) {
             
             .event-content {
                 font-size: 0.85rem;
-            }
-            
-            /* Show event indicators on mobile */
-            .event-indicators {
-                display: flex;
-            }
-            
-            /* Hide full event text on mobile */
-            .calendar-events {
-                display: none;
             }
 
             /* Modal adjustments for mobile */
@@ -895,7 +1023,9 @@ function getFirstDayOfMonth($month, $year) {
                         echo "<div class='event-indicators'>";
                         if (isset($events[$dateStr])) {
                             foreach ($events[$dateStr] as $event) {
-                                echo "<div class='event-indicator {$event['type']}'></div>";
+                                $statusClass = $event['status'] === 'rejected' ? 'rejected' : 
+                                             ($event['status'] === 'pending' ? 'pending' : $event['type']);
+                                echo "<div class='event-indicator $statusClass'></div>";
                             }
                         }
                         echo "</div>";
@@ -905,9 +1035,11 @@ function getFirstDayOfMonth($month, $year) {
                         if (isset($events[$dateStr])) {
                             foreach ($events[$dateStr] as $event) {
                                 $paidClass = $event['paid'] ? 'paid' : '';
-                                echo "<div class='calendar-event {$event['type']} $paidClass' 
+                                $statusClass = $event['status'] === 'rejected' ? 'rejected' : 
+                                             ($event['status'] === 'pending' ? 'pending' : $event['type']);
+                                echo "<div class='calendar-event $statusClass $paidClass' 
                                       title='{$event['title']}'
-                                      onclick='showEventModal(\"{$event['title']}\", \"{$event['type']}\", \"{$event['date']}\")'>
+                                      onclick='showEventModal(\"{$event['title']}\", \"{$event['type']}\", \"{$event['date']}\", \"{$event['status']}\")'>
                                       {$event['title']}
                                   </div>";
                             }
@@ -955,6 +1087,20 @@ function getFirstDayOfMonth($month, $year) {
                                 <div class="event-date">Posted dates</div>
                             </div>
                         </div>
+                        <div class="calendar-list-item">
+                            <div class="color-indicator rejected"></div>
+                            <div class="event-details">
+                                <div class="event-title">Rejected Payments</div>
+                                <div class="event-date">Requires attention</div>
+                            </div>
+                        </div>
+                        <div class="calendar-list-item">
+                            <div class="color-indicator pending"></div>
+                            <div class="event-details">
+                                <div class="event-title">Pending Payments</div>
+                                <div class="event-date">Under review</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -976,8 +1122,10 @@ function getFirstDayOfMonth($month, $year) {
                             foreach ($todayEvents as $event) {
                                 $date = date('M j, Y', strtotime($event['date']));
                                 $paidClass = $event['paid'] ? 'paid' : '';
-                                echo "<div class='event-card {$event['type']} $paidClass' 
-                                      onclick='showEventModal(\"{$event['title']}\", \"{$event['type']}\", \"{$event['date']}\")'>
+                                $statusClass = $event['status'] === 'rejected' ? 'rejected' : 
+                                             ($event['status'] === 'pending' ? 'pending' : $event['type']);
+                                echo "<div class='event-card $statusClass $paidClass' 
+                                      onclick='showEventModal(\"{$event['title']}\", \"{$event['type']}\", \"{$event['date']}\", \"{$event['status']}\")'>
                                       <div class='event-header'>
                                           <div class='event-type'>{$event['type']}</div>
                                           <div class='event-date-display'>$date</div>
@@ -999,6 +1147,7 @@ function getFirstDayOfMonth($month, $year) {
             <span class="close">&times;</span>
             <div class="modal-header">
                 <h2 class="modal-title" id="modalEventType"></h2>
+                <div class="modal-status" id="modalEventStatus"></div>
             </div>
             <div class="modal-body">
                 <p id="modalEventContent"></p>
@@ -1015,9 +1164,22 @@ function getFirstDayOfMonth($month, $year) {
         const modal = document.getElementById("eventModal");
         
         // Function to show modal with event details
-        function showEventModal(title, type, date) {
-            document.getElementById("modalEventType").textContent = type.charAt(0).toUpperCase() + type.slice(1);
+        function showEventModal(title, type, date, status) {
+            document.getElementById("modalEventType").textContent = 
+                type.charAt(0).toUpperCase() + type.slice(1);
+            
             document.getElementById("modalEventContent").textContent = title;
+            
+            // Display status if available
+            const statusElement = document.getElementById("modalEventStatus");
+            if (status) {
+                statusElement.textContent = "Status: " + status.charAt(0).toUpperCase() + status.slice(1);
+                statusElement.className = "modal-status " + status;
+            } else {
+                statusElement.textContent = "";
+                statusElement.className = "modal-status";
+            }
+            
             document.getElementById("modalEventDate").textContent = new Date(date).toLocaleDateString('en-US', { 
                 year: 'numeric', 
                 month: 'long', 
@@ -1061,29 +1223,6 @@ function getFirstDayOfMonth($month, $year) {
                     
                     // Add selected class to clicked day
                     this.classList.add('selected');
-                });
-            });
-            
-            // Add event indicators for mobile
-            document.querySelectorAll('.calendar-day.has-events').forEach(day => {
-                const events = day.querySelectorAll('.calendar-event');
-                const indicators = day.querySelector('.event-indicators');
-                
-                // Clear existing indicators
-                indicators.innerHTML = '';
-                
-                // Add new indicators
-                events.forEach(event => {
-                    const type = Array.from(event.classList).find(cls => 
-                        cls !== 'calendar-event' && 
-                        ['lease', 'bill', 'maintenance', 'announcement'].includes(cls)
-                    );
-                    
-                    if (type) {
-                        const indicator = document.createElement('div');
-                        indicator.className = `event-indicator ${type}`;
-                        indicators.appendChild(indicator);
-                    }
                 });
             });
         });

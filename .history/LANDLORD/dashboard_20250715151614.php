@@ -910,7 +910,7 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
                 <button class="action-btn" onclick="window.location.href='maintenance-req.php'">
                     <i class="fas fa-tools"></i> Maintenance Requests
                 </button>
-                <button class="action-btn" onclick="window.location.href='#'">
+                <button class="action-btn" onclick="window.location.href='applications.php'">
                     <i class="fas fa-user-plus"></i> Tenant Applications
                 </button>
                 <button class="action-btn" onclick="window.location.href='view-dues.php'">

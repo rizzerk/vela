@@ -468,12 +468,11 @@ if ($lease) {
         <div class="bills-section">
             <div class="section-header">
                 <h2 class="section-title">Notices</h2>
-                <span onclick="viewAllNotices()" style="color: #1666ba; cursor: pointer; font-weight: 500;">
-                    View All
-                </span>
+                <button class="filter-btn" onclick="viewAllNotices()" style="background: #1666ba; color: white; border-color: #1666ba;">
+                    <i class="fas fa-eye"></i> View All
+                </button>
             </div>
             
-            <div class="notice-section">
             <?php if (!empty($announcements)): ?>
                 <?php foreach ($announcements as $index => $announcement): ?>
                     <div style="<?= $index > 0 ? 'border-top: 1px solid rgba(255,255,255,0.2); padding-top: 1rem; margin-top: 1rem;' : '' ?>">
@@ -495,7 +494,6 @@ if ($lease) {
                     <p style="font-size: 0.9rem; line-height: 1.5; opacity: 0.95; margin: 0; color: #ffffff;">No announcements at this time. Check back later for updates from your landlord.</p>
                 </div>
             <?php endif; ?>
-            </div>
         </div>
 
         <div class="actions-section">

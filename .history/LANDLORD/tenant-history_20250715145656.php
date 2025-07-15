@@ -2,31 +2,6 @@
 session_start();
 require_once '../connection.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_lease'])) {
-    header('Content-Type: application/json');
-    
-    $lease_id = $_POST['lease_id'] ?? null;
-    $active = $_POST['active'] ?? null;
-    
-    if ($lease_id && $active !== null) {
-        try {
-            $stmt = $conn->prepare("UPDATE LEASE SET active = ? WHERE lease_id = ?");
-            $stmt->bind_param("ii", $active, $lease_id);
-            
-            if ($stmt->execute()) {
-                echo json_encode(['success' => true]);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to update']);
-            }
-        } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => 'Database error']);
-        }
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Invalid parameters']);
-    }
-    exit;
-}
-
 $landlord_id = $_SESSION['user_id'] ?? 1;
 
 $search = $_GET['search'] ?? '';
@@ -337,31 +312,6 @@ if ($result && $result->num_rows > 0) {
             font-style: italic;
         }
 
-        .action-btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .action-btn.activate {
-            background: #22c55e;
-            color: white;
-        }
-
-        .action-btn.deactivate {
-            background: #ef4444;
-            color: white;
-        }
-
-        .action-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
-
         @media (max-width: 1024px) {
             .tenant-item,
             .tenant-header {
@@ -400,6 +350,7 @@ if ($result && $result->num_rows > 0) {
     <div class="main-content">
         <div class="header">
             <h1>Tenant History</h1>
+            <p>View the complete history of tenants for each property</p>
         </div>
 
         <div class="search-controls">
@@ -494,32 +445,5 @@ if ($result && $result->num_rows > 0) {
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
-
-    <script>
-    function toggleLease(leaseId, newStatus) {
-        if (confirm('Are you sure you want to ' + (newStatus ? 'activate' : 'deactivate') + ' this lease?')) {
-            const formData = new FormData();
-            formData.append('toggle_lease', '1');
-            formData.append('lease_id', leaseId);
-            formData.append('active', newStatus);
-            
-            fetch('', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Error: ' + (data.message || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                alert('Error updating lease status');
-            });
-        }
-    }
-    </script>
 </body>
 </html>

@@ -3,20 +3,6 @@ session_start();
 require_once '../connection.php';
 
 $landlord_id = $_SESSION['user_id'] ?? 1;
-
-if ($_POST['action'] ?? '' === 'add_announcement') {
-    $title = $_POST['title'];
-    $content = $_POST['content'];
-    $visible_to = $_POST['visible_to'];
-    $priority = $_POST['priority'];
-    
-    $stmt = $conn->prepare("INSERT INTO ANNOUNCEMENT (title, content, visible_to, priority, created_by, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
-    $stmt->bind_param("ssssi", $title, $content, $visible_to, $priority, $landlord_id);
-    $stmt->execute();
-    header("Location: dashboard.php");
-    exit;
-}
-
 $properties = [];
 $total_properties = 0;
 $total_vacant = 0;
@@ -52,7 +38,18 @@ if (!empty($properties)) {
     $total_occupied = array_sum(array_column($properties, 'occupied'));
 }
 
-
+if ($_POST['action'] ?? '' === 'add_announcement') {
+    $title = $_POST['title'];
+    $content = $_POST['content'];
+    $visible_to = $_POST['visible_to'];
+    $priority = $_POST['priority'];
+    
+    $insert_query = "INSERT INTO ANNOUNCEMENT (title, content, visible_to, priority, created_by, created_at) 
+                     VALUES (?, ?, ?, ?, ?, NOW())";
+    $stmt = $conn->prepare($insert_query);
+    $stmt->bind_param("ssssi", $title, $content, $visible_to, $priority, $landlord_id);
+    $stmt->execute();
+}
 
 $current_month = date('Y-m');
 $current_year = date('Y');
@@ -76,9 +73,10 @@ $property_list = $conn->query($property_list_query)->fetch_all(MYSQLI_ASSOC);
 
 $announcement_query = "SELECT title, content, created_at 
                       FROM ANNOUNCEMENT 
+                      WHERE visible_to IN ('landlord', 'all') 
                       ORDER BY created_at DESC 
-                      LIMIT 1";
-$latest_announcement = $conn->query($announcement_query)->fetch_assoc();
+                      LIMIT 3";
+$announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
 
 ?>
 
@@ -910,7 +908,7 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
                 <button class="action-btn" onclick="window.location.href='maintenance-req.php'">
                     <i class="fas fa-tools"></i> Maintenance Requests
                 </button>
-                <button class="action-btn" onclick="window.location.href='#'">
+                <button class="action-btn" onclick="window.location.href='applications.php'">
                     <i class="fas fa-user-plus"></i> Tenant Applications
                 </button>
                 <button class="action-btn" onclick="window.location.href='view-dues.php'">
@@ -941,71 +939,66 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
         <div class="full-width-section">
             <div class="card announcements-card">
                 <h2 class="card-title">
-                    Latest Announcement
-                    <button class="add-btn" onclick="openAnnouncementModal()">
-                        <i class="fas fa-plus"></i> Add
-                    </button>
+                    Recent Announcements
+                    <button class="add-btn" onclick="openModal()"><i class="fas fa-plus"></i> Add</button>
                 </h2>
-                <?php if (!$latest_announcement): ?>
+                <?php if (empty($announcements)): ?>
                     <div class="empty-state empty-state-white">
                         <i class="fas fa-bullhorn"></i>
                         <p>No announcements</p>
                     </div>
                 <?php else: ?>
-                    <div class="announcement">
-                        <div class="announcement-date"><?= date('F j, Y', strtotime($latest_announcement['created_at'])) ?></div>
-                        <div class="announcement-text">
-                            <strong><?= htmlspecialchars($latest_announcement['title']) ?></strong><br>
-                            <?= htmlspecialchars($latest_announcement['content']) ?>
+                    <?php foreach ($announcements as $announcement): ?>
+                        <div class="announcement">
+                            <div class="announcement-date"><?= date('F j, Y', strtotime($announcement['created_at'])) ?></div>
+                            <div class="announcement-text">
+                                <strong><?= htmlspecialchars($announcement['title']) ?></strong><br>
+                                <?= htmlspecialchars($announcement['content']) ?>
+                            </div>
                         </div>
-                    </div>
+                    <?php endforeach; ?>
                 <?php endif; ?>
-                <div style="text-align: center; margin-top: 1.5rem;">
-                    <a href="announcements.php" style="color: rgba(255,255,255,0.9); text-decoration: underline; font-size: 0.9rem;">
-                        View All Announcements
-                    </a>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- Add Announcement Modal -->
-    <div class="modal" id="announcementModal">
+    <!-- Announcement Modal -->
+    <div id="announcementModal" class="modal">
         <div class="modal-content">
-            <h3 style="color: #1666ba; margin-bottom: 1.5rem;">Add Announcement</h3>
+            <h3 style="color: #1666ba; margin-bottom: 1.5rem;">Add New Announcement</h3>
             <form method="POST">
                 <input type="hidden" name="action" value="add_announcement">
                 
                 <div class="form-group">
-                    <label for="title">Title</label>
-                    <input type="text" id="title" name="title" required>
+                    <label>Title</label>
+                    <input type="text" name="title" required>
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="content">Content</label>
-                    <textarea id="content" name="content" required></textarea>
+                    <label>Content</label>
+                    <textarea name="content" required></textarea>
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="visible_to">Visible To</label>
-                    <select id="visible_to" name="visible_to" required>
-                        <option value="all">All Users</option>
+                    <label>Visible To</label>
+                    <select name="visible_to" required>
+                        <option value="all">Everyone</option>
                         <option value="tenant">Tenants Only</option>
                         <option value="landlord">Landlords Only</option>
                     </select>
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="priority">Priority</label>
-                    <select id="priority" name="priority" required>
+                    <label>Priority</label>
+                    <select name="priority" required>
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
                         <option value="high">High</option>
                     </select>
                 </div>
-
-                <button type="submit" class="btn-primary">Add Announcement</button>
-                <button type="button" class="btn-secondary" onclick="closeAnnouncementModal()">Cancel</button>
+                
+                <button type="submit" class="btn-primary">Create Announcement</button>
+                <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
             </form>
         </div>
     </div>
@@ -1070,7 +1063,20 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
         
         createYearlyChart();
 
-
+        function openModal() {
+            document.getElementById('announcementModal').style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('announcementModal').style.display = 'none';
+        }
+        
+        window.onclick = function(event) {
+            const modal = document.getElementById('announcementModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
         
         function toggleMobileMenu() {
             const sidebar = document.getElementById('mobileSidebar');
@@ -1084,21 +1090,6 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             const overlay = document.getElementById('mobileOverlay');
             sidebar.classList.remove('active');
             overlay.classList.remove('active');
-        }
-        
-        function openAnnouncementModal() {
-            document.getElementById('announcementModal').style.display = 'block';
-        }
-        
-        function closeAnnouncementModal() {
-            document.getElementById('announcementModal').style.display = 'none';
-        }
-        
-        window.onclick = function(event) {
-            const modal = document.getElementById('announcementModal');
-            if (event.target == modal) {
-                closeAnnouncementModal();
-            }
         }
     </script>
 </body>
