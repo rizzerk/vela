@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../connection.php';
+<<<<<<< Updated upstream
 require_once '../vendor/autoload.php'; // Load PHPMailer
 
 error_reporting(E_ALL);
@@ -94,6 +95,11 @@ function sendRejectionEmail($applicant_name, $applicant_email, $property_title) 
     }
 }
 
+=======
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+>>>>>>> Stashed changes
 // Check if user is logged in and is landlord
 if (!isset($_SESSION['loggedin'])) {
     header("Location: ../login.php");
@@ -121,14 +127,22 @@ while ($row = $result->fetch_assoc()) {
 $stmt->close();
 
 // Handle application status update
+<<<<<<< Updated upstream
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
     $application_id = $_POST['application_id'];
     $status = $_POST['update_status'];
     
+=======
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
+  $application_id = $_POST['application_id'];
+  $status = $_POST['update_status']; // use the button value here
+>>>>>>> Stashed changes
     try {
         // Start transaction
         $conn->begin_transaction();
         
+<<<<<<< Updated upstream
         // First get application details for email
         $appStmt = $conn->prepare("SELECT a.*, p.title, u.name as applicant_name, u.email 
                                  FROM APPLICATIONS a
@@ -141,6 +155,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
         $application = $appResult->fetch_assoc();
         $appStmt->close();
         
+=======
+>>>>>>> Stashed changes
         // Update application status
         $stmt = $conn->prepare("UPDATE APPLICATIONS SET status = ?, approved_at = ? WHERE application_id = ?");
         $approved_at = $status == 'approved' ? date('Y-m-d H:i:s') : NULL;
@@ -150,6 +166,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
         
         // If approved, create lease and update user role
         if ($status == 'approved') {
+<<<<<<< Updated upstream
+=======
+            // Get application details
+            $appStmt = $conn->prepare("SELECT property_id, applicant_id FROM APPLICATIONS WHERE application_id = ?");
+            $appStmt->bind_param("i", $application_id);
+            $appStmt->execute();
+            $appResult = $appStmt->get_result();
+            $application = $appResult->fetch_assoc();
+            $appStmt->close();
+            
+>>>>>>> Stashed changes
             // Create lease (1 year by default)
             $start_date = date('Y-m-d');
             $end_date = date('Y-m-d', strtotime('+1 year'));
@@ -173,6 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
             $userStmt->execute();
             $userStmt->close();
             
+<<<<<<< Updated upstream
             // Create initial bill with billing period
             $rentStmt = $conn->prepare("SELECT monthly_rent FROM PROPERTY WHERE property_id = ?");
             $rentStmt->bind_param("i", $application['property_id']);
@@ -219,6 +247,44 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
                 $application['email'],
                 $application['title']
             );
+=======
+       
+  
+  // Create initial bill with billing period
+  $rentStmt = $conn->prepare("SELECT monthly_rent FROM PROPERTY WHERE property_id = ?");
+  $rentStmt->bind_param("i", $application['property_id']);
+  $rentStmt->execute();
+  $rentResult = $rentStmt->get_result();
+  $rent = $rentResult->fetch_assoc();
+  $rentStmt->close();
+  
+  $billStmt = $conn->prepare("INSERT INTO BILL 
+    (lease_id, amount, due_date, status, description, 
+     billing_period_start, billing_period_end, bill_type) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+
+$status = 'unpaid';
+$description = 'Monthly Rent';
+$bill_type = 'rent';
+
+$due_date = date('Y-m-d', strtotime('+5 days'));
+    $period_start = date('Y-m-d'); // Start from today
+    $period_end = date('Y-m-d', strtotime('+1 month'));
+
+$billStmt->bind_param("idssssss", 
+    $lease_id, 
+    $rent['monthly_rent'], 
+    $due_date,
+    $status,
+    $description,
+    $period_start,
+    $period_end,
+    $bill_type
+);
+  $billStmt->execute();
+  $billStmt->close();
+
+>>>>>>> Stashed changes
         }
         
         // Commit transaction
