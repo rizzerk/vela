@@ -24,39 +24,11 @@ $debug_info = "User ID: $userId, ";
 if ($lease) {
     $debug_info .= "Lease ID: {$lease['lease_id']}, ";
     
-    // Base query
-    $billQuery = "SELECT b.bill_id, b.amount, b.due_date, b.status as bill_status, 
-                         b.description, b.billing_period_start, b.billing_period_end, 
-                         b.bill_type, p.status as payment_status
-                  FROM BILL b
-                  LEFT JOIN PAYMENT p ON b.bill_id = p.bill_id
-                  WHERE b.lease_id = ? ";
-    
-    // Add filter conditions
-    switch ($filter) {
-        case 'paid':
-            $billQuery .= "AND (b.status = 'paid' OR p.status = 'verified') ";
-            break;
-        case 'unpaid':
-            $billQuery .= "AND b.status = 'unpaid' AND (p.status IS NULL OR p.status != 'verified') ";
-            break;
-        case 'pending':
-            $billQuery .= "AND p.status = 'pending' ";
-            break;
-        case 'rejected':
-            $billQuery .= "AND p.status = 'rejected' ";
-            break;
-        case 'overdue':
-            // Show bills that are unpaid and past their due date
-            $billQuery .= "AND (b.status = 'overdue' OR (b.due_date < CURDATE() AND b.status = 'unpaid' AND (p.status IS NULL OR p.status != 'verified'))) ";
-            break;
-        case 'all':
-        default:
-            // No additional filter
-            break;
-    }
-    
-    $billQuery .= "GROUP BY b.bill_id ORDER BY b.due_date ASC";
+    $billQuery = "SELECT bill_id, amount, due_date, status, description, 
+                         billing_period_start, billing_period_end, bill_type
+                  FROM BILL 
+                  WHERE lease_id = ? AND status != 'paid'
+                  ORDER BY due_date ASC";
     
     $billStmt = $conn->prepare($billQuery);
     $billStmt->bind_param("i", $lease['lease_id']);
