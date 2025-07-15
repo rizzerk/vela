@@ -5,6 +5,9 @@ require_once "../connection.php";
 $userName = $_SESSION['name'] ?? 'Tenant';
 $userId = $_SESSION['user_id'];
 
+// Get filter from query parameter
+$filter = $_GET['filter'] ?? 'all';
+
 $leaseQuery = "SELECT l.lease_id, l.property_id, p.title, p.address 
                FROM LEASE l 
                JOIN PROPERTY p ON l.property_id = p.property_id 
@@ -20,20 +23,51 @@ $debug_info = "User ID: $userId, ";
 
 if ($lease) {
     $debug_info .= "Lease ID: {$lease['lease_id']}, ";
-    
-    $billQuery = "SELECT bill_id, amount, due_date, status, description, 
-                         billing_period_start, billing_period_end, bill_type
-                  FROM BILL 
-                  WHERE lease_id = ? AND status != 'paid'
-                  ORDER BY due_date ASC
-                  LIMIT 2";
-    
+
+    // Base query
+    $billQuery = "SELECT b.bill_id, b.amount, b.due_date, b.status as bill_status, 
+                         b.description, b.billing_period_start, b.billing_period_end, 
+                         b.bill_type, p.status as payment_status
+                  FROM BILL b
+                  LEFT JOIN PAYMENT p ON b.bill_id = p.bill_id
+                  WHERE b.lease_id = ? ";
+
+    // Add filter conditions
+    switch ($filter) {
+        case 'paid':
+            $billQuery .= "AND (b.status = 'paid' OR p.status = 'verified') ";
+            break;
+        case 'unpaid':
+            $billQuery .= "AND b.status = 'unpaid' AND (p.status IS NULL OR p.status != 'verified') ";
+            break;
+        case 'pending':
+            $billQuery .= "AND p.status = 'pending' ";
+            break;
+        case 'rejected':
+            $billQuery .= "AND p.status = 'rejected' ";
+            break;
+        case 'overdue':
+            // Show bills that are unpaid and past their due date
+            $billQuery .= "AND (b.status = 'overdue' OR (b.due_date < CURDATE() AND b.status = 'unpaid' AND (p.status IS NULL OR p.status != 'verified'))) ";
+            break;
+        case 'all':
+        default:
+            // No additional filter
+            break;
+    }
+
+    $billQuery .= "GROUP BY b.bill_id ORDER BY b.due_date ASC";
+
     $billStmt = $conn->prepare($billQuery);
     $billStmt->bind_param("i", $lease['lease_id']);
     $billStmt->execute();
     $billResult = $billStmt->get_result();
-    
+
     while ($row = $billResult->fetch_assoc()) {
+        // For overdue filter, mark bills as overdue if they meet the criteria
+        if ($filter === 'overdue' && $row['bill_status'] === 'unpaid' && strtotime($row['due_date']) < time()) {
+            $row['bill_status'] = 'overdue';
+        }
         $bills[] = $row;
     }
     $debug_info .= "Bills found: " . count($bills);
@@ -44,6 +78,7 @@ if ($lease) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -80,11 +115,39 @@ if ($lease) {
             margin-bottom: 2rem;
         }
 
+        .filter-section {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #64748b;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            background: #f1f5f9;
+        }
+
+        .filter-btn.active {
+            background: #1666ba;
+            color: white;
+            border-color: #1666ba;
+        }
+
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid #e2e8f0;
         }
@@ -109,8 +172,13 @@ if ($lease) {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 2rem;
+            padding: 1.5rem;
             margin-bottom: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .bill-item:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         .bill-info {
@@ -118,16 +186,38 @@ if ($lease) {
         }
 
         .bill-type {
-            font-size: 0.875rem;
-            color: #1666ba;
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
             font-weight: 600;
+            margin-bottom: 0.5rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            margin-bottom: 0.5rem;
+        }
+
+        .bill-type.rent {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .bill-type.utility {
+            background-color: #fef3c7;
+            color: #d97706;
+        }
+
+        .bill-type.penalty {
+            background-color: #fecaca;
+            color: #dc2626;
+        }
+
+        .bill-type.other {
+            background-color: #e5e7eb;
+            color: #374151;
         }
 
         .bill-amount {
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: 800;
             color: #1e293b;
             margin-bottom: 0.25rem;
@@ -135,28 +225,28 @@ if ($lease) {
         }
 
         .bill-due {
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: #64748b;
             font-weight: 500;
             margin: 0;
         }
 
         .bill-period {
-            font-size: 0.875rem;
+            font-size: 0.85rem;
             color: #64748b;
             font-weight: 500;
             margin-top: 0.25rem;
         }
 
         .bill-status {
-            padding: 0.75rem 1.5rem;
-            border-radius: 25px;
-            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
             font-weight: 600;
             text-transform: capitalize;
             letter-spacing: 0.025em;
             white-space: nowrap;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .status-overdue {
@@ -174,17 +264,27 @@ if ($lease) {
             color: white;
         }
 
+        .status-rejected {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .status-pending {
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            color: white;
+        }
+
         .notice-section {
             background: linear-gradient(135deg, #1666ba 0%, #368ce7 100%);
             border-radius: 16px;
-            padding: 2.5rem;
+            padding: 2rem;
             margin-bottom: 2rem;
             color: #ffffff;
             box-shadow: 0 10px 15px -3px rgba(22, 102, 186, 0.1), 0 4px 6px -2px rgba(22, 102, 186, 0.05);
         }
 
         .notice-title {
-            font-size: 1.75rem;
+            font-size: 1.5rem;
             font-weight: 700;
             margin-bottom: 1rem;
             letter-spacing: -0.025em;
@@ -213,7 +313,7 @@ if ($lease) {
         .action-card {
             background: #1666ba;
             border-radius: 12px;
-            padding: 2rem;
+            padding: 1.5rem;
             border: none;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -229,7 +329,7 @@ if ($lease) {
         }
 
         .action-icon {
-            font-size: 2.5rem;
+            font-size: 2rem;
             color: #ffffff;
             margin-bottom: 1rem;
         }
@@ -246,56 +346,54 @@ if ($lease) {
             color: #666;
             font-style: italic;
             padding: 2rem;
+            background: #f8fafc;
+            border-radius: 12px;
         }
 
         @media (max-width: 768px) {
             .content-wrapper {
                 padding: 1rem;
             }
-            
+
             .section-header {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 0.5rem;
             }
 
-            .bills-section, .actions-section {
-                padding: 1rem;
-            }
-
+            .bills-section,
+            .actions-section,
             .notice-section {
                 padding: 1.5rem;
             }
 
             .actions-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 0.5rem;
+                grid-template-columns: 1fr;
+                gap: 1rem;
             }
 
             .action-card {
-                padding: 1rem;
-                min-height: 120px;
+                padding: 1.25rem;
             }
 
             .action-icon {
-                font-size: 1.5rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .action-title {
-                font-size: 0.8rem;
+                font-size: 1.75rem;
             }
 
             .bill-item {
-                padding: 1rem;
+                padding: 1.25rem;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
             }
 
-            .bill-amount {
-                font-size: 1.5rem;
+            .bill-status {
+                align-self: flex-start;
             }
         }
     </style>
 </head>
+
 <body>
     <?php include '../includes/navbar/tenant-navbar.php'; ?>
 
@@ -305,30 +403,54 @@ if ($lease) {
                 <h2 class="section-title">Payment Status</h2>
                 <div class="welcome-text">Welcome back, <?php echo htmlspecialchars($userName); ?>!</div>
             </div>
-            <!-- Debug: <?= $debug_info ?> -->
+
+            <!-- Filter buttons -->
+            <div class="filter-section">
+                <button class="filter-btn <?= $filter === 'all' ? 'active' : '' ?>" onclick="setFilter('all')">All</button>
+                <button class="filter-btn <?= $filter === 'paid' ? 'active' : '' ?>" onclick="setFilter('paid')">Paid</button>
+                <button class="filter-btn <?= $filter === 'unpaid' ? 'active' : '' ?>" onclick="setFilter('unpaid')">Unpaid</button>
+                <button class="filter-btn <?= $filter === 'pending' ? 'active' : '' ?>" onclick="setFilter('pending')">Pending</button>
+                <button class="filter-btn <?= $filter === 'rejected' ? 'active' : '' ?>" onclick="setFilter('rejected')">Rejected</button>
+                <button class="filter-btn <?= $filter === 'overdue' ? 'active' : '' ?>" onclick="setFilter('overdue')">Overdue</button>
+            </div>
+
             <?php if (empty($bills)): ?>
-                <div class="no-bills">No bills found</div>
+                <div class="no-bills">No bills found for this filter</div>
             <?php else: ?>
                 <?php foreach ($bills as $bill): ?>
                     <div class="bill-item">
                         <div class="bill-info">
-                            <div class="bill-type"><?php echo ucfirst($bill['bill_type']); ?></div>
-                            <div class="bill-amount">₱<?php echo number_format($bill['amount'], 2); ?></div>
-                            <div class="bill-due">Due: <?php echo date('M d, Y', strtotime($bill['due_date'])); ?></div>
-                            <?php if ($bill['bill_type'] === 'rent' && $bill['billing_period_start']): ?>
+                            <span class="bill-type <?= strtolower($bill['bill_type']) ?>">
+                                <?= ucfirst($bill['bill_type']) ?>
+                            </span>
+                            <div class="bill-amount">₱<?= number_format($bill['amount'], 2) ?></div>
+                            <div class="bill-due">Due: <?= date('M d, Y', strtotime($bill['due_date'])) ?></div>
+                            <?php if ($bill['billing_period_start'] && $bill['billing_period_end']): ?>
                                 <div class="bill-period">
-                                    Period: <?php echo date('M d', strtotime($bill['billing_period_start'])) . ' - ' . 
-                                                  date('M d, Y', strtotime($bill['billing_period_end'])); ?>
+                                    Period: <?= date('M d', strtotime($bill['billing_period_start'])) . ' - ' .
+                                                date('M d, Y', strtotime($bill['billing_period_end'])) ?>
                                 </div>
                             <?php endif; ?>
                             <?php if ($bill['description']): ?>
                                 <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b; font-weight: 500;">
-                                    <?php echo htmlspecialchars($bill['description']); ?>
+                                    <?= htmlspecialchars($bill['description']) ?>
                                 </div>
                             <?php endif; ?>
                         </div>
-                        <div class="bill-status status-<?php echo $bill['status']; ?>">
-                            <?php echo ucfirst($bill['status']); ?>
+                        <div class="bill-status 
+                            <?php if ($bill['payment_status'] === 'rejected'): ?>
+                                status-rejected">Payment Rejected
+                        <?php elseif ($bill['payment_status'] === 'pending'): ?>
+                            status-pending">Payment Pending
+                        <?php elseif ($bill['payment_status'] === 'verified'): ?>
+                            status-paid">Payment Verified
+                        <?php elseif ($bill['bill_status'] === 'overdue'): ?>
+                            status-overdue">Overdue
+                        <?php elseif ($bill['bill_status'] === 'paid'): ?>
+                            status-paid">Paid
+                        <?php else: ?>
+                            status-unpaid">Unpaid
+                        <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -338,7 +460,7 @@ if ($lease) {
         <div class="notice-section">
             <h2 class="notice-title">Important Notice</h2>
             <p class="notice-text">
-                Your monthly rent payment is due on the 5th of each month. Please ensure timely payment to avoid late fees. 
+                Your monthly rent payment is due on the 5th of each month. Please ensure timely payment to avoid late fees.
                 For any maintenance requests or concerns, use the button below or contact our support team.
             </p>
         </div>
@@ -368,18 +490,23 @@ if ($lease) {
     </div>
 
     <script>
+        function setFilter(filter) {
+            window.location.href = `?filter=${filter}`;
+        }
+
         function maintenanceRequest() {
             window.location.href = 'maintenance.php';
         }
-        
+
         function viewPaymentHistory() {
             window.location.href = 'pay-dues.php';
         }
-        
+
         function viewLease() {
             window.location.href = 'lease-details.php';
         }
     </script>
 </body>
+
 </html>
 <?php $conn->close(); ?>
