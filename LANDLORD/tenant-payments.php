@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../connection.php';
+require_once '../vendor/autoload.php'; // Make sure PHPMailer is installed via Composer
 
 $landlord_id = $_SESSION['user_id'] ?? 1;
 
@@ -15,6 +16,22 @@ if (isset($_POST['update_status'])) {
         echo json_encode(['success' => false, 'message' => 'Invalid status']);
         exit;
     }
+
+    // First get tenant email and payment details before updating
+    $payment_details_query = "
+        SELECT u.email, u.name AS tenant_name, p.amount_paid, p.reference_num, b.bill_type 
+        FROM PAYMENT p
+        JOIN BILL b ON p.bill_id = b.bill_id
+        JOIN LEASE l ON b.lease_id = l.lease_id
+        JOIN USERS u ON l.tenant_id = u.user_id
+        WHERE p.payment_id = ?
+    ";
+    $stmt = $conn->prepare($payment_details_query);
+    $stmt->bind_param("i", $payment_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $payment_details = $result->fetch_assoc();
+    $stmt->close();
 
     // Update payment status
     $update_query = "UPDATE PAYMENT SET status = ? WHERE payment_id = ?";
@@ -33,6 +50,59 @@ if (isset($_POST['update_status'])) {
             $bill_stmt = $conn->prepare($bill_update_query);
             $bill_stmt->bind_param("i", $payment_id);
             $bill_stmt->execute();
+            $bill_stmt->close();
+        }
+
+        // Send email notification to tenant
+        if ($payment_details && !empty($payment_details['email'])) {
+            $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+            
+            try {
+                // Server settings
+                $mail->isSMTP();
+                $mail->Host       = 'smtp.gmail.com'; // Your SMTP server
+                $mail->SMTPAuth   = true;
+                $mail->Username   = 'velacinco5@gmail.com'; // SMTP username
+                $mail->Password   = 'aycm atee woxl lmvj'; // SMTP password
+                $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = 587;
+                
+                // Recipients
+                $mail->setFrom('velacinco5@gmail.com', 'VELA Cinco Rentals');
+                $mail->addAddress($payment_details['email'], $payment_details['tenant_name']);
+                
+                // Content
+                $mail->isHTML(true);
+                
+                if ($new_status === 'verified') {
+                    $mail->Subject = 'Payment Verified - ' . $payment_details['reference_num'];
+                    $mail->Body    = '
+                        <h2>Payment Verified</h2>
+                        <p>Hello ' . htmlspecialchars($payment_details['tenant_name']) . ',</p>
+                        <p>Your payment of <strong>₱' . number_format($payment_details['amount_paid'], 2) . '</strong> for ' . 
+                        htmlspecialchars($payment_details['bill_type']) . ' (Reference: ' . htmlspecialchars($payment_details['reference_num']) . ') has been verified.</p>
+                        <p>Thank you for your payment!</p>
+                        <p>Best regards,<br>VELA Team</p>
+                    ';
+                } else { // rejected
+                    $mail->Subject = 'Payment Rejected - ' . $payment_details['reference_num'];
+                    $mail->Body    = '
+                        <h2>Payment Rejected</h2>
+                        <p>Hello ' . htmlspecialchars($payment_details['tenant_name']) . ',</p>
+                        <p>Your payment of <strong>₱' . number_format($payment_details['amount_paid'], 2) . '</strong> for ' . 
+                        htmlspecialchars($payment_details['bill_type']) . ' (Reference: ' . htmlspecialchars($payment_details['reference_num']) . ') has been rejected.</p>
+                        <p>Please review your payment details and submit a new payment if needed.</p>
+                        <p>If you believe this was a mistake, please contact your landlord.</p>
+                        <p>Best regards,<br>VELA Team</p>
+                    ';
+                }
+                
+                $mail->AltBody = strip_tags($mail->Body);
+                $mail->send();
+            } catch (Exception $e) {
+                // Log error but don't fail the operation
+                error_log("Mailer Error: " . $mail->ErrorInfo);
+            }
         }
 
         echo json_encode(['success' => true]);
