@@ -6,31 +6,19 @@
     <ul class="nav-menu">
         <!-- Core Management -->
         <li class="nav-item">
-<<<<<<< Updated upstream
             <a href="dashboard.php" class="nav-link <?= $current_page == 'dashboard.php' ? 'active' : '' ?>">
-=======
-            <a href="dashboard.php" class="nav-link active">
->>>>>>> Stashed changes
                 <i class="fas fa-tachometer-alt"></i>
                 Dashboard
             </a>
         </li>
         <li class="nav-item">
-<<<<<<< Updated upstream
             <a href="properties.php" class="nav-link <?= $current_page == 'properties.php' ? 'active' : '' ?>">
-=======
-            <a href="properties.php" class="nav-link">
->>>>>>> Stashed changes
                 <i class="fas fa-building"></i>
                 Properties
             </a>
         </li>
         <li class="nav-item">
-<<<<<<< Updated upstream
             <a href="bills.php" class="nav-link <?= $current_page == 'bills.php' ? 'active' : '' ?>">
-=======
-            <a href="bills.php" class="nav-link">
->>>>>>> Stashed changes
                 <i class="fas fa-chart-line"></i>
                 Bills
             </a>
@@ -58,23 +46,7 @@
             </a>
         </li>
         <li class="nav-item">
-<<<<<<< Updated upstream
             <a href="tenant-history.php" class="nav-link <?= $current_page == 'tenant-history.php' ? 'active' : '' ?>">
-=======
-            <a href="applications.php" class="nav-link">
-                <i class="fas fa-file-alt"></i>
-                Manage Applications
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="#" class="nav-link">
-                <i class="fas fa-receipt"></i>
-                Tenant Payments
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="#" class="nav-link">
->>>>>>> Stashed changes
                 <i class="fas fa-history"></i>
                 Tenant History
             </a>

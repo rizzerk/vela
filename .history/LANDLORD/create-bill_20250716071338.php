@@ -201,7 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body>
-<?php include ('../includes/navbar/landlord-sidebar.php'); ?>
+    <?php include "includes/navbar/navbarIN.html" ?>
     
     <div class="form-container">
         <h2>Create Manual Bill</h2>
