@@ -1,4 +1,4 @@
-'<?php
+<?php
 session_start();
 require_once "../connection.php";
 
@@ -7,7 +7,8 @@ $userId = $_SESSION['user_id'];
 
 $filter = $_GET['filter'] ?? 'all';
 
-$leaseQuery = "SELECT l.lease_id, l.property_id, p.title, p.address 
+$leaseQuery = "SELECT l.lease_id, l.property_id, p.title, p.address, 
+                      l.start_date, l.end_date
                FROM LEASE l 
                JOIN PROPERTY p ON l.property_id = p.property_id 
                WHERE l.tenant_id = ? AND l.active = 1";
@@ -19,10 +20,35 @@ $lease = $leaseResult->fetch_assoc();
 
 $bills = [];
 $announcements = [];
-$events = [];
+$leaseEvents = [];
+$maintenanceEvents = [];
+$paymentEvents = [];
 $debug_info = "User ID: $userId, ";
 
 if ($lease) {
+    // Get maintenance requests
+    try {
+        $maintenanceQuery = "SELECT created_at FROM MAINTENANCE_REQUEST WHERE property_id = ? LIMIT 10";
+        $maintenanceStmt = $conn->prepare($maintenanceQuery);
+        $maintenanceStmt->bind_param("i", $lease['property_id']);
+        $maintenanceStmt->execute();
+        $maintenanceResult = $maintenanceStmt->get_result();
+        while ($row = $maintenanceResult->fetch_assoc()) {
+            $maintenanceEvents[] = $row['created_at'];
+        }
+    } catch (Exception $e) {}
+    
+    // Get payment events
+    try {
+        $paymentQuery = "SELECT p.created_at, p.status FROM PAYMENT p JOIN BILL b ON p.bill_id = b.bill_id WHERE b.lease_id = ? AND p.status IN ('rejected', 'pending')";
+        $paymentStmt = $conn->prepare($paymentQuery);
+        $paymentStmt->bind_param("i", $lease['lease_id']);
+        $paymentStmt->execute();
+        $paymentResult = $paymentStmt->get_result();
+        while ($row = $paymentResult->fetch_assoc()) {
+            $paymentEvents[] = ['date' => $row['created_at'], 'status' => $row['status']];
+        }
+    } catch (Exception $e) {}
     $announcementQuery = "SELECT title, content, priority, created_at FROM ANNOUNCEMENT 
                          WHERE visible_to IN ('tenant', 'all') 
                          ORDER BY FIELD(priority, 'high', 'medium', 'low'), created_at DESC LIMIT 3";
@@ -80,82 +106,6 @@ if ($lease) {
         $bills[] = $row;
     }
     $debug_info .= "Bills found: " . count($bills);
-    
-    // Get calendar events
-    $user_role = $_SESSION['role'];
-    
-    // Get lease events
-    $leaseQuery = "SELECT l.lease_id, l.start_date, l.end_date, p.title AS property_name, p.property_type 
-                   FROM LEASE l 
-                   JOIN PROPERTY p ON l.property_id = p.property_id 
-                   WHERE l.tenant_id = ?";
-    $stmt = $conn->prepare($leaseQuery);
-    $stmt->bind_param("i", $userId);
-    $stmt->execute();
-    $leaseResult = $stmt->get_result();
-    while ($row = $leaseResult->fetch_assoc()) {
-        $events[$row['start_date']][] = [
-            'title' => "Lease Start: " . $row['property_name'],
-            'type' => 'lease',
-            'date' => $row['start_date'],
-            'property_type' => $row['property_type']
-        ];
-        $events[$row['end_date']][] = [
-            'title' => "Lease End: " . $row['property_name'],
-            'type' => 'lease',
-            'date' => $row['end_date'],
-            'property_type' => $row['property_type']
-        ];
-    }
-    
-    // Get bill events
-    $billEventQuery = "SELECT b.bill_id, b.due_date, b.amount, b.description, b.status, 
-                              p.status as payment_status
-                       FROM BILL b 
-                       LEFT JOIN PAYMENT p ON b.bill_id = p.bill_id
-                       WHERE b.lease_id = ? AND b.due_date >= CURDATE()";
-    $stmt = $conn->prepare($billEventQuery);
-    $stmt->bind_param("i", $lease['lease_id']);
-    $stmt->execute();
-    $billEventResult = $stmt->get_result();
-    while ($row = $billEventResult->fetch_assoc()) {
-        $isPaid = ($row['status'] == 'paid') || ($row['payment_status'] == 'verified');
-        $title = "Payment Due: " . $row['description'] . " ($" . $row['amount'] . ")";
-        if ($row['payment_status'] === 'rejected') {
-            $title = "Payment Rejected: " . $row['description'] . " ($" . $row['amount'] . ")";
-        } elseif ($row['payment_status'] === 'pending') {
-            $title = "Payment Pending: " . $row['description'] . " ($" . $row['amount'] . ")";
-        } elseif ($isPaid) {
-            $title = "Payment Verified: " . $row['description'] . " ($" . $row['amount'] . ")";
-        }
-        
-        $events[$row['due_date']][] = [
-            'title' => $title,
-            'type' => 'bill',
-            'date' => $row['due_date'],
-            'paid' => $isPaid,
-            'payment_status' => $row['payment_status'] ?? $row['status']
-        ];
-    }
-    
-    // Get maintenance events
-    $maintenanceQuery = "SELECT mr.requested_at, mr.description, mr.status
-                         FROM MAINTENANCE_REQUEST mr 
-                         WHERE mr.lease_id = ? AND mr.requested_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
-    $stmt = $conn->prepare($maintenanceQuery);
-    $stmt->bind_param("i", $lease['lease_id']);
-    $stmt->execute();
-    $maintenanceResult = $stmt->get_result();
-    while ($row = $maintenanceResult->fetch_assoc()) {
-        $date = date('Y-m-d', strtotime($row['requested_at']));
-        $events[$date][] = [
-            'title' => "Maintenance: " . $row['description'],
-            'type' => 'maintenance',
-            'date' => $date,
-            'status' => $row['status']
-        ];
-    }
-    
 } else {
     $debug_info .= "No active lease found";
 }
@@ -186,53 +136,158 @@ if ($lease) {
         }
 
         .content-wrapper {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 2.5rem;
+            padding: 2rem;
         }
-        
+
         .dashboard-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
             gap: 2rem;
-            min-height: calc(100vh - 200px);
+            margin-bottom: 2rem;
         }
-        
-        .left-column, .right-column {
+
+        .main-content {
             display: flex;
             flex-direction: column;
             gap: 2rem;
-            height: 100%;
-        }
-        
-        .calendar-widget {
-            flex: 2;
-            min-height: 500px;
-        }
-        
-        .left-column .bills-section {
-            flex: 1;
-            min-height: 300px;
-        }
-        
-        .right-column .bills-section {
-            flex: 2;
-            min-height: 500px;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        
-        .actions-section {
-            flex: 1;
-            min-height: 200px;
         }
 
-        .bills-section {
+        .sidebar-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .section {
             background: #ffffff;
             border-radius: 16px;
             padding: 2rem;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
             border: 1px solid #e2e8f0;
+        }
+
+        .calendar-section {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .calendar {
+            width: 100%;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .calendar-nav {
+            background: none;
+            border: none;
+            color: #1666ba;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .calendar-nav:hover {
+            background: #f1f5f9;
+        }
+
+        .calendar-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .calendar-day-header {
+            background: #f8fafc;
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .calendar-day {
+            background: #ffffff;
+            padding: 0.5rem;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            position: relative;
+        }
+
+        .calendar-day:hover {
+            background: #f1f5f9;
+        }
+
+        .calendar-day.today {
+            background: #1666ba;
+            color: white;
+            font-weight: 600;
+        }
+
+        .calendar-day.has-due {
+            background: #fef3c7;
+            color: #d97706;
+            font-weight: 600;
+        }
+
+        .calendar-day.has-due.today {
+            background: #dc2626;
+            color: white;
+        }
+
+        .calendar-day.has-events {
+            min-height: 60px;
+            align-items: flex-start;
+            padding: 4px;
+            flex-direction: column;
+        }
+        
+        .calendar-event {
+            font-size: 0.6rem;
+            padding: 1px 3px;
+            border-radius: 3px;
+            margin: 1px 0;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .event-bill { background: #fef3c7; color: #92400e; }
+        .event-announcement { background: #ecfccb; color: #365314; }
+        .event-maintenance { background: #ede9fe; color: #5b21b6; }
+        .event-overdue { background: #fee2e2; color: #991b1b; }
+        .event-pending { background: #dbeafe; color: #1e40af; }
+
+        .calendar-day.other-month {
+            color: #cbd5e1;
         }
 
         .filter-section {
@@ -286,14 +341,14 @@ if ($lease) {
         }
 
         .bill-item {
-            border-radius: 12px;
+            border-radius: 16px;
             background: #ffffff;
             border: 1px solid #e2e8f0;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1.25rem;
-            margin-bottom: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
             transition: all 0.2s ease;
         }
 
@@ -398,6 +453,7 @@ if ($lease) {
             background: linear-gradient(135deg, #1666ba 0%, #368ce7 100%);
             border-radius: 12px;
             padding: 1.25rem;
+            margin-bottom: 1rem;
             color: #ffffff;
             box-shadow: 0 4px 6px -1px rgba(22, 102, 186, 0.1), 0 2px 4px -1px rgba(22, 102, 186, 0.05);
         }
@@ -425,24 +481,20 @@ if ($lease) {
 
         .actions-grid {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 1rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
         }
 
         .action-card {
             background: #1666ba;
             border-radius: 12px;
-            padding: 1rem;
+            padding: 1.5rem;
             border: none;
             cursor: pointer;
             transition: all 0.3s ease;
             text-align: center;
             color: #ffffff;
             box-shadow: 0 4px 6px -1px rgba(22, 102, 186, 0.1), 0 2px 4px -1px rgba(22, 102, 186, 0.06);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
         }
 
         .action-card:hover {
@@ -452,12 +504,13 @@ if ($lease) {
         }
 
         .action-icon {
-            font-size: 1.25rem;
+            font-size: 2rem;
             color: #ffffff;
+            margin-bottom: 1rem;
         }
 
         .action-title {
-            font-size: 0.95rem;
+            font-size: 1.125rem;
             font-weight: 600;
             color: #ffffff;
             letter-spacing: -0.025em;
@@ -471,194 +524,17 @@ if ($lease) {
             background: #f8fafc;
             border-radius: 12px;
         }
-        
-        .calendar-widget {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-            border: 1px solid #e2e8f0;
-        }
-        
-        .calendar-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.5rem;
-        }
-        
-        .month-nav {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        
-        .month-nav button {
-            border: none;
-            background: #e2e8f0;
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            color: #1666ba;
-        }
-        
-        .month-nav button:hover {
-            background: #1666ba;
-            color: white;
-        }
-        
-        .month-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            min-width: 120px;
-            text-align: center;
-            color: #1e293b;
-        }
-        
-        .calendar-table {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 1px;
-            background: #e2e8f0;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        .day-header {
-            background: #1666ba;
-            color: white;
-            font-weight: 600;
-            padding: 10px 5px;
-            text-align: center;
-            font-size: 0.8rem;
-        }
-        
-        .calendar-day {
-            background: white;
-            height: 80px;
-            padding: 6px;
-            position: relative;
-            transition: all 0.2s ease;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        
-        .calendar-day:hover {
-            background: #f1f8ff;
-        }
-        
-        .calendar-day.empty {
-            background: #f8f9fa;
-        }
-        
-        .calendar-day-number {
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 3px;
-            color: #495057;
-        }
-        
-        .calendar-day.today .calendar-day-number {
-            background: #1666ba;
-            color: white;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .calendar-events {
-            flex-grow: 1;
-            overflow: hidden;
-        }
-        
-        .calendar-event {
-            font-size: 0.6rem;
-            padding: 2px 4px;
-            border-radius: 3px;
-            margin-bottom: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            cursor: pointer;
-        }
-        
-        .calendar-event.lease {
-            background: #d4edda;
-            border-left: 3px solid #28a745;
-        }
-        
-        .calendar-event.bill {
-            background: #fff3cd;
-            border-left: 3px solid #ffc107;
-        }
-        
-        .calendar-event.maintenance {
-            background: #f8d7da;
-            border-left: 3px solid #dc3545;
-        }
-        
-        .calendar-event.announcement {
-            background: #cce5ff;
-            border-left: 3px solid #1666ba;
-        }
-        
-        .calendar-event.paid {
-            text-decoration: line-through;
-            opacity: 0.7;
-        }
-        
-        .event-modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        
-        .event-modal-content {
-            background-color: #fefefe;
-            margin: 15% auto;
-            padding: 20px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 500px;
-            position: relative;
-        }
-        
-        .event-close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        
-        .event-close:hover {
-            color: #000;
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
         }
 
         @media (max-width: 768px) {
             .content-wrapper {
                 padding: 1rem;
-            }
-            
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
             }
 
             .section-header {
@@ -667,9 +543,8 @@ if ($lease) {
                 gap: 0.5rem;
             }
 
-            .bills-section,
-            .actions-section,
-            .notice-section {
+            .section,
+            .calendar-section {
                 padding: 1.5rem;
             }
 
@@ -696,7 +571,13 @@ if ($lease) {
             .bill-status {
                 align-self: flex-start;
             }
+
+            .calendar-day {
+                min-height: 35px;
+                font-size: 0.8rem;
+            }
         }
+        
     </style>
 </head>
 
@@ -704,114 +585,27 @@ if ($lease) {
     <?php include '../includes/navbar/tenant-navbar.php'; ?>
 
     <div class="content-wrapper">
-        <div class="section-header">
-            <h2 class="section-title">Dashboard</h2>
-            <div class="welcome-text">Welcome back, <?php echo htmlspecialchars($userName); ?>!</div>
-        </div>
-        
         <div class="dashboard-grid">
-            <div class="left-column">
-                <div class="calendar-widget">
+            <div class="sidebar-content">
+                <div class="calendar-section">
                     <div class="section-header">
                         <h2 class="section-title">Calendar</h2>
                     </div>
-                    
-                    <?php
-                    // Get current month and year for calendar
-                    $currentMonth = isset($_GET['month']) ? intval($_GET['month']) : date('n');
-                    $currentYear = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
-                    
-                    // Handle month navigation
-                    if (isset($_GET['prev'])) {
-                        $currentMonth--;
-                        if ($currentMonth < 1) {
-                            $currentMonth = 12;
-                            $currentYear--;
-                        }
-                    } elseif (isset($_GET['next'])) {
-                        $currentMonth++;
-                        if ($currentMonth > 12) {
-                            $currentMonth = 1;
-                            $currentYear++;
-                        }
-                    }
-                    
-                    $monthNames = [
-                        1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April', 
-                        5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August', 
-                        9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'
-                    ];
-                    $currentMonthName = $monthNames[$currentMonth];
-                    
-                    function getDaysInMonth($month, $year) {
-                        return date('t', strtotime("$year-$month-01"));
-                    }
-                    
-                    function getFirstDayOfMonth($month, $year) {
-                        return date('w', strtotime("$year-$month-01"));
-                    }
-                    ?>
-                    
-                    <div class="calendar-header">
-                        <div class="month-nav">
-                            <a href="?prev=1&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?= $filter ?>">
-                                <button><i class="fas fa-chevron-left"></i></button>
-                            </a>
-                            <div class="month-title"><?php echo $currentMonthName . ' ' . $currentYear; ?></div>
-                            <a href="?next=1&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?= $filter ?>">
-                                <button><i class="fas fa-chevron-right"></i></button>
-                            </a>
+                    <div class="calendar">
+                        <div class="calendar-header">
+                            <button class="calendar-nav" onclick="changeMonth(-1)">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <div class="calendar-title" id="calendar-title"></div>
+                            <button class="calendar-nav" onclick="changeMonth(1)">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
                         </div>
-                    </div>
-                    
-                    <div class="calendar-table">
-                        <div class="day-header">Sun</div>
-                        <div class="day-header">Mon</div>
-                        <div class="day-header">Tue</div>
-                        <div class="day-header">Wed</div>
-                        <div class="day-header">Thu</div>
-                        <div class="day-header">Fri</div>
-                        <div class="day-header">Sat</div>
-                        
-                        <?php
-                        $daysInMonth = getDaysInMonth($currentMonth, $currentYear);
-                        $firstDay = getFirstDayOfMonth($currentMonth, $currentYear);
-                        
-                        // Create empty cells for days before the first day of the month
-                        for ($i = 0; $i < $firstDay; $i++) {
-                            echo '<div class="calendar-day empty"></div>';
-                        }
-                        
-                        // Create cells for each day of the month
-                        $today = date('Y-m-d');
-                        for ($day = 1; $day <= $daysInMonth; $day++) {
-                            $dateStr = sprintf("%04d-%02d-%02d", $currentYear, $currentMonth, $day);
-                            $isToday = ($dateStr == date('Y-m-d')) ? 'today' : '';
-                            
-                            echo "<div class='calendar-day $isToday'>";
-                            echo "<div class='calendar-day-number'>$day</div>";
-                            
-                            // Display events
-                            echo "<div class='calendar-events'>";
-                            if (isset($events[$dateStr])) {
-                                foreach ($events[$dateStr] as $index => $event) {
-                                    $paidClass = (isset($event['paid']) && $event['paid']) ? 'paid' : '';
-                                    $statusClass = isset($event['status']) && $event['status'] === 'rejected' ? 'rejected' : 
-                                                 (isset($event['status']) && $event['status'] === 'pending' ? 'pending' : $event['type']);
-                                    $eventData = htmlspecialchars(json_encode($event));
-                                    echo "<div class='calendar-event $statusClass $paidClass' title='{$event['title']}' onclick='showEventDetail($eventData)'>";
-                                    echo htmlspecialchars($event['title']);
-                                    echo "</div>";
-                                }
-                            }
-                            echo "</div>";
-                            echo "</div>";
-                        }
-                        ?>
+                        <div class="calendar-grid" id="calendar-grid"></div>
                     </div>
                 </div>
-                
-                <div class="bills-section">
+
+                <div class="section">
                     <div class="section-header">
                         <h2 class="section-title">Notices</h2>
                         <span onclick="viewAllNotices()" style="color: #1666ba; cursor: pointer; font-weight: 500;">
@@ -844,14 +638,14 @@ if ($lease) {
                     </div>
                 </div>
             </div>
-            
-            <div class="right-column">
-                <div class="bills-section">
+
+            <div class="main-content">
+                <div class="section">
                     <div class="section-header">
                         <h2 class="section-title">Payment Status</h2>
+                        <div class="welcome-text">Welcome back, <?php echo htmlspecialchars($userName); ?>!</div>
                     </div>
 
-                    <!-- Filter buttons -->
                     <div class="filter-section">
                         <button class="filter-btn <?= $filter === 'all' ? 'active' : '' ?>" onclick="setFilter('all')">All</button>
                         <button class="filter-btn <?= $filter === 'paid' ? 'active' : '' ?>" onclick="setFilter('paid')">Paid</button>
@@ -903,11 +697,8 @@ if ($lease) {
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
-                
+
                 <div class="actions-section">
-                    <div class="section-header">
-                        <h2 class="section-title">Quick Actions</h2>
-                    </div>
                     <div class="actions-grid">
                         <div class="action-card" onclick="maintenanceRequest()">
                             <div class="action-icon">
@@ -933,73 +724,170 @@ if ($lease) {
         </div>
     </div>
 
-    <div id="eventModal" class="event-modal">
-        <div class="event-modal-content">
-            <span class="event-close" onclick="closeEventModal()">&times;</span>
-            <h3 id="eventTitle"></h3>
-            <div id="eventDetails"></div>
-        </div>
-    </div>
-
     <script>
-        function setFilter(filter) {
-            window.location.href = `?filter=${filter}`;
-        }
+    let currentDate = new Date();
+    // Get all the events data from PHP
+    const events = {
+        lease: <?= json_encode($lease ? [
+            'start' => $lease['lease_start_date'] ?? null,
+            'end' => $lease['lease_end_date'] ?? null
+        ] : []) ?>,
+        bills: <?= json_encode(array_map(function($bill) { 
+            return [
+                'date' => $bill['due_date'],
+                'status' => $bill['payment_status'] ?? $bill['bill_status'],
+                'type' => $bill['bill_type']
+            ]; 
+        }, $bills)) ?>,
+        announcements: <?= json_encode(array_map(function($announcement) { 
+            return [
+                'date' => $announcement['created_at'],
+                'priority' => $announcement['priority']
+            ]; 
+        }, $announcements)) ?>,
+        // Note: Maintenance requests would need to be fetched from your database
+        maintenance: [] // This would be populated similarly if you have maintenance data
+    };
 
-        function maintenanceRequest() {
-            window.location.href = 'maintenance.php';
-        }
+    function setFilter(filter) {
+        window.location.href = `?filter=${filter}`;
+    }
 
-        function viewPaymentHistory() {
-            window.location.href = 'pay-dues.php';
-        }
+    function maintenanceRequest() {
+        window.location.href = 'maintenance.php';
+    }
 
-        function viewLease() {
-            window.location.href = 'lease-details.php';
-        }
+    function viewPaymentHistory() {
+        window.location.href = 'pay-dues.php';
+    }
 
-        function viewAllNotices() {
-            window.location.href = 'notices.php';
-        }
+    function viewLease() {
+        window.location.href = 'lease-details.php';
+    }
+
+    function viewAllNotices() {
+        window.location.href = 'notices.php';
+    }
+
+    function changeMonth(direction) {
+        currentDate.setMonth(currentDate.getMonth() + direction);
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const today = new Date();
         
-        function showEventDetail(event) {
-            const modal = document.getElementById('eventModal');
-            const title = document.getElementById('eventTitle');
-            const details = document.getElementById('eventDetails');
+        document.getElementById('calendar-title').textContent = 
+            currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+        let calendarHTML = '';
+        const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        
+        dayHeaders.forEach(day => {
+            calendarHTML += `<div class="calendar-day-header">${day}</div>`;
+        });
+
+        // Previous month days
+        for (let i = firstDay - 1; i >= 0; i--) {
+            const day = daysInPrevMonth - i;
+            calendarHTML += `<div class="calendar-day other-month">${day}</div>`;
+        }
+
+        // Current month days
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dateObj = new Date(year, month, day);
+            const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
             
-            title.textContent = event.title;
+            // Check for events on this day
+            const dayEvents = {
+                leaseStart: events.lease.start && dateStr === events.lease.start,
+                leaseEnd: events.lease.end && dateStr === events.lease.end,
+                bills: events.bills.filter(bill => bill.date === dateStr),
+                announcements: events.announcements.filter(ann => ann.date.startsWith(dateStr)),
+                maintenance: events.maintenance.filter(maint => maint.date === dateStr)
+            };
             
-            let detailsHtml = `<p><strong>Due Date:</strong> ${event.date}</p>`;
+            let classes = 'calendar-day';
+            let indicators = '';
             
-            if (event.type === 'lease') {
-                detailsHtml += `<p><strong>Property Type:</strong> ${event.property_type || 'N/A'}</p>`;
-            } else {
-                detailsHtml += `<p><strong>Type:</strong> ${event.type.charAt(0).toUpperCase() + event.type.slice(1)}</p>`;
+            if (isToday) classes += ' today';
+            
+            // Lease events
+            if (dayEvents.leaseStart) {
+                classes += ' lease-event';
+                indicators += '<div class="event-indicator lease-start" title="Lease Start"></div>';
+            }
+            if (dayEvents.leaseEnd) {
+                classes += ' lease-event';
+                indicators += '<div class="event-indicator lease-end" title="Lease End"></div>';
             }
             
-            if (event.type === 'bill' && event.payment_status) {
-                detailsHtml += `<p><strong>Payment Status:</strong> ${event.payment_status.charAt(0).toUpperCase() + event.payment_status.slice(1)}</p>`;
-            } else if (event.status) {
-                detailsHtml += `<p><strong>Status:</strong> ${event.status.charAt(0).toUpperCase() + event.status.slice(1)}</p>`;
+            // Bill events
+            dayEvents.bills.forEach(bill => {
+                if (bill.status === 'overdue' || (bill.status === 'unpaid' && dateObj < today)) {
+                    classes += ' bill-overdue';
+                    indicators += '<div class="event-indicator bill-overdue" title="Overdue Bill"></div>';
+                } else if (bill.status === 'unpaid') {
+                    classes += ' bill-unpaid';
+                    indicators += '<div class="event-indicator bill-unpaid" title="Unpaid Bill"></div>';
+                } else if (bill.status === 'pending') {
+                    classes += ' bill-pending';
+                    indicators += '<div class="event-indicator bill-pending" title="Pending Payment"></div>';
+                } else if (bill.status === 'rejected') {
+                    classes += ' bill-rejected';
+                    indicators += '<div class="event-indicator bill-rejected" title="Rejected Payment"></div>';
+                } else if (bill.status === 'verified' || bill.status === 'paid') {
+                    classes += ' bill-paid';
+                    indicators += '<div class="event-indicator bill-paid" title="Paid Bill"></div>';
+                }
+            });
+            
+            // Announcements
+            if (dayEvents.announcements.length > 0) {
+                const priority = dayEvents.announcements.some(ann => ann.priority === 'high') ? 'high' : 
+                               dayEvents.announcements.some(ann => ann.priority === 'medium') ? 'medium' : 'low';
+                classes += ` announcement-${priority}`;
+                indicators += `<div class="event-indicator announcement" title="Announcement"></div>`;
             }
             
-            details.innerHTML = detailsHtml;
-            modal.style.display = 'block';
-        }
-        
-        function closeEventModal() {
-            document.getElementById('eventModal').style.display = 'none';
-        }
-        
-        window.onclick = function(event) {
-            const modal = document.getElementById('eventModal');
-            if (event.target == modal) {
-                modal.style.display = 'none';
+            // Maintenance (would work similarly if you have the data)
+            if (dayEvents.maintenance.length > 0) {
+                classes += ' maintenance';
+                indicators += '<div class="event-indicator maintenance" title="Maintenance Request"></div>';
             }
+            
+            calendarHTML += `
+                <div class="${classes}" onclick="showDayEvents('${dateStr}')">
+                    <span>${day}</span>
+                    <div class="event-indicators">${indicators}</div>
+                </div>
+            `;
         }
 
-    </script>
+        // Next month days
+        const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+        const remainingCells = totalCells - (firstDay + daysInMonth);
+        for (let day = 1; day <= remainingCells; day++) {
+            calendarHTML += `<div class="calendar-day other-month">${day}</div>`;
+        }
+
+        document.getElementById('calendar-grid').innerHTML = calendarHTML;
+    }
+
+    function showDayEvents(dateStr) {
+        // This would show a modal or navigate to a page with events for that day
+        console.log("Showing events for:", dateStr);
+        // You could implement this to show a popup with all events for the selected day
+    }
+
+    document.addEventListener('DOMContentLoaded', renderCalendar);
+</script>
 </body>
-
 </html>
-<?php $conn->close(); ?>'

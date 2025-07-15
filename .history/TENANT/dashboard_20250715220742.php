@@ -193,38 +193,14 @@ if ($lease) {
         
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            grid-template-columns: 1.5fr 1fr;
             gap: 2rem;
-            min-height: calc(100vh - 200px);
         }
         
         .left-column, .right-column {
             display: flex;
             flex-direction: column;
             gap: 2rem;
-            height: 100%;
-        }
-        
-        .calendar-widget {
-            flex: 2;
-            min-height: 500px;
-        }
-        
-        .left-column .bills-section {
-            flex: 1;
-            min-height: 300px;
-        }
-        
-        .right-column .bills-section {
-            flex: 2;
-            min-height: 500px;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        
-        .actions-section {
-            flex: 1;
-            min-height: 200px;
         }
 
         .bills-section {
@@ -233,6 +209,7 @@ if ($lease) {
             padding: 2rem;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
             border: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
         }
 
         .filter-section {
@@ -286,14 +263,14 @@ if ($lease) {
         }
 
         .bill-item {
-            border-radius: 12px;
+            border-radius: 16px;
             background: #ffffff;
             border: 1px solid #e2e8f0;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1.25rem;
-            margin-bottom: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
             transition: all 0.2s ease;
         }
 
@@ -398,6 +375,7 @@ if ($lease) {
             background: linear-gradient(135deg, #1666ba 0%, #368ce7 100%);
             border-radius: 12px;
             padding: 1.25rem;
+            margin-bottom: 1rem;
             color: #ffffff;
             box-shadow: 0 4px 6px -1px rgba(22, 102, 186, 0.1), 0 2px 4px -1px rgba(22, 102, 186, 0.05);
         }
@@ -425,24 +403,20 @@ if ($lease) {
 
         .actions-grid {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 1rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
         }
 
         .action-card {
             background: #1666ba;
             border-radius: 12px;
-            padding: 1rem;
+            padding: 1.5rem;
             border: none;
             cursor: pointer;
             transition: all 0.3s ease;
             text-align: center;
             color: #ffffff;
             box-shadow: 0 4px 6px -1px rgba(22, 102, 186, 0.1), 0 2px 4px -1px rgba(22, 102, 186, 0.06);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
         }
 
         .action-card:hover {
@@ -452,12 +426,13 @@ if ($lease) {
         }
 
         .action-icon {
-            font-size: 1.25rem;
+            font-size: 2rem;
             color: #ffffff;
+            margin-bottom: 1rem;
         }
 
         .action-title {
-            font-size: 0.95rem;
+            font-size: 1.125rem;
             font-weight: 600;
             color: #ffffff;
             letter-spacing: -0.025em;
@@ -478,6 +453,7 @@ if ($lease) {
             padding: 2rem;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
             border: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
         }
         
         .calendar-header {
@@ -543,7 +519,7 @@ if ($lease) {
         .calendar-day {
             background: white;
             height: 80px;
-            padding: 6px;
+            padding: 5px;
             position: relative;
             transition: all 0.2s ease;
             display: flex;
