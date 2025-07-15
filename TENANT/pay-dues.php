@@ -5,6 +5,7 @@ ini_set('display_errors', 1);
 
 session_start();
 require_once '../connection.php';
+require_once '../vendor/autoload.php'; // Make sure to include PHPMailer autoload
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
@@ -12,6 +13,79 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
+
+// Function to send confirmation email
+function sendPaymentConfirmationEmail($email, $name, $paymentDetails) {
+    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    
+    try {
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com'; // Your SMTP server
+        $mail->SMTPAuth = true;
+        $mail->Username = 'velacinco5@gmail.com'; // SMTP username
+        $mail->Password = 'aycm atee woxl lmvj'; // SMTP password
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = 587;
+
+        // Recipients
+        $mail->setFrom('velacinco5@gmail.com', 'VELA Cinco Rentals');
+        $mail->addAddress($email, $name);
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = 'Payment Submission Confirmation';
+        
+        $mail->Body = "
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #1666ba; color: white; padding: 10px; text-align: center; }
+                    .content { padding: 20px; }
+                    .footer { margin-top: 20px; font-size: 0.9em; text-align: center; color: #777; }
+                    .details { margin: 15px 0; }
+                    .detail-item { margin-bottom: 10px; }
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <div class='header'>
+                        <h2>Payment Submission Received</h2>
+                    </div>
+                    <div class='content'>
+                        <p>Dear $name,</p>
+                        <p>Thank you for submitting your payment. Your payment details have been received and are pending verification by the landlord.</p>
+                        
+                        <div class='details'>
+                            <div class='detail-item'><strong>Payment Amount:</strong> ₱" . number_format($paymentDetails['amount'], 2) . "</div>
+                            <div class='detail-item'><strong>Payment Method:</strong> " . htmlspecialchars($paymentDetails['method']) . "</div>
+                            <div class='detail-item'><strong>Reference Number:</strong> " . htmlspecialchars($paymentDetails['ref_num']) . "</div>
+                            <div class='detail-item'><strong>Bill ID:</strong> " . htmlspecialchars($paymentDetails['bill_id']) . "</div>
+                            <div class='detail-item'><strong>Submission Date:</strong> " . date('F j, Y g:i a') . "</div>
+                        </div>
+                        
+                        <p>Please note that your payment will need to be verified by the landlord before it is marked as complete. You will receive another email once your payment has been verified.</p>
+                        <p>If you have any questions, please contact our support team.</p>
+                    </div>
+                    <div class='footer'>
+                        <p>This is an automated message. Please do not reply directly to this email.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        ";
+
+        $mail->AltBody = "Dear $name,\n\nThank you for submitting your payment. Your payment details have been received and are pending verification by the landlord.\n\nPayment Amount: ₱" . number_format($paymentDetails['amount'], 2) . "\nPayment Method: " . $paymentDetails['method'] . "\nReference Number: " . $paymentDetails['ref_num'] . "\nBill ID: " . $paymentDetails['bill_id'] . "\nSubmission Date: " . date('F j, Y g:i a') . "\n\nPlease note that your payment will need to be verified by the landlord before it is marked as complete. You will receive another email once your payment has been verified.\n\nIf you have any questions, please contact our support team.\n\nThis is an automated message. Please do not reply directly to this email.";
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+        return false;
+    }
+}
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -221,15 +295,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         throw new Exception("Execute failed: " . $stmt->error);
                     }
 
-                    // DO NOT UPDATE BILL STATUS HERE
-                    // Bill status should remain unchanged until payment is verified
-                    // The bill status will be updated when the landlord verifies the payment
+                    // Get user email and name for confirmation email
+                    $user_query = "SELECT name, email FROM USERS WHERE user_id = ?";
+                    $stmt_user = $conn->prepare($user_query);
+                    $stmt_user->bind_param("i", $user_id);
+                    $stmt_user->execute();
+                    $user_result = $stmt_user->get_result();
+                    $user = $user_result->fetch_assoc();
 
                     // Commit transaction if all succeeds
                     $conn->commit();
 
-                    header("Location: payment_confirmation.php");
-                    exit();
+                    // Prepare payment details for email
+                    $paymentDetails = [
+                        'amount' => $amount,
+                        'method' => $payment_method,
+                        'ref_num' => $ref_num,
+                        'bill_id' => $target_bill_id
+                    ];
+
+                    // Send confirmation email
+                    if (sendPaymentConfirmationEmail($user['email'], $user['name'], $paymentDetails)) {
+                        // Email sent successfully
+                        header("Location: payment_confirmation.php");
+                        exit();
+                    } else {
+                        // Payment was processed but email failed - still show success but log error
+                        error_log("Payment processed but confirmation email failed to send for user ID: $user_id");
+                        header("Location: payment_confirmation.php");
+                        exit();
+                    }
                 } catch (Exception $e) {
                     $conn->rollback();
                     unlink($full_file_path);
@@ -250,6 +345,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die("No file uploaded or upload error: " . $_FILES['proof']['error']);
     }
 }
+
+// Rest of your existing code for fetching unpaid bills and displaying the form...
+// [Keep all the HTML and JavaScript parts exactly as they were in your original code]
 
 // Fetch tenant's unpaid bills for the dropdown
 // Only exclude bills with pending or verified payments, but include those with rejected payments
