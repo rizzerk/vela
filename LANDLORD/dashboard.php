@@ -18,6 +18,7 @@ if ($_POST['action'] ?? '' === 'add_announcement') {
     $priority = $_POST['priority'];
     
     // First insert the announcement
+    // First insert the announcement
     $stmt = $conn->prepare("INSERT INTO ANNOUNCEMENT (title, content, visible_to, priority, created_by, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
     $stmt->bind_param("ssssi", $title, $content, $visible_to, $priority, $landlord_id);
     
@@ -114,6 +115,7 @@ if ($_POST['action'] ?? '' === 'add_announcement') {
 }
 
 // Rest of your existing dashboard code...
+// Rest of your existing dashboard code...
 $properties = [];
 $total_properties = 0;
 $total_vacant = 0;
@@ -175,6 +177,7 @@ $announcement_query = "SELECT title, content, created_at
                       LIMIT 1";
 $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
 ?>
+
 
 
 <!DOCTYPE html>
