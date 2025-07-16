@@ -7,7 +7,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION
     exit();
 }
 
-
 if (isset($_GET['check_updates']) && $_SERVER['REQUEST_METHOD'] === 'GET') {
     $lastUpdate = $_GET['last_update'] ?? '';
     $stmt = $conn->prepare("SELECT COUNT(*) AS count, MAX(updated_at) AS newest 
@@ -28,14 +27,12 @@ if (isset($_GET['check_updates']) && $_SERVER['REQUEST_METHOD'] === 'GET') {
 
 $userName = $_SESSION['name'] ?? 'Tenant';
 $userId = $_SESSION['user_id'] ?? 0;
-
 $message = ''; 
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $issueType = trim($_POST["issueType"]);
     $description = trim($_POST["description"]);
     $imagePath = null;
-
     
     $leaseStmt = $conn->prepare("SELECT lease_id FROM LEASE WHERE tenant_id = ? AND active = 1 LIMIT 1");
     $leaseStmt->bind_param("i", $userId);
@@ -44,8 +41,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if ($leaseResult && $leaseRow = $leaseResult->fetch_assoc()) {
         $leaseId = $leaseRow['lease_id'];
-
-        if (!empty($_FILES['imageUpload']['name'])) {
+        
+      if (!isset($_FILES['imageUpload']) || $_FILES['imageUpload']['error'] === UPLOAD_ERR_NO_FILE) {
+    $message = "<div class='message-box error-message'>
+                    <strong>Image Required:</strong> Please upload an image to proceed with your request.
+                    <button class='close-btn' onclick='this.parentElement.remove()'>&times;</button>
+                </div>";
+        } else {
             $uploadDir = "../uploads/maintenance/";
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0777, true);
@@ -57,36 +59,29 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             if (move_uploaded_file($fileTmp, $targetFilePath)) {
                 $imagePath = $targetFilePath;
+
+                $insertStmt = $conn->prepare("
+                    INSERT INTO MAINTENANCE_REQUEST (lease_id, issue_type, description, status, requested_at, updated_at, image_path)
+                    VALUES (?, ?, ?, 'pending', NOW(), NOW(), ?)
+                ");
+                $insertStmt->bind_param("isss", $leaseId, $issueType, $description, $imagePath);
+
+                if ($insertStmt->execute()) {
+                    $message = "<span class='success-message'>Request submitted successfully.</span>";
+                } else {
+                    $message = "<span class='error-message'>Error submitting request.</span>";
+                }
+                $insertStmt->close();
+            } else {
+                $message = "<span class='error-message'>Failed to upload image.</span>";
             }
         }
-
-        
-        $insertStmt = $conn->prepare("
-            INSERT INTO MAINTENANCE_REQUEST (lease_id, issue_type, description, status, requested_at, updated_at, image_path)
-            VALUES (?, ?, ?, 'pending', NOW(), NOW(), ?)
-        ");
-        $insertStmt->bind_param("isss", $leaseId, $issueType, $description, $imagePath);
-
-        if ($insertStmt->execute()) {
-            
-            header("Location: " . $_SERVER['PHP_SELF'] . "?success=1");
-            exit();
-        } else {
-            $message = "<span class='error-message'>Error submitting request.</span>";
-        }
-
-        $insertStmt->close();
     } else {
-        $message = "<span class='error-message'>No active lease found. Please make sure you have an active lease before submitting a request.</span>";
+        $message = "<span class='error-message'>No active lease found.</span>";
     }
-
     $leaseStmt->close();
 }
 
-
-if (isset($_GET['success']) && $_GET['success'] == 1) {
-    $message = "<span class='success-message'>Request submitted successfully.</span>";
-}
 ?>
 
 <!DOCTYPE html>
@@ -97,7 +92,6 @@ if (isset($_GET['success']) && $_GET['success'] == 1) {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <style>
-        
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #ffffff 0%, #deecfb 100%);
@@ -135,6 +129,11 @@ if (isset($_GET['success']) && $_GET['success'] == 1) {
             max-height: 600px;
             overflow-y: auto;
         }
+        .status-pending { color: #ffc107; font-weight: 600; }
+        .status-in_progress { color: #17a2b8; font-weight: 600; }
+        .status-resolved { color: #28a745; font-weight: 600; }
+        .status-rejected { color: #dc3545; font-weight: 600; }
+        
         h2 {
             font-size: 1.5rem;
             color: #1666ba;
@@ -193,27 +192,43 @@ if (isset($_GET['success']) && $_GET['success'] == 1) {
             font-weight: 600;
         }
         .message-box {
-            margin-bottom: 1rem;
-            font-weight: 600;
-        }
-       
-        .success-message {
-            display: inline-block;
-            padding: 0.75rem 1rem;
-            background-color: #d1e7dd;
-            color: #0f5132;
-            border: 1px solid #badbcc;
-            border-radius: 8px;
-        }
-        
-        .error-message {
-            display: inline-block;
-            padding: 0.75rem 1rem;
-            background-color: #f8d7da;
-            color: #842029;
-            border: 1px solid #f5c2c7;
-            border-radius: 8px;
-        }
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 600px;
+    margin: 0.75rem auto;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    line-height: 1.5;
+    transition: all 0.3s ease;
+}
+
+.success-message {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border-left: 5px solid #198754;
+}
+
+.error-message {
+    background-color: #f8d7da;
+    color: #842029;
+    border-left: 5px solid #dc3545;
+}
+
+.message-box .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: inherit;
+    cursor: pointer;
+    margin-left: 1rem;
+}
+
+
         @media (max-width: 768px) {
             .maintenance-wrapper {
                 flex-wrap: wrap;
@@ -235,31 +250,22 @@ if (isset($_GET['success']) && $_GET['success'] == 1) {
         <h1 class="title">Maintenance Request</h1>
 
         <div class="maintenance-wrapper">
-          
             <section class="form-section" aria-labelledby="submit-request">
                 <h2 id="submit-request">Submit a Request</h2>
-
                 <?php if (!empty($message)) : ?>
-                    <div class="message-box">
-                        <?php echo $message; ?>
-                    </div>
+                    <div class="message-box"><?php echo $message; ?></div>
                 <?php endif; ?>
-
-                <form action="#" method="POST" enctype="multipart/form-data">
+                <form action="#" method="POST" enctype="multipart/form-data" novalidate>
                     <label for="issueType">Issue Type</label>
                     <input type="text" id="issueType" name="issueType" placeholder="e.g. Broken faucet" required />
-
                     <label for="description">Description</label>
                     <textarea id="description" name="description" rows="5" placeholder="Describe the issue in detail..." required></textarea>
-
                     <label for="imageUpload">Upload Image</label>
-                    <input type="file" id="imageUpload" name="imageUpload" accept="image/*" />
-
+                    <input type="file" id="imageUpload" name="imageUpload" accept="image/*" required />
                     <button type="submit">Submit</button>
                 </form>
             </section>
 
-          
             <section class="request-section" aria-labelledby="my-requests">
                 <h2 id="my-requests">My Requests</h2>
                 <table>
@@ -294,20 +300,19 @@ if (isset($_GET['success']) && $_GET['success'] == 1) {
                                             <td>#".htmlspecialchars($row['request_id'])."</td>
                                             <td>".htmlspecialchars($row['issue_type'])."</td>
                                             <td>".htmlspecialchars(date('Y-m-d', strtotime($row['requested_at'])))."</td>
-                                            <td>".ucfirst(str_replace('_', ' ', htmlspecialchars($row['status'])))."</td>";
+                                            <td><span class='status-".htmlspecialchars($row['status'])."'>".
+                                                ucfirst(str_replace('_', ' ', htmlspecialchars($row['status']))).
+                                            "</span></td>";
 
                                     if (!empty($row['image_path'])) {
-                                        echo "<td><img src='" . htmlspecialchars($row['image_path']) . "' style='width:60px;'></td>";
+                                        echo "<td><img src='".htmlspecialchars($row['image_path'])."' style='width:60px;'></td>";
                                     } else {
                                         echo "<td>N/A</td>";
                                     }
-
                                     echo "</tr>";
                                 }
                             }
                             $stmt->close();
-                        } else {
-                            echo "<tr><td colspan='5' style='text-align:center;'>User not logged in properly.</td></tr>";
                         }
                         ?>
                     </tbody>
@@ -316,43 +321,46 @@ if (isset($_GET['success']) && $_GET['success'] == 1) {
         </div>
     </div>
 
-<script>
-  
-  document.querySelector('form').addEventListener('submit', function(e) {
-      const btn = this.querySelector('button[type="submit"]');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-  });
+    <script>
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const btn = this.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        });
 
-  
-  window.addEventListener('DOMContentLoaded', () => {
+       window.addEventListener('DOMContentLoaded', () => {
     const msgBox = document.querySelector('.message-box');
     if (msgBox) {
-      setTimeout(() => {
-        msgBox.style.transition = "opacity 0.5s ease";
-        msgBox.style.opacity = 0;
-        setTimeout(() => msgBox.remove(), 600);
-      }, 3000);
+        setTimeout(() => {
+            msgBox.remove();
+        }, 2000);
     }
-  });
-</script>
+});
 
-<script>
- 
-  let lastUpdate = "<?= date('Y-m-d H:i:s') ?>";
+        let lastUpdate = "<?= date('Y-m-d H:i:s') ?>";
+        setInterval(() => {
+            fetch(`?check_updates=1&last_update=${lastUpdate}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.updated) {
+                    const shouldReload = confirm("Your requests have updates. Reload page?");
+                    if (shouldReload) location.reload();
+                }
+                lastUpdate = data.new_timestamp || lastUpdate;
+            });
+        }, 60000);
 
-  setInterval(() => {
-      fetch(`?check_updates=1&last_update=${lastUpdate}`)
-      .then(res => res.json())
-      .then(data => {
-          if (data.updated) {
-              const shouldReload = confirm("Your requests have updates. Reload page?");
-              if (shouldReload) location.reload();
-          }
-          lastUpdate = data.new_timestamp || lastUpdate;
-      });
-  }, 60000); 
-</script>
+    window.addEventListener('DOMContentLoaded', () => {
+        const msgBox = document.querySelector('.message-box');
+        if (msgBox) {
+            setTimeout(() => {
+                msgBox.style.opacity = '0';
+                setTimeout(() => msgBox.remove(), 500);
+            }, 4000); 
+        }
+    });
 
+
+    </script>
 </body>
 </html>

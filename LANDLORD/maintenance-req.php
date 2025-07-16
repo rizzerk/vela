@@ -2,13 +2,31 @@
 session_start();
 require_once "../connection.php";
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_id'], $_POST['issue_type'])) {
+    header('Content-Type: application/json');
+
+    $requestId = intval($_POST['request_id']);
+    $issueType = trim($_POST['issue_type']);
+
+    $stmt = $conn->prepare("UPDATE MAINTENANCE_REQUEST SET issue_type = ?, updated_at = NOW() WHERE request_id = ?");
+    $stmt->bind_param("si", $issueType, $requestId);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to update issue type']);
+    }
+
+    $stmt->close();
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_id'], $_POST['status'])) {
     header('Content-Type: application/json');
 
     $requestId = intval($_POST['request_id']);
     $status = $_POST['status'];
-    $allowed = ['pending', 'in_progress', 'resolved'];
+    $allowed = ['pending', 'in_progress', 'resolved', 'rejected'];
 
     if (!in_array($status, $allowed, true)) {
         echo json_encode(['success' => false, 'message' => 'Invalid status']);
@@ -50,16 +68,20 @@ if (!empty($whereClauses)) {
 
 $query = "
     SELECT 
-        mr.request_id, 
-        mr.status, 
-        mr.issue_type, 
-        mr.description, 
-        mr.requested_at, 
-        mr.image_path,
-        u.name AS tenant_name
-    FROM MAINTENANCE_REQUEST mr
-    JOIN LEASE l ON mr.lease_id = l.lease_id
-    JOIN USERS u ON l.tenant_id = u.user_id
+    mr.request_id, 
+    mr.status, 
+    mr.issue_type, 
+    mr.description, 
+    mr.requested_at, 
+    mr.image_path,
+    u.name AS tenant_name,
+    p.title AS property_title
+FROM MAINTENANCE_REQUEST mr
+JOIN LEASE l ON mr.lease_id = l.lease_id
+JOIN USERS u ON l.tenant_id = u.user_id
+JOIN PROPERTY p ON l.property_id = p.property_id
+
+
     $whereSQL
     ORDER BY mr.requested_at DESC
 ";
@@ -321,11 +343,114 @@ if ($nextMonth > 12) { $nextMonth = 1; $nextYear++; }
       .calendar-grid { grid-template-columns: repeat(2, 1fr); }
       .header h1 { font-size: 2rem; }
     }
+
+    button {
+  background: #1666ba;
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+button[style*="background: #28a745"]:hover {
+  background: #218838 !important;
+}
+
+button[style*="background: #dc3545"]:hover {
+  background: #c82333 !important;
+}
+
+/* Custom Dialog Styles */
+.custom-dialog {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 10000;
+  justify-content: center;
+  align-items: center;
+}
+
+.dialog-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.dialog-title {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.dialog-message {
+  margin-bottom: 1.5rem;
+  color: #555;
+}
+
+.dialog-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.dialog-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.dialog-button-confirm {
+  background-color: #28a745;
+  color: white;
+}
+
+.dialog-button-cancel {
+  background-color: #6c757d;
+  color: white;
+}
+
+.dialog-button-reject {
+  background-color: #dc3545;
+  color: white;
+}
+
+.accept-dialog .dialog-title {
+  color: #28a745;
+}
+
+.reject-dialog .dialog-title {
+  color: #dc3545;
+}
+
+.accept-dialog .dialog-button-confirm:hover {
+  background-color: #218838;
+}
+
+.reject-dialog .dialog-button-confirm:hover {
+  background-color: #c82333;
+}
   </style>
 </head>
 <body>
 
-<?php include ('../includes/navbar/landlord-sidebar.html'); ?>
+<?php include ('../includes/navbar/landlord-sidebar.php'); ?>
 
 <div class="main-content">
   <div class="header">
@@ -346,6 +471,28 @@ if ($nextMonth > 12) { $nextMonth = 1; $nextYear++; }
     </form>
   </div>
 
+<div id="acceptDialog" class="custom-dialog accept-dialog">
+  <div class="dialog-content">
+    <div class="dialog-title">Confirm Acceptance</div>
+    <div class="dialog-message">Are you sure you want to accept this maintenance request? The status will be set to "In Progress".</div>
+    <div class="dialog-buttons">
+      <button class="dialog-button dialog-button-confirm" onclick="confirmAccept()">Accept</button>
+      <button class="dialog-button dialog-button-cancel" onclick="closeDialog('acceptDialog')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="rejectDialog" class="custom-dialog reject-dialog">
+  <div class="dialog-content">
+    <div class="dialog-title">Confirm Rejection</div>
+    <div class="dialog-message">Are you sure you want to reject this maintenance request? The status will be set to "Rejected" and the tenant will be notified.</div>
+    <div class="dialog-buttons">
+      <button class="dialog-button dialog-button-confirm dialog-button-reject" onclick="confirmReject()">Reject</button>
+      <button class="dialog-button dialog-button-cancel" onclick="closeDialog('rejectDialog')">Cancel</button>
+    </div>
+  </div>
+</div> 
+ 
   <div class="calendar">
     <div class="calendar-header">
       <h2><?= date("F Y", $start) ?></h2>
@@ -398,6 +545,8 @@ if ($nextMonth > 12) { $nextMonth = 1; $nextYear++; }
             <th>Image</th>
             <th>Date Submitted</th>
             <th>Tenant Name</th>
+            <th>Property</th>
+
           </tr>
         </thead>
         <tbody id="modal-body">
@@ -409,40 +558,76 @@ if ($nextMonth > 12) { $nextMonth = 1; $nextYear++; }
   <div class="table-container">
     <table>
       <thead>
-        <tr>
-          <th>Request ID</th>
-          <th>Status</th>
-          <th>Issue</th>
-          <th>Image</th>
-          <th>Date Submitted</th>
-          <th>Tenant Name</th>
-        </tr>
-      </thead>
+  <tr>
+    <th>Request ID</th>
+    <th>Status</th>
+    <th>Issue</th>
+    <th>Image</th>
+    <th>Date Submitted</th>
+    <th>Tenant Name</th>
+    <th>Actions</th>
+    <th>Property</th>
+
+  </tr>
+</thead>
       <tbody>
-        <?php foreach ($requests as $req): ?>
-          <tr>
-            <td>#<?= $req['request_id'] ?></td>
-            <td>
-<select onchange="updateStatus(<?= $req['request_id'] ?>, this.value)" <?= $req['status'] === 'resolved' ? 'disabled' : '' ?>>
-                <option value="pending" <?= $req['status'] === 'pending' ? 'selected' : '' ?>>Pending</option>
-                <option value="in_progress" <?= $req['status'] === 'in_progress' ? 'selected' : '' ?>>In Progress</option>
-                <option value="resolved" <?= $req['status'] === 'resolved' ? 'selected' : '' ?>>Done</option>
-              </select>
-            </td>
-            <td><?= htmlspecialchars($req['issue_type']) ?></td>
-            <td>
-              <?php if (!empty($req['image_path'])): ?>
-                <a href="<?= htmlspecialchars($req['image_path']) ?>" target="_blank">
-                  <img src="<?= htmlspecialchars($req['image_path']) ?>" class="thumbnail" alt="Request Image">
-                </a>
-              <?php else: ?>
-                N/A
-              <?php endif; ?>
-            </td>
-            <td><?= date('Y-m-d', strtotime($req['requested_at'])) ?></td>
-            <td><?= htmlspecialchars($req['tenant_name']) ?></td>
-          </tr>
-        <?php endforeach; ?>
+       <?php foreach ($requests as $req): ?>
+  <tr>
+    <td>#<?= $req['request_id'] ?></td>
+    <td>
+<select onchange="updateStatus(<?= $req['request_id'] ?>, this.value)" <?= in_array($req['status'], ['resolved', 'rejected']) ? 'disabled' : '' ?>>
+        <option value="pending" <?= $req['status'] === 'pending' ? 'selected' : '' ?>>Pending</option>
+        <option value="in_progress" <?= $req['status'] === 'in_progress' ? 'selected' : '' ?>>In Progress</option>
+        <option value="resolved" <?= $req['status'] === 'resolved' ? 'selected' : '' ?>>Done</option>
+      </select>
+    </td>
+    <td style="min-width: 250px;">
+      <div style="display: flex; align-items: center; gap: 10px;" id="issue-container-<?= $req['request_id'] ?>">
+        <span id="display-text-<?= $req['request_id'] ?>" style="flex: 1;">
+          <?= htmlspecialchars($req['issue_type']) ?>
+        </span>
+        <button id="edit-button-<?= $req['request_id'] ?>" onclick="editIssueType(<?= $req['request_id'] ?>)">Edit</button>
+        <input type="text" id="input-issue-<?= $req['request_id'] ?>" value="<?= htmlspecialchars($req['issue_type']) ?>" 
+               style="flex: 1; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; display: none;">
+        <button id="save-button-<?= $req['request_id'] ?>" onclick="saveIssueType(<?= $req['request_id'] ?>)" style="display: none;">Save</button>
+      </div>
+    </td>
+    <td>
+      <?php if (!empty($req['image_path'])): ?>
+        <a href="<?= htmlspecialchars($req['image_path']) ?>" target="_blank">
+          <img src="<?= htmlspecialchars($req['image_path']) ?>" class="thumbnail" alt="Request Image">
+        </a>
+      <?php else: ?>
+        N/A
+      <?php endif; ?>
+    </td>
+    <td><?= date('Y-m-d', strtotime($req['requested_at'])) ?></td>
+    <td><?= htmlspecialchars($req['tenant_name']) ?></td>
+          
+  
+    <td>
+  <div style="display: flex; gap: 5px;">
+    <?php if ($req['status'] === 'pending'): ?>
+  <button onclick="acceptRequest(<?= $req['request_id'] ?>)" style="background: #28a745;">Accept</button>
+  <button onclick="rejectRequest(<?= $req['request_id'] ?>)" style="background: #dc3545;">Reject</button>
+<?php elseif ($req['status'] === 'in_progress'): ?>
+  <span style="color: #28a745; font-weight: 500;">Accepted</span>
+<?php elseif ($req['status'] === 'resolved'): ?>
+  <span style="color: #28a745; font-weight: 500;">Accepted</span>
+<?php elseif ($req['status'] === 'rejected'): ?>
+  <span style="color: #dc3545; font-weight: 500;">Rejected</span>
+<?php else: ?>
+  <span>-</span>
+<?php endif; ?>
+
+  </div>
+</td>
+
+    <td><?= htmlspecialchars($req['property_title']) ?></td>
+
+
+  </tr>
+<?php endforeach; ?>
       </tbody>
     </table>
   </div>
@@ -450,6 +635,8 @@ if ($nextMonth > 12) { $nextMonth = 1; $nextYear++; }
 
 <script>
   const requestsByDay = <?= json_encode($requestsByDay) ?>;
+
+  let selectedRequestId = null;
 
   function openModal(day) {
     const modal = document.getElementById('modal');
@@ -476,23 +663,13 @@ if ($nextMonth > 12) { $nextMonth = 1; $nextYear++; }
         tr.appendChild(tdId);
 
         const tdStatus = document.createElement('td');
-        const select = document.createElement('select');
-        ['pending', 'in_progress', 'resolved'].forEach(status => {
-          const option = document.createElement('option');
-          option.value = status;
-          option.textContent = status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
-          if (req.status === status) option.selected = true;
-          select.appendChild(option);
-        });
-        select.onchange = function () {
-          updateStatus(req.request_id, this.value);
-        };
-        tdStatus.appendChild(select);
-        tr.appendChild(tdStatus);
+tdStatus.textContent = req.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+tr.appendChild(tdStatus);
+
 
         const tdIssue = document.createElement('td');
-        tdIssue.textContent = req.issue_type;
-        tr.appendChild(tdIssue);
+tdIssue.textContent = req.issue_type; // read-only
+tr.appendChild(tdIssue);
 
         const tdImage = document.createElement('td');
         if (req.image_path) {
@@ -514,9 +691,13 @@ if ($nextMonth > 12) { $nextMonth = 1; $nextYear++; }
         tdDate.textContent = new Date(req.requested_at).toISOString().slice(0, 10);
         tr.appendChild(tdDate);
 
+        const tdProperty = document.createElement('td');
+tdProperty.textContent = req.tenant_name;
+tr.appendChild(tdProperty);
+
         const tdTenant = document.createElement('td');
-        tdTenant.textContent = req.tenant_name;
-        tr.appendChild(tdTenant);
+        tdTenant.textContent = req.property_title;
+        tr.appendChild(tdTenant);   
 
         modalBody.appendChild(tr);
       });
@@ -541,7 +722,7 @@ if ($nextMonth > 12) { $nextMonth = 1; $nextYear++; }
         try {
           const res = JSON.parse(xhr.responseText);
           if (res.success) {
-            window.location.href = window.location.pathname + '?month=<?= $month ?>&year=<?= $year ?>'; 
+window.location.href = window.location.pathname + '?month=<?= $month ?>&year=<?= $year ?>&status=<?= $statusFilter ?>';
           } else {
             alert('Update failed: ' + (res.message || 'Unknown error'));
           }
@@ -554,4 +735,105 @@ if ($nextMonth > 12) { $nextMonth = 1; $nextYear++; }
     };
     xhr.send(`request_id=${id}&status=${status}`);
   }
+
+  function updateIssueType(id, issueType) {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '', true); 
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.onload = function () {
+      if (xhr.status === 200) {
+        try {
+          const res = JSON.parse(xhr.responseText);
+          if (!res.success) {
+            alert('Failed to update issue type: ' + (res.message || 'Unknown error'));
+          }
+        } catch {
+          alert('Invalid response');
+        }
+      } else {
+        alert('Request failed');
+      }
+    };
+    xhr.send(`request_id=${id}&issue_type=${encodeURIComponent(issueType)}`);
+  }
+
+  function editIssueType(id) {
+  document.getElementById(`display-text-${id}`).style.display = 'none';
+  document.getElementById(`edit-button-${id}`).style.display = 'none';
+
+  document.getElementById(`input-issue-${id}`).style.display = 'inline-block';
+  document.getElementById(`save-button-${id}`).style.display = 'inline-block';
+}
+
+function saveIssueType(id) {
+  const newValue = document.getElementById(`input-issue-${id}`).value;
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '', true);
+  xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+  xhr.onload = function () {
+    if (xhr.status === 200) {
+      try {
+        const res = JSON.parse(xhr.responseText);
+        if (res.success) {
+          document.getElementById(`display-text-${id}`).innerText = newValue;
+
+          // Toggle views
+          document.getElementById(`display-text-${id}`).style.display = 'inline-block';
+          document.getElementById(`edit-button-${id}`).style.display = 'inline-block';
+
+          document.getElementById(`input-issue-${id}`).style.display = 'none';
+          document.getElementById(`save-button-${id}`).style.display = 'none';
+        } else {
+          alert('Failed to update issue type: ' + (res.message || 'Unknown error'));
+        }
+      } catch {
+        alert('Invalid server response');
+      }
+    } else {
+      alert('Request failed');
+    }
+  };
+  xhr.send(`request_id=${id}&issue_type=${encodeURIComponent(newValue)}`);
+}
+
+function acceptRequest(id) {
+  selectedRequestId = id;
+  document.getElementById('acceptDialog').style.display = 'flex';
+}
+
+function rejectRequest(id) {
+  selectedRequestId = id;
+  document.getElementById('rejectDialog').style.display = 'flex';
+}
+
+
+function confirmAccept() {
+  if (selectedRequestId !== null) {
+    updateStatus(selectedRequestId, 'in_progress');
+    closeDialog('acceptDialog');
+  }
+}
+
+function confirmReject() {
+  if (selectedRequestId !== null) {
+    updateStatus(selectedRequestId, 'rejected');
+    closeDialog('rejectDialog');
+  }
+}
+
+function closeDialog(dialogId) {
+  document.getElementById(dialogId).style.display = 'none';
+  selectedRequestId = null;
+}
+
+
+document.addEventListener('keydown', function (e) {
+  if (e.key === "Escape") {
+    closeDialog('acceptDialog');
+    closeDialog('rejectDialog');
+  }
+});
+
+
 </script>
