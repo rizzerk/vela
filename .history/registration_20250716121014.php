@@ -508,6 +508,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                             <div class="requirement" id="number-req">
                                 <i class="fas fa-circle"></i> At least 1 number
                             </div>
+                            <div class="requirement" id="special-req">
+                                <i class="fas fa-circle"></i> At least 1 special character
+                            </div>
                         </div>
                     </div>
 
