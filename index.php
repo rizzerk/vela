@@ -31,7 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         $error = "Database connection failed";
     } else {
         try {
-            $stmt = $conn->prepare("SELECT user_id, name, email, password, role FROM USERS WHERE email = ?");
+            // Updated query to include is_active column
+            $stmt = $conn->prepare("SELECT user_id, name, email, password, role, is_active FROM USERS WHERE email = ?");
             if (!$stmt) {
                 $error = "Database prepare failed: " . $conn->error;
             } else {
@@ -42,7 +43,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                 if ($result->num_rows == 1) {
                     $user = $result->fetch_assoc();
                     
-                    if (password_verify($password, $user['password'])) {
+                    // Check if user is active before password verification
+                    if ($user['is_active'] != '1') {
+                        $error = "Your account has been deactivated. Please contact the administrator.";
+                    } elseif (password_verify($password, $user['password'])) {
+                        // User is active and password is correct - proceed with login
                         $_SESSION['user_id'] = $user['user_id'];
                         $_SESSION['name'] = $user['name'];
                         $_SESSION['email'] = $user['email'];
@@ -55,8 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                             $update_stmt->execute();
                             $update_stmt->close();
                         } catch (Exception $update_e) {
+                            // Silent fail for last_login update
                         }
                         
+                        // Redirect based on user role
                         if ($user['role'] == 'tenant') {
                             header("Location: TENANT/dashboard.php");
                             exit;

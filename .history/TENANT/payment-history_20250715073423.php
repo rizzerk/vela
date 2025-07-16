@@ -1,7 +1,6 @@
 <?php
 session_start();
 require_once "../connection.php";
-require_once "../includes/auth/tenant_auth.php";
 
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION['role'] !== 'tenant') {
     header('Location: ../index.php');
