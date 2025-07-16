@@ -342,9 +342,6 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
             color: #6b7280;
             font-style: italic;
         }
-        .no-payments {
-            padding: 2rem;
-        }
 
         .no-record {
             text-align: center;
@@ -513,6 +510,7 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                             <span class="status <?= strtolower($payment['status']) ?>">
                                     <?= ucfirst($payment['status']) ?>
                                 </span>
+                                <em style="color:#94a3b8;">No file</em>
                                 <select class="status-dropdown" onchange="updatePaymentStatus(<?= $payment['payment_id'] ?>, this.value)">
                                     <option value="pending" <?= $payment['status'] === 'pending' ? 'selected' : '' ?>>Pending</option>
                                     <option value="confirmed" <?= $payment['status'] === 'confirmed' ? 'selected' : '' ?>>Confirmed</option>
@@ -528,7 +526,7 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                                         <i class="fas fa-eye"></i> View
                                     </button>
                                 <?php else: ?>
-                                    <em style="color:#94a3b8;">No file</em>
+                                    <em style="color:#aaa;">No file</em>
                                 <?php endif; ?>
                             </td>
                             <td>
