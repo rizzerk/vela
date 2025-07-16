@@ -1,12 +1,10 @@
 <?php
 session_start();
 include '../connection.php';
-require '../vendor/autoload.php';
 
 // Check if user is logged in
 
 function sendNewPropertyNotification($property_title, $property_address, $monthly_rent) {
-    include '../connection.php';
     $mail = new PHPMailer\PHPMailer\PHPMailer(true);
     
     try {

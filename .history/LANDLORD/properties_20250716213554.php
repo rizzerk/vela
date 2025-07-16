@@ -1,66 +1,8 @@
 <?php
 session_start();
 include '../connection.php';
-require '../vendor/autoload.php';
 
 // Check if user is logged in
-
-function sendNewPropertyNotification($property_title, $property_address, $monthly_rent) {
-    include '../connection.php';
-    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
-    
-    try {
-        // Get all general users' emails
-        $query = "SELECT email FROM USERS WHERE role = 'general_user'";
-        $result = mysqli_query($conn, $query);
-        $emails = mysqli_fetch_all($result, MYSQLI_ASSOC);
-        
-        if (empty($emails)) return true; // No users to notify
-        
-        // SMTP Configuration
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        $mail->Username   = 'velacinco5@gmail.com';
-        $mail->Password   = 'aycm atee woxl lmvj';
-        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-        $mail->Port       = 465;
-
-        // Sender
-        $mail->setFrom('velacinco5@gmail.com', 'VELA Cinco Rentals');
-        
-        // Add all general users as BCC recipients
-        foreach ($emails as $user) {
-            $mail->addBCC($user['email']);
-        }
-      
-        // Email content
-        $mail->isHTML(true);
-        $mail->Subject = 'New Property Available: ' . $property_title;
-        
-        $mail->Body = "
-            <h2>New Property Available!</h2>
-            <p>A new rental property has just been published on VELA Cinco Rentals.</p>
-            
-            <h3>Property Details:</h3>
-            <ul>
-                <li><strong>Title:</strong> {$property_title}</li>
-                <li><strong>Address:</strong> {$property_address}</li>
-                <li><strong>Monthly Rent:</strong> ₱" . number_format($monthly_rent, 2) . "</li>
-            </ul>
-            
-            <p>Visit our website to view more details and apply for this property.</p>
-            
-            <p>Thank you,<br>VELA Cinco Rentals Team</p>
-        ";
-
-        $mail->send();
-        return true;
-    } catch (Exception $e) {
-        error_log("New property notification error: " . $e->getMessage());
-        return false;
-    }
-}
 
 // Fetch all properties with their first photo
 $query = "SELECT p.*, 
@@ -86,25 +28,13 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
     
     if ($action === 'publish') {
         // Only allow publishing if property is vacant
-        $check_query = "SELECT status, title, address, monthly_rent FROM PROPERTY WHERE property_id = '$property_id'";
+        $check_query = "SELECT status FROM PROPERTY WHERE property_id = '$property_id'";
         $check_result = mysqli_query($conn, $check_query);
         $property = mysqli_fetch_assoc($check_result);
         
         if ($property['status'] === 'vacant') {
             $update_query = "UPDATE PROPERTY SET published = TRUE WHERE property_id = '$property_id'";
             mysqli_query($conn, $update_query);
-            
-            // Send notification to all general users
-            $emailSent = sendNewPropertyNotification(
-                $property['title'],
-                $property['address'],
-                $property['monthly_rent']
-            );
-            
-            if (!$emailSent) {
-                $_SESSION['error'] = "Property published but failed to send notifications";
-            }
-            
             header("Location: properties.php");
             exit();
         } else {

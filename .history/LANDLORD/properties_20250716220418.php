@@ -1,7 +1,6 @@
 <?php
 session_start();
 include '../connection.php';
-require '../vendor/autoload.php';
 
 // Check if user is logged in
 
