@@ -1,25 +1,23 @@
 <?php
 session_start();
 require_once '../connection.php';
+require_once "../includes/auth/landlord_auth.php";
 require_once '../vendor/autoload.php'; // Make sure PHPMailer is installed via Composer
+
 
 $landlord_id = $_SESSION['user_id'] ?? 1;
 
 if ($_POST['action'] ?? '' === 'add_announcement') {
     $title = $_POST['title'];
     $content = $_POST['content'];
-    $visible_to = $_POST['visible_to'];
     $priority = $_POST['priority'];
     
-    // First insert the announcement
-    // First insert the announcement
-    $stmt = $conn->prepare("INSERT INTO ANNOUNCEMENT (title, content, visible_to, priority, created_by, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
-    $stmt->bind_param("ssssi", $title, $content, $visible_to, $priority, $landlord_id);
+    $stmt = $conn->prepare("INSERT INTO ANNOUNCEMENT (title, content, visible_to, priority, created_by, created_at) VALUES (?, ?, 'tenant', ?, ?, NOW())");
+    $stmt->bind_param("sssi", $title, $content, $priority, $landlord_id);
     
     if ($stmt->execute()) {
         $announcement_id = $conn->insert_id;
         
-        // Get recipient emails based on visibility setting
         $recipient_query = "SELECT email, name FROM USERS WHERE ";
         
         switch ($visible_to) {
@@ -1074,14 +1072,7 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
                     <textarea id="content" name="content" required></textarea>
                 </div>
 
-                <div class="form-group">
-                    <label for="visible_to">Visible To</label>
-                    <select id="visible_to" name="visible_to" required>
-                        <option value="all">All Users</option>
-                        <option value="tenant">Tenants Only</option>
-                        <option value="landlord">Landlords Only</option>
-                    </select>
-                </div>
+
 
                 <div class="form-group">
                     <label for="priority">Priority</label>
