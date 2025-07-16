@@ -1,4 +1,4 @@
-<?php 
+<?php
 session_start();
 require_once '../connection.php';
 require_once '../vendor/autoload.php'; // Make sure PHPMailer is installed via Composer
@@ -56,7 +56,7 @@ if (isset($_POST['update_status'])) {
         // Send email notification to tenant
         if ($payment_details && !empty($payment_details['email'])) {
             $mail = new PHPMailer\PHPMailer\PHPMailer(true);
-            
+
             try {
                 // Server settings
                 $mail->isSMTP();
@@ -66,20 +66,20 @@ if (isset($_POST['update_status'])) {
                 $mail->Password   = 'aycm atee woxl lmvj'; // SMTP password
                 $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
                 $mail->Port       = 587;
-                
+
                 // Recipients
                 $mail->setFrom('velacinco5@gmail.com', 'VELA Cinco Rentals');
                 $mail->addAddress($payment_details['email'], $payment_details['tenant_name']);
-                
+
                 // Content
                 $mail->isHTML(true);
-                
+
                 if ($new_status === 'verified') {
                     $mail->Subject = 'Payment Verified - ' . $payment_details['reference_num'];
                     $mail->Body    = '
                         <h2>Payment Verified</h2>
                         <p>Hello ' . htmlspecialchars($payment_details['tenant_name']) . ',</p>
-                        <p>Your payment of <strong>₱' . number_format($payment_details['amount_paid'], 2) . '</strong> for ' . 
+                        <p>Your payment of <strong>₱' . number_format($payment_details['amount_paid'], 2) . '</strong> for ' .
                         htmlspecialchars($payment_details['bill_type']) . ' (Reference: ' . htmlspecialchars($payment_details['reference_num']) . ') has been verified.</p>
                         <p>Thank you for your payment!</p>
                         <p>Best regards,<br>VELA Team</p>
@@ -89,14 +89,14 @@ if (isset($_POST['update_status'])) {
                     $mail->Body    = '
                         <h2>Payment Rejected</h2>
                         <p>Hello ' . htmlspecialchars($payment_details['tenant_name']) . ',</p>
-                        <p>Your payment of <strong>₱' . number_format($payment_details['amount_paid'], 2) . '</strong> for ' . 
+                        <p>Your payment of <strong>₱' . number_format($payment_details['amount_paid'], 2) . '</strong> for ' .
                         htmlspecialchars($payment_details['bill_type']) . ' (Reference: ' . htmlspecialchars($payment_details['reference_num']) . ') has been rejected.</p>
                         <p>Please review your payment details and submit a new payment if needed.</p>
                         <p>If you believe this was a mistake, please contact your landlord.</p>
                         <p>Best regards,<br>VELA Team</p>
                     ';
                 }
-                
+
                 $mail->AltBody = strip_tags($mail->Body);
                 $mail->send();
             } catch (Exception $e) {
@@ -342,11 +342,9 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
             color: #6b7280;
             font-style: italic;
         }
+
         .no-payments {
             padding: 2rem;
-        }
-
-        .no-record {
             text-align: center;
             color: #64748b;
             background: white;
@@ -448,10 +446,11 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 </head>
 
 <body>
-    <?php include('../includes/navbar/landlord-sidebar.html'); ?>
+    <?php include('../includes/navbar/landlord-sidebar.php'); ?>
 
     <div class="main-content">
         <h1>Payments</h1>
+
         <?php if (empty($payments)): ?>
             <div class="no-payments">
                 <i class="fas fa-file-invoice-dollar" style="font-size:2rem;"></i>
@@ -460,18 +459,6 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
         <?php else: ?>
             <table>
                 <thead>
-        <table>
-            <thead>
-                <tr>
-                    <th>Tenant</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Proof of Payment</th>
-                    <th>Amount</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($payments)): ?>
                     <tr>
                         <th>Tenant</th>
                         <th>Bill Info</th>
@@ -483,9 +470,8 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                         <th>Proof</th>
                         <th>Actions</th>
                     </tr>
-                    </thead>
-                    <tbody>
-                <?php else: ?>
+                </thead>
+                <tbody>
                     <?php foreach ($payments as $payment): ?>
                         <tr class="<?= $payment['status'] === 'pending' ? 'pending-payment' : '' ?>">
                             <td><?= htmlspecialchars($payment['tenant_name']) ?></td>
@@ -510,14 +496,9 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                             </td>
                             <td><?= date('M d, Y H:i', strtotime($payment['submitted_at'])) ?></td>
                             <td>
-                            <span class="status <?= strtolower($payment['status']) ?>">
+                                <span class="status <?= strtolower($payment['status']) ?>">
                                     <?= ucfirst($payment['status']) ?>
                                 </span>
-                                <select class="status-dropdown" onchange="updatePaymentStatus(<?= $payment['payment_id'] ?>, this.value)">
-                                    <option value="pending" <?= $payment['status'] === 'pending' ? 'selected' : '' ?>>Pending</option>
-                                    <option value="confirmed" <?= $payment['status'] === 'confirmed' ? 'selected' : '' ?>>Confirmed</option>
-                                    <option value="rejected" <?= $payment['status'] === 'rejected' ? 'selected' : '' ?>>Rejected</option>
-                                </select>
                             </td>
                             <td>₱<?= number_format($payment['amount_paid'], 2) ?></td>
                             <td><?= ucfirst($payment['mode']) ?></td>
@@ -553,12 +534,9 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                             </td>
                         </tr>
                     <?php endforeach; ?>
-                    </tbody>
+                </tbody>
             </table>
         <?php endif; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
     </div>
 
     <!-- Modal for viewing proof of payment -->

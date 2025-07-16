@@ -1,11 +1,60 @@
 <?php
 session_start();
 require_once '../connection.php';
+require_once '../vendor/autoload.php'; // Make sure PHPMailer is installed via Composer
 
 // Check if user is logged in and has admin privileges
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] !== 'landlord' && $_SESSION['role'] !== 'admin')) {
     header("Location: ../index.php");
     exit;
+}
+
+// Function to send email notification
+function sendStatusEmail($email, $name, $status) {
+    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    
+    try {
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com'; // Your SMTP server
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'velacinco5@gmail.com'; // SMTP username
+        $mail->Password   = 'aycm atee woxl lmvj'; // SMTP password
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = 587;
+        
+        // Recipients
+        $mail->setFrom('velacinco5@gmail.com', 'VELA Cinco Rentals');
+        $mail->addAddress($email, $name);
+        
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = 'Account Status Update';
+        
+        if ($status) {
+            $mail->Body = "
+                <h2>Account Activated</h2>
+                <p>Hello $name,</p>
+                <p>Your account has been activated. You can now log in to the VELA system.</p>
+                <p>If you have any questions, please contact our support team.</p>
+                <p>Best regards,<br>VELA Cinco Rentals</p>
+            ";
+        } else {
+            $mail->Body = "
+                <h2>Account Deactivated</h2>
+                <p>Hello $name,</p>
+                <p>Your account has been deactivated by an administrator.</p>
+                <p>If you believe this is an error, please contact our support team.</p>
+                <p>Best regards,<br>VELA Cinco Rentals</p>
+            ";
+        }
+        
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+        return false;
+    }
 }
 
 // Handle form submissions
@@ -22,6 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $query = "INSERT INTO USERS (name, email, phone, password, role, is_active) 
                   VALUES ('$name', '$email', '$phone', '$hashed_password', '$role', 1)";
         mysqli_query($conn, $query);
+        
+        // Send welcome email
+        sendStatusEmail($email, $name, 1);
         
         // Set success message
         $_SESSION['message'] = "User added successfully";
@@ -53,8 +105,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $current_status = intval($_POST['current_status']);
         $new_status = $current_status ? 0 : 1;
         
+        // Get user details before updating
+        $user_query = "SELECT email, name FROM USERS WHERE user_id = $user_id";
+        $user_result = mysqli_query($conn, $user_query);
+        $user_data = mysqli_fetch_assoc($user_result);
+        
         $query = "UPDATE USERS SET is_active = $new_status WHERE user_id = $user_id";
         mysqli_query($conn, $query);
+        
+        // Send status change email
+        sendStatusEmail($user_data['email'], $user_data['name'], $new_status);
         
         // Set success message
         $_SESSION['message'] = "User status updated";
@@ -71,6 +131,8 @@ $query = "SELECT * FROM USERS ORDER BY is_active DESC, name ASC";
 $result = mysqli_query($conn, $query);
 $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
 ?>
+
+<!-- The HTML part remains the same as in your original code -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -360,7 +422,7 @@ $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
 </head>
 
 <body>
-    <?php include('../includes/navbar/landlord-sidebar.html'); ?>
+    <?php include('../includes/navbar/landlord-sidebar.php'); ?>
 
     <div class="main-content">
         <h1>User Management</h1>
