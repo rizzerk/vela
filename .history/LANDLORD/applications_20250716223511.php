@@ -239,13 +239,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
             $userStmt->close();
             
             // Create initial bill
-            $rentStmt = $conn->prepare("SELECT monthly_rent FROM PROPERTY WHERE property_id = ?");
-            $rentStmt->bind_param("i", $application['property_id']);
-            $rentStmt->execute();
-            $rentResult = $rentStmt->get_result();
-            $rent = $rentResult->fetch_assoc();
-            $rentStmt->close();
-            
             $billStmt = $conn->prepare("INSERT INTO BILL 
                 (lease_id, amount, due_date, status, description, 
                  billing_period_start, billing_period_end, bill_type) 
