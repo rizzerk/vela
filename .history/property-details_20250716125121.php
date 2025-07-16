@@ -87,80 +87,51 @@ while ($row = $result->fetch_assoc()) {
 $stmt->close();
 
 // Handle application submission
-// Handle application submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_application'])) {
-  if (!isset($_SESSION['loggedin']) || $_SESSION['role'] != 'general_user') {
-      $error = "You need to be logged in as a general user to submit an application.";
-  } else {
-      $occupation = trim($_POST['occupation']);
-      $monthly_income = trim($_POST['monthly_income']);
-      $num_of_tenants = trim($_POST['num_of_tenants']);
-      $co_tenants = trim($_POST['co_tenants']);
-      
-      // File upload handling
-      $document_path = null;
-      if (isset($_FILES['document']) && $_FILES['document']['error'] === UPLOAD_ERR_OK) {
-          $allowed_types = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-          $file_type = $_FILES['document']['type'];
-          
-          if (!in_array($file_type, $allowed_types)) {
-              $error = "Only PDF and Word documents are allowed.";
-          } else {
-              $upload_dir = 'uploads/applications/';
-              if (!file_exists($upload_dir)) {
-                  mkdir($upload_dir, 0777, true);
-              }
-              
-              $file_ext = pathinfo($_FILES['document']['name'], PATHINFO_EXTENSION);
-              $filename = 'app_' . $_SESSION['user_id'] . '_' . time() . '.' . $file_ext;
-              $destination = $upload_dir . $filename;
-              
-              if (move_uploaded_file($_FILES['document']['tmp_name'], $destination)) {
-                  $document_path = $destination;
-              } else {
-                  $error = "Failed to upload document. Please try again.";
-              }
-          }
-      } else {
-          $error = "Please upload your application document (PDF or Word).";
-      }
-      
-      // Basic validation
-      if (empty($occupation) || empty($monthly_income) || empty($num_of_tenants) || empty($document_path)) {
-          $error = "Please fill in all required fields and upload your document.";
-      } else {
-          try {
-              $stmt = $conn->prepare("INSERT INTO APPLICATIONS (property_id, applicant_id, status, submitted_at, occupation, monthly_income, num_of_tenants, co_tenants, document_path) 
-                                    VALUES (?, ?, 'pending', NOW(), ?, ?, ?, ?, ?)");
-              $stmt->bind_param("iisiiss", $property_id, $_SESSION['user_id'], $occupation, $monthly_income, $num_of_tenants, $co_tenants, $document_path);
-              
-              if ($stmt->execute()) {
-                  // Get applicant details
-                  $stmt_applicant = $conn->prepare("SELECT name, email FROM USERS WHERE user_id = ?");
-                  $stmt_applicant->bind_param("i", $_SESSION['user_id']);
-                  $stmt_applicant->execute();
-                  $applicant = $stmt_applicant->get_result()->fetch_assoc();
-                  $stmt_applicant->close();
-                  
-                  // Send confirmation email to applicant
-                  if ($applicant) {
-                      sendApplicationConfirmation(
-                          $property['title'],
-                          $applicant['name'],
-                          $applicant['email']
-                      );
-                  }
-                  
-                  $success = "Your application has been submitted successfully! You will receive a confirmation email shortly.";
-              } else {
-                  $error = "There was an error submitting your application. Please try again.";
-              }
-              $stmt->close();
-          } catch (Exception $e) {
-              $error = "Database error: " . $e->getMessage();
-          }
-      }
-  }
+    if (!isset($_SESSION['loggedin']) || $_SESSION['role'] != 'general_user') {
+        $error = "You need to be logged in as a general user to submit an application.";
+    } else {
+        $occupation = trim($_POST['occupation']);
+        $monthly_income = trim($_POST['monthly_income']);
+        $num_of_tenants = trim($_POST['num_of_tenants']);
+        $co_tenants = trim($_POST['co_tenants']);
+        
+        // Basic validation
+        if (empty($occupation) || empty($monthly_income) || empty($num_of_tenants)) {
+            $error = "Please fill in all required fields.";
+        } else {
+            try {
+                $stmt = $conn->prepare("INSERT INTO APPLICATIONS (property_id, applicant_id, status, submitted_at, occupation, monthly_income, num_of_tenants, co_tenants) 
+                                      VALUES (?, ?, 'pending', NOW(), ?, ?, ?, ?)");
+                $stmt->bind_param("iisiis", $property_id, $_SESSION['user_id'], $occupation, $monthly_income, $num_of_tenants, $co_tenants);
+                
+                if ($stmt->execute()) {
+                    // Get applicant details
+                    $stmt_applicant = $conn->prepare("SELECT name, email FROM USERS WHERE user_id = ?");
+                    $stmt_applicant->bind_param("i", $_SESSION['user_id']);
+                    $stmt_applicant->execute();
+                    $applicant = $stmt_applicant->get_result()->fetch_assoc();
+                    $stmt_applicant->close();
+                    
+                    // Send confirmation email to applicant
+                    if ($applicant) {
+                        sendApplicationConfirmation(
+                            $property['title'],
+                            $applicant['name'],
+                            $applicant['email']
+                        );
+                    }
+                    
+                    $success = "Your application has been submitted successfully! You will receive a confirmation email shortly.";
+                } else {
+                    $error = "There was an error submitting your application. Please try again.";
+                }
+                $stmt->close();
+            } catch (Exception $e) {
+                $error = "Database error: " . $e->getMessage();
+            }
+        }
+    }
 }
 ?>
 
@@ -408,35 +379,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_application']))
                     <p>Only registered accounts can apply for properties.<a href="registration.php" style="color: #1666ba;"> Register here</a> to reserve property </p>
                 </div>
             <?php else: ?>
-              <form method="POST" action="" enctype="multipart/form-data">
-        <div class="form-group">
-            <label for="occupation">Occupation</label>
-            <input type="text" id="occupation" name="occupation" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="monthly_income">Monthly Income (₱)</label>
-            <input type="number" id="monthly_income" name="monthly_income" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="num_of_tenants">Number of Tenants</label>
-            <input type="number" id="num_of_tenants" name="num_of_tenants" min="1" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="co_tenants">Co-Tenants (if any)</label>
-            <textarea id="co_tenants" name="co_tenants"></textarea>
-        </div>
-        
-        <div class="form-group">
-            <label for="document">Application Document (PDF or Word)</label>
-            <input type="file" id="document" name="document" accept=".pdf,.doc,.docx" required>
-            <small>Please include your government ID, proof of income, and 1x1 picture in a single document.</small>
-        </div>
-        
-        <button type="submit" name="submit_application" class="submit-btn">Submit Application</button>
-    </form>
+                <form method="POST" action="">
+                    <div class="form-group">
+                        <label for="occupation">Occupation</label>
+                        <input type="text" id="occupation" name="occupation" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="monthly_income">Monthly Income (₱)</label>
+                        <input type="number" id="monthly_income" name="monthly_income" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="num_of_tenants">Number of Tenants</label>
+                        <input type="number" id="num_of_tenants" name="num_of_tenants" min="1" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="co_tenants">Co-Tenants (if any)</label>
+                        <textarea id="co_tenants" name="co_tenants"></textarea>
+                    </div>
+                    
+                    <button type="submit" name="submit_application" class="submit-btn">Submit Application</button>
+                </form>
             <?php endif; ?>
         </div>
     </div>

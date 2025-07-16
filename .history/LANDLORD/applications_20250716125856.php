@@ -394,52 +394,41 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
                         <th>Income</th>
                         <th>Tenants</th>
                         <th>Submitted</th>
-                        <th>Document</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-        <?php foreach ($applications as $application): ?>
-            <tr>
-                <td>
-                    <strong><?php echo htmlspecialchars($application['title']); ?></strong><br>
-                    <?php echo htmlspecialchars($application['address']); ?>
-                </td>
-                <td><?php echo htmlspecialchars($application['applicant_name']); ?></td>
-                <td>
-                    <?php echo htmlspecialchars($application['email']); ?><br>
-                    <?php echo htmlspecialchars($application['phone']); ?>
-                </td>
-                <td>₱<?php echo number_format($application['monthly_income'], 2); ?></td>
-                <td><?php echo htmlspecialchars($application['num_of_tenants']); ?></td>
-                <td><?php echo date('M d, Y', strtotime($application['submitted_at'])); ?></td>
-                <td>
-    <?php if ($application['document_path']): ?>
-        <a href="download.php?file=<?php echo urlencode(basename($application['document_path'])); ?>&app_id=<?php echo $application['application_id']; ?>" 
-           class="view-btn">
-            Download Document
-        </a>
-    <?php else: ?>
-        No document
-    <?php endif; ?>
-</td>
-                <td class="status-<?php echo htmlspecialchars($application['status']); ?>">
-                    <?php echo ucfirst($application['status']); ?>
-                </td>
-                <td>
-                    <?php if ($application['status'] == 'pending'): ?>
-                        <form method="POST" class="action-form">
-                            <input type="hidden" name="application_id" value="<?php echo $application['application_id']; ?>">
-                            <button type="submit" name="update_status" value="approved" class="action-btn approve-btn">Approve</button>
-                            <button type="submit" name="update_status" value="rejected" class="action-btn reject-btn">Reject</button>
-                        </form>
-                    <?php endif; ?>
-                </td>
-            </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
+                    <?php foreach ($applications as $application): ?>
+                        <tr>
+                            <td>
+                                <strong><?php echo htmlspecialchars($application['title']); ?></strong><br>
+                                <?php echo htmlspecialchars($application['address']); ?>
+                            </td>
+                            <td><?php echo htmlspecialchars($application['applicant_name']); ?></td>
+                            <td>
+                                <?php echo htmlspecialchars($application['email']); ?><br>
+                                <?php echo htmlspecialchars($application['phone']); ?>
+                            </td>
+                            <td>₱<?php echo number_format($application['monthly_income'], 2); ?></td>
+                            <td><?php echo htmlspecialchars($application['num_of_tenants']); ?></td>
+                            <td><?php echo date('M d, Y', strtotime($application['submitted_at'])); ?></td>
+                            <td class="status-<?php echo htmlspecialchars($application['status']); ?>">
+                                <?php echo ucfirst($application['status']); ?>
+                            </td>
+                            <td>
+                                <?php if ($application['status'] == 'pending'): ?>
+                                  <form method="POST" class="action-form">
+    <input type="hidden" name="application_id" value="<?php echo $application['application_id']; ?>">
+    <button type="submit" name="update_status" value="approved" class="action-btn approve-btn">Approve</button>
+    <button type="submit" name="update_status" value="rejected" class="action-btn reject-btn">Reject</button>
+</form>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         <?php endif; ?>
     </div>
 </body>

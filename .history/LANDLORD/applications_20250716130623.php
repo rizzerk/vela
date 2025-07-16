@@ -394,7 +394,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
                         <th>Income</th>
                         <th>Tenants</th>
                         <th>Submitted</th>
-                        <th>Document</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -415,15 +414,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
                 <td><?php echo htmlspecialchars($application['num_of_tenants']); ?></td>
                 <td><?php echo date('M d, Y', strtotime($application['submitted_at'])); ?></td>
                 <td>
-    <?php if ($application['document_path']): ?>
-        <a href="download.php?file=<?php echo urlencode(basename($application['document_path'])); ?>&app_id=<?php echo $application['application_id']; ?>" 
-           class="view-btn">
-            Download Document
-        </a>
-    <?php else: ?>
-        No document
-    <?php endif; ?>
-</td>
+                    <?php if ($application['document_path']): ?>
+                        <a href="<?php echo htmlspecialchars($application['document_path']); ?>" 
+                           download 
+                           class="view-btn">
+                            Download Document
+                        </a>
+                    <?php else: ?>
+                        No document
+                    <?php endif; ?>
+                </td>
                 <td class="status-<?php echo htmlspecialchars($application['status']); ?>">
                     <?php echo ucfirst($application['status']); ?>
                 </td>
