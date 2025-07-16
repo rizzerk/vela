@@ -417,7 +417,7 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
         }
         
         .quick-actions-card {
-            background: linear-gradient(135deg, #368ce7, #1666ba);
+            background: linear-gradient(135deg, #bedaf7, #7ab3ef);
             color: white;
         }
         

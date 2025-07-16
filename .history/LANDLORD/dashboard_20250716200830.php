@@ -2,7 +2,8 @@
 session_start();
 require_once '../connection.php';
 require_once "../includes/auth/landlord_auth.php";
-require_once '../vendor/autoload.php';
+require_once '../vendor/autoload.php'; // Make sure PHPMailer is installed via Composer
+
 
 $landlord_id = $_SESSION['user_id'] ?? 1;
 
@@ -17,26 +18,43 @@ if ($_POST['action'] ?? '' === 'add_announcement') {
     if ($stmt->execute()) {
         $announcement_id = $conn->insert_id;
         
-        $recipient_query = "SELECT email, name FROM USERS WHERE role = 'tenant'";
+        $recipient_query = "SELECT email, name FROM USERS WHERE ";
+        
+        switch ($visible_to) {
+            case 'all':
+                $recipient_query .= "role IN ('tenant', 'general_user')";
+                break;
+            case 'tenant':
+                $recipient_query .= "role = 'tenant'";
+                break;
+            case 'landlord':
+                $recipient_query .= "role = 'landlord'";
+                break;
+        }
+        
         $recipient_result = $conn->query($recipient_query);
         $recipients = $recipient_result ? $recipient_result->fetch_all(MYSQLI_ASSOC) : [];
         
+        // Send email to each recipient if there are any
         if (!empty($recipients)) {
             $mail = new PHPMailer\PHPMailer\PHPMailer(true);
             
             try {
+                // Server settings
                 $mail->isSMTP();
-                $mail->Host       = 'smtp.gmail.com';
+                $mail->Host       = 'smtp.gmail.com'; // Your SMTP server
                 $mail->SMTPAuth   = true;
-                $mail->Username   = 'velacinco5@gmail.com';
-                $mail->Password   = 'aycm atee woxl lmvj';
+                $mail->Username   = 'velacinco5@gmail.com'; // SMTP username
+                $mail->Password   = 'aycm atee woxl lmvj'; // SMTP password
                 $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
                 $mail->Port       = 587;
                 
+                // Common email settings
                 $mail->setFrom('velacinco5@gmail.com', 'VELA Cinco Rentals');
                 $mail->isHTML(true);
                 $mail->Subject = 'New Announcement: ' . htmlspecialchars($title);
                 
+                // Email template
                 $email_template = '
                     <h2>New Announcement</h2>
                     <p>Hello {name},</p>
@@ -53,13 +71,17 @@ if ($_POST['action'] ?? '' === 'add_announcement') {
                     <p>Best regards,<br>VELA Cinco Rentals</p>
                 ';
                 
+                // Send to each recipient
                 foreach ($recipients as $recipient) {
                     try {
                         $mail->clearAddresses();
                         $mail->addAddress($recipient['email'], $recipient['name']);
+                        
+                        // Personalize the email
                         $personalized_email = str_replace('{name}', htmlspecialchars($recipient['name']), $email_template);
                         $mail->Body = $personalized_email;
                         $mail->AltBody = strip_tags($personalized_email);
+                        
                         $mail->send();
                     } catch (Exception $e) {
                         error_log("Failed to send announcement to {$recipient['email']}: " . $mail->ErrorInfo);
@@ -74,12 +96,14 @@ if ($_POST['action'] ?? '' === 'add_announcement') {
         header("Location: dashboard.php");
         exit;
     } else {
+        // Handle database error
         header("Location: dashboard.php?error=1");
         exit;
     }
 }
 
-// Get property data
+// Rest of your existing dashboard code...
+// Rest of your existing dashboard code...
 $properties = [];
 $total_properties = 0;
 $total_vacant = 0;
@@ -115,80 +139,27 @@ if (!empty($properties)) {
     $total_occupied = array_sum(array_column($properties, 'occupied'));
 }
 
-// Get financial data
-$monthly_rent_query = "SELECT COALESCE(SUM(monthly_rent), 0) as total_rent FROM PROPERTY WHERE status = 'occupied'";
-$rent_result = $conn->query($monthly_rent_query);
-$monthly_rent = $rent_result ? $rent_result->fetch_assoc()['total_rent'] : 0;
-
-// Get actual rent collected this month
-$monthly_collected_query = "
-    SELECT COALESCE(SUM(p.amount_paid), 0) as collected
-    FROM PAYMENT p 
-    JOIN BILL b ON p.bill_id = b.bill_id
-    WHERE p.status = 'verified' 
-    AND b.bill_type = 'rent'
-    AND MONTH(p.submitted_at) = MONTH(NOW()) 
-    AND YEAR(p.submitted_at) = YEAR(NOW())
-";
-$collected_result = $conn->query($monthly_collected_query);
-$monthly_collected = $collected_result ? $collected_result->fetch_assoc()['collected'] : 0;
-
-// Get utility payments this month
-$monthly_utilities_query = "
-    SELECT COALESCE(SUM(p.amount_paid), 0) as utilities
-    FROM PAYMENT p 
-    JOIN BILL b ON p.bill_id = b.bill_id
-    WHERE p.status = 'verified' 
-    AND b.bill_type = 'utility'
-    AND MONTH(p.submitted_at) = MONTH(NOW()) 
-    AND YEAR(p.submitted_at) = YEAR(NOW())
-";
-$utilities_result = $conn->query($monthly_utilities_query);
-$monthly_utilities = $utilities_result ? $utilities_result->fetch_assoc()['utilities'] : 0;
-
-// Get other expenses (penalties, other bills)
-$other_expenses_query = "
-    SELECT COALESCE(SUM(p.amount_paid), 0) as other_expenses
-    FROM PAYMENT p 
-    JOIN BILL b ON p.bill_id = b.bill_id
-    WHERE p.status = 'verified' 
-    AND b.bill_type IN ('penalty', 'other')
-    AND MONTH(p.submitted_at) = MONTH(NOW()) 
-    AND YEAR(p.submitted_at) = YEAR(NOW())
-";
-$other_expenses_result = $conn->query($other_expenses_query);
-$other_expenses = $other_expenses_result ? $other_expenses_result->fetch_assoc()['other_expenses'] : 0;
-
-// Get yearly data for chart
-$yearly_data_query = "
+// Get financial data from database
+$financial_query = "
     SELECT 
-        MONTH(p.submitted_at) as month,
-        b.bill_type,
-        SUM(p.amount_paid) as total
-    FROM PAYMENT p 
-    JOIN BILL b ON p.bill_id = b.bill_id
-    WHERE p.status = 'verified' 
-    AND YEAR(p.submitted_at) = YEAR(NOW())
-    GROUP BY MONTH(p.submitted_at), b.bill_type
-    ORDER BY MONTH(p.submitted_at)
+        COALESCE(SUM(CASE WHEN p.status = 'occupied' THEN p.monthly_rent ELSE 0 END), 0) as total_rent,
+        COALESCE(SUM(CASE WHEN pay.payment_type = 'rent' AND MONTH(pay.payment_date) = MONTH(NOW()) AND YEAR(pay.payment_date) = YEAR(NOW()) THEN pay.amount ELSE 0 END), 0) as monthly_collected,
+        COALESCE(SUM(CASE WHEN pay.payment_type = 'utilities' AND MONTH(pay.payment_date) = MONTH(NOW()) AND YEAR(pay.payment_date) = YEAR(NOW()) THEN pay.amount ELSE 0 END), 0) as monthly_utilities,
+        COALESCE(SUM(CASE WHEN mr.status = 'completed' AND MONTH(mr.completed_date) = MONTH(NOW()) AND YEAR(mr.completed_date) = YEAR(NOW()) THEN mr.cost ELSE 0 END), 0) as monthly_maintenance
+    FROM PROPERTY p
+    LEFT JOIN PAYMENT pay ON p.property_id = pay.property_id
+    LEFT JOIN MAINTENANCE_REQUEST mr ON p.property_id = mr.property_id
 ";
-$yearly_result = $conn->query($yearly_data_query);
-$yearly_data = $yearly_result ? $yearly_result->fetch_all(MYSQLI_ASSOC) : [];
 
-// Process yearly data for chart
-$monthly_rent_data = array_fill(0, 12, 0);
-$monthly_utility_data = array_fill(0, 12, 0);
+$financial_result = $conn->query($financial_query);
+$financial_data = $financial_result ? $financial_result->fetch_assoc() : [];
 
-foreach ($yearly_data as $row) {
-    $month_index = $row['month'] - 1;
-    if ($row['bill_type'] === 'rent') {
-        $monthly_rent_data[$month_index] = (float)$row['total'];
-    } elseif ($row['bill_type'] === 'utility') {
-        $monthly_utility_data[$month_index] = (float)$row['total'];
-    }
-}
+$monthly_rent = $financial_data['total_rent'] ?? 0;
+$monthly_collected = $financial_data['monthly_collected'] ?? 0;
+$monthly_utilities = $financial_data['monthly_utilities'] ?? 0;
+$monthly_maintenance = $financial_data['monthly_maintenance'] ?? 0;
 
-$total_expenses = $monthly_utilities + $other_expenses;
+$monthly_net = $monthly_collected - $monthly_utilities - $monthly_maintenance;
 
 $property_list_query = "SELECT property_id, title FROM PROPERTY ORDER BY title";
 $property_list = $conn->query($property_list_query)->fetch_all(MYSQLI_ASSOC);
@@ -199,6 +170,8 @@ $announcement_query = "SELECT title, content, created_at
                       LIMIT 1";
 $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -217,13 +190,12 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            background-color: #f6f6f6;
             color: #1e293b;
             line-height: 1.6;
             min-height: 100vh;
         }
         
-        /* Mobile navbar styles */
         .mobile-navbar {
             display: none;
             position: fixed;
@@ -231,16 +203,16 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             left: 0;
             right: 0;
             background: white;
-            padding: 1rem 1.5rem;
+            padding: 1rem 2rem;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            z-index: 1000;
+            z-index: 1001;
             justify-content: space-between;
             align-items: center;
         }
         
         .mobile-logo {
             font-size: 1.5rem;
-            font-weight: 800;
+            font-weight: 700;
             color: #1666ba;
             text-decoration: none;
         }
@@ -248,93 +220,141 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
         .mobile-menu-toggle {
             background: none;
             border: none;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             color: #1666ba;
             cursor: pointer;
-        }
-        
-        .mobile-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1001;
-        }
-        
-        .mobile-overlay.active {
-            display: block;
         }
         
         .mobile-sidebar {
             position: fixed;
+            right: -280px;
             top: 0;
-            left: -300px;
-            width: 300px;
+            width: 280px;
             height: 100vh;
-            background: white;
+            background: linear-gradient(180deg, #1666ba 0%, #368ce7 100%);
+            padding: 2rem 0;
             z-index: 1002;
-            transition: left 0.3s ease;
-            overflow-y: auto;
+            box-shadow: -2px 0 15px rgba(0, 0, 0, 0.1);
+            transition: right 0.3s ease;
         }
         
         .mobile-sidebar.active {
-            left: 0;
+            right: 0;
         }
         
         .mobile-sidebar-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 0 1rem;
+            position: relative;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 1.5rem;
         }
         
         .mobile-sidebar-header h2 {
-            color: #1666ba;
-            font-size: 1.5rem;
+            color: white;
+            font-size: 1.8rem;
             font-weight: 800;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
         
         .mobile-close-btn {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: #64748b;
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            color: white;
             cursor: pointer;
+            font-size: 1.2rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .mobile-close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
         }
         
         .mobile-nav-menu {
             list-style: none;
-            padding: 0;
         }
         
         .mobile-nav-item {
-            border-bottom: 1px solid #f1f5f9;
+            margin-bottom: 0.5rem;
         }
         
         .mobile-nav-link {
             display: flex;
             align-items: center;
             padding: 1rem 1.5rem;
-            color: #64748b;
+            color: rgba(255, 255, 255, 0.9);
             text-decoration: none;
             transition: all 0.3s ease;
+            font-size: 0.95rem;
+            font-weight: 500;
+            border-radius: 25px 0 0 25px;
+            margin-left: 1rem;
+            position: relative;
+            overflow: hidden;
         }
         
         .mobile-nav-link:hover,
         .mobile-nav-link.active {
-            background: #f8fafc;
-            color: #1666ba;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            transform: translateX(-5px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .mobile-nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            font-weight: 600;
+        }
+        
+        .mobile-nav-link::before {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: white;
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .mobile-nav-link.active::before,
+        .mobile-nav-link:hover::before {
+            transform: scaleY(1);
         }
         
         .mobile-nav-link i {
-            margin-right: 0.75rem;
-            width: 20px;
+            margin-right: 1rem;
+            width: 18px;
+            font-size: 1.1rem;
         }
         
+        .mobile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .mobile-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
         .main-content {
             margin-left: 250px;
             padding: 2rem;
@@ -353,17 +373,7 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             
             .main-content {
                 margin-left: 0;
-                padding: 1rem;
                 padding-top: 80px;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
             }
         }
 
@@ -398,18 +408,53 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             margin-bottom: 2rem;
         }
         
+        .financial-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .financial-grid .card {
+            padding: 1.5rem;
+        }
+        
+        #yearlyChart {
+            max-height: 200px;
+            width: 100% !important;
+        }
+        
+        .filter-section {
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .filter-section select {
+            padding: 0.5rem;
+            border: 1px solid #bedaf7;
+            border-radius: 8px;
+            background: white;
+            color: #1666ba;
+            font-weight: 600;
+        }
+        
+        .financial-card {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .financial-card .card-title {
+            color: white;
+        }
+
         .card {
             background: white;
             border-radius: 16px;
             padding: 2rem;
-            box-shadow: 0 10px 40px rgba(22, 102, 186, 0.08);
-            border: 1px solid rgba(190, 218, 247, 0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 50px rgba(22, 102, 186, 0.12);
+            box-shadow: 0 8px 32px rgba(22, 102, 186, 0.1);
+            border: 1px solid rgba(190, 218, 247, 0.3);
         }
         
         .dashboard-grid .card {
@@ -417,7 +462,7 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
         }
         
         .quick-actions-card {
-            background: linear-gradient(135deg, #368ce7, #1666ba);
+            background: linear-gradient(135deg, #bedaf7, #7ab3ef);
             color: white;
         }
         
@@ -444,6 +489,15 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             background: rgba(255,255,255,0.2);
         }
         
+        .action-btn:last-child {
+            margin-bottom: 0;
+        }
+        
+        .action-btn i {
+            margin-right: 0.5rem;
+            width: 16px;
+        }
+
         .card-title {
             font-size: 1.1rem;
             color: #1666ba;
@@ -452,25 +506,67 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
-        .properties-status-card .card-title,
-        .quick-actions-card .card-title,
-        .announcements-card .card-title {
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric:last-child {
+            margin-bottom: 0;
+        }
+
+        .metric.total {
+            background: #1666ba;
+            color: white;
+            font-weight: 600;
+        }
+
+        .metric-label {
+            font-size: 0.95rem;
+            color: #64748b;
+        }
+
+        .metric.total .metric-label {
             color: white;
         }
 
-        .properties-status-card {
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1666ba;
+        }
+
+        .metric.total .metric-value {
+            color: white;
+        }
+
+        .status-card {
             background: linear-gradient(135deg, #368ce7, #1666ba);
             color: white;
         }
-        
+
+        .status-card .card-title {
+            color: white;
+        }
+
         .status-metric {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding: 1rem;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 8px;
             margin-bottom: 0.5rem;
+        }
+
+        .status-metric:last-child {
+            margin-bottom: 0;
         }
 
         .status-label {
@@ -481,6 +577,15 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
         .status-value {
             font-size: 1.1rem;
             font-weight: 700;
+            color: white;
+        }
+
+        .properties-status-card {
+            background: linear-gradient(135deg, #368ce7, #1666ba);
+            color: white;
+        }
+        
+        .properties-status-card .card-title {
             color: white;
         }
         
@@ -506,9 +611,89 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             font-size: 0.9rem;
         }
         
+        .add-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #1666ba;
+            font-weight: 600;
+        }
+        
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #bedaf7;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .form-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        .btn-primary {
+            background: #1666ba;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            margin-left: 0.5rem;
+        }
+        
         .empty-state {
             text-align: center;
             padding: 2rem;
+            color: #64748b;
+        }
+        
+        .empty-state i {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #bedaf7;
+        }
+        
+        .empty-state p {
+            font-size: 0.9rem;
             color: #64748b;
         }
         
@@ -516,11 +701,23 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             color: rgba(255,255,255,0.8);
         }
         
+        .empty-state-white i {
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .empty-state-white p {
+            color: rgba(255,255,255,0.7);
+        }
+
         .announcement {
             background: rgba(255, 255, 255, 0.15);
             border-radius: 8px;
             padding: 1.5rem;
             margin-bottom: 1rem;
+        }
+
+        .announcement:last-child {
+            margin-bottom: 0;
         }
 
         .announcement-date {
@@ -536,274 +733,162 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             line-height: 1.6;
         }
 
-        /* Financial Report Styles */
-        .financial-section {
-            margin-bottom: 3rem;
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 200px;
+                padding: 1.5rem;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+            }
+            
+            .announcements-card {
+                grid-column: span 2;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .dashboard-grid .card {
+                padding: 1.25rem;
+            }
         }
-        
-        .section-title {
-            color: #1666ba;
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            font-weight: 700;
-        }
-        
-        .filter-section {
-            display: flex;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-        
-        .filter-group {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        
-        .filter-group label {
-            color: #1666ba;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        
-        .filter-group select {
-            padding: 0.5rem 1rem;
-            border: 1px solid #bedaf7;
-            border-radius: 8px;
-            background: white;
-            color: #1666ba;
-            font-weight: 500;
-            min-width: 150px;
-        }
-        
-        .financial-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .financial-card {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-            border: 1px solid rgba(190, 218, 247, 0.3);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .financial-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-        
-        .income-card {
-            border-top: 4px solid #10b981;
-        }
-        
-        .expenses-card {
-            border-top: 4px solid #f59e0b;
-        }
-        
-        .net-income-card {
-            border-top: 4px solid #1666ba;
-        }
-        
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-            color: #1666ba;
-        }
-        
-        .card-header i {
-            font-size: 1.25rem;
-        }
-        
-        .card-header h3 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin: 0;
-        }
-        
-        .financial-metric {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        
-        .financial-metric:last-child {
-            border-bottom: none;
-        }
-        
-        .metric-label {
-            color: #64748b;
-            font-size: 0.9rem;
-        }
-        
-        .metric-value {
-            font-weight: 600;
-            color: #1e293b;
-        }
-        
-        .financial-metric.total .metric-label {
-            font-weight: 700;
-            color: #1666ba;
-        }
-        
-        .financial-metric.total .metric-value {
-            font-weight: 700;
-            color: #1666ba;
-        }
-        
-        .income-card .financial-metric.total .metric-value {
-            color: #10b981;
-        }
-        
-        .expenses-card .financial-metric.total .metric-value {
-            color: #f59e0b;
-        }
-        
-        .net-income-card .financial-metric.total .metric-value {
-            color: #1666ba;
-        }
-        
-        .chart-container {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-            border: 1px solid rgba(190, 218, 247, 0.3);
-        }
-        
-        .chart-container h3 {
-            color: #1666ba;
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-        
 
-
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 2rem;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #1666ba;
-            font-weight: 600;
-        }
-        
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #bedaf7;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-        
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #1666ba;
-            box-shadow: 0 0 0 3px rgba(22, 102, 186, 0.1);
-        }
-        
-        .form-group textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        
-        .btn-primary {
-            background: #1666ba;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            margin-right: 1rem;
-            transition: background 0.3s ease;
-        }
-        
-        .btn-primary:hover {
-            background: #1454a3;
-        }
-        
-        .btn-secondary {
-            background: #64748b;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: background 0.3s ease;
-        }
-        
-        .btn-secondary:hover {
-            background: #475569;
-        }
-        
         @media (max-width: 768px) {
-            .financial-cards {
-                grid-template-columns: 1fr;
-                gap: 1rem;
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .header p {
+                font-size: 1rem;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.5rem;
+            }
+            
+            .announcements-card {
+                grid-column: span 2;
+            }
+            
+            .card {
+                padding: 1.5rem;
+            }
+            
+            .dashboard-grid .card {
+                padding: 1rem;
             }
             
             .filter-section {
-                flex-direction: column;
-                gap: 1rem;
-            }
-            
-            .filter-group {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 0.5rem;
             }
             
-            .filter-group select {
+            .filter-section select {
                 width: 100%;
+            }
+            
+            .financial-grid {
+                margin-bottom: 2rem;
+            }
+            
+            .financial-grid .card {
+                padding: 1rem;
+            }
+            
+            #yearlyChart {
+                max-height: 200px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 0.75rem;
+            }
+            
+            .header {
+                margin-bottom: 2rem;
+            }
+            
+            .header h1 {
+                font-size: 1.75rem;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 0.4rem;
+            }
+            
+            .announcements-card {
+                grid-column: span 1;
+            }
+            
+            .card {
+                padding: 1.25rem;
+                border-radius: 12px;
+            }
+            
+            .dashboard-grid .card {
+                padding: 0.75rem;
+            }
+            
+            .card-title {
+                font-size: 0.9rem;
+                margin-bottom: 1rem;
+            }
+            
+            .metric, .status-metric {
+                padding: 0.6rem;
+            }
+            
+            .metric-label, .status-label {
+                font-size: 0.8rem;
+            }
+            
+            .metric-value, .status-value {
+                font-size: 0.95rem;
+            }
+            
+            .action-btn {
+                padding: 0.6rem;
+                font-size: 0.8rem;
+            }
+            
+            .announcement {
+                padding: 1.25rem;
+            }
+            
+            .announcement-date {
+                font-size: 0.75rem;
+            }
+            
+            .announcement-text {
+                font-size: 0.9rem;
             }
             
             .modal-content {
                 margin: 10% auto;
                 padding: 1.5rem;
                 width: 95%;
+            }
+            
+            .form-group input, .form-group textarea, .form-group select {
+                padding: 0.6rem;
+            }
+            
+            .btn-primary, .btn-secondary {
+                padding: 0.6rem 1.25rem;
+                font-size: 0.9rem;
             }
         }
     </style>
@@ -862,6 +947,18 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
                     Tenant Payments
                 </a>
             </li>
+            <li class="mobile-nav-item">
+                <a href="tenant-payments.php" class="mobile-nav-link">
+                    <i class="fas fa-history"></i>
+                    Tenant History
+                </a>
+            </li>
+            <li class="mobile-nav-item">
+                <a href="#" class="mobile-nav-link">
+                    <i class="fas fa-user"></i>
+                    Landlord Profile
+                </a>
+            </li>
         </ul>
     </div>
     
@@ -913,99 +1010,21 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             </div>
         </div>
         
-        <div class="financial-section">
-            <h2 class="section-title">Financial Report</h2>
-            
-            <div class="filter-section">
-                <div class="filter-group">
-                    <label for="propertyFilter">Property:</label>
-                    <select id="propertyFilter" onchange="updateCharts()">
-                        <option value="all">All Properties</option>
-                        <?php foreach ($property_list as $property): ?>
-                            <option value="<?= $property['property_id'] ?>"><?= htmlspecialchars($property['title']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="timeFilter">Time Period:</label>
-                    <select id="timeFilter" onchange="updateCharts()">
-                        <option value="monthly">This Month</option>
-                        <option value="quarterly">This Quarter</option>
-                        <option value="yearly">This Year</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="financial-cards">
-                <!-- Income Card -->
-                <div class="financial-card income-card">
-                    <div class="card-header">
-                        <i class="fas fa-money-bill-wave"></i>
-                        <h3>Income</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="financial-metric">
-                            <span class="metric-label">Rent Collected</span>
-                            <span class="metric-value">₱<?= number_format($monthly_collected, 2) ?></span>
-                        </div>
-                        <div class="financial-metric">
-                            <span class="metric-label">Expected Rent</span>
-                            <span class="metric-value">₱<?= number_format($monthly_rent, 2) ?></span>
-                        </div>
-                        <div class="financial-metric total">
-                            <span class="metric-label">Collection Rate</span>
-                            <span class="metric-value"><?= $monthly_rent > 0 ? number_format(($monthly_collected/$monthly_rent)*100, 2) : '0' ?>%</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Expenses Card -->
-                <div class="financial-card expenses-card">
-                    <div class="card-header">
-                        <i class="fas fa-receipt"></i>
-                        <h3>Expenses</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="financial-metric">
-                            <span class="metric-label">Utilities</span>
-                            <span class="metric-value">₱<?= number_format($monthly_utilities, 2) ?></span>
-                        </div>
-                        <div class="financial-metric">
-                            <span class="metric-label">Other Expenses</span>
-                            <span class="metric-value">₱<?= number_format($other_expenses, 2) ?></span>
-                        </div>
-                        <div class="financial-metric total">
-                            <span class="metric-label">Total Expenses</span>
-                            <span class="metric-value">₱<?= number_format($total_expenses, 2) ?></span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Net Income Card -->
-                <div class="financial-card net-income-card">
-                    <div class="card-header">
-                        <i class="fas fa-chart-line"></i>
-                        <h3>Net Income</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="financial-metric">
-                            <span class="metric-label">Gross Income</span>
-                            <span class="metric-value">₱<?= number_format($monthly_collected, 2) ?></span>
-                        </div>
-                        <div class="financial-metric">
-                            <span class="metric-label">Total Expenses</span>
-                            <span class="metric-value">₱<?= number_format($total_expenses, 2) ?></span>
-                        </div>
-                        <div class="financial-metric total">
-                            <span class="metric-label">Net Profit</span>
-                            <span class="metric-value">₱<?= number_format($monthly_collected - $total_expenses, 2) ?></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="chart-container">
-                <canvas id="yearlyChart" height="300"></canvas>
+        <!-- Financial Summary Section -->
+        <div class="filter-section">
+            <label for="propertyFilter" style="color: #1666ba; font-weight: 600;">Filter by Property:</label>
+            <select id="propertyFilter" onchange="updateCharts()">
+                <option value="all">All Properties</option>
+                <?php foreach ($property_list as $property): ?>
+                    <option value="<?= $property['property_id'] ?>"><?= htmlspecialchars($property['title']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div class="financial-grid">
+            <div class="card">
+                <h2 class="card-title">Financial Summary</h2>
+                <canvas id="yearlyChart" width="400" height="200"></canvas>
             </div>
         </div>
         
@@ -1058,6 +1077,8 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
                     <textarea id="content" name="content" required></textarea>
                 </div>
 
+
+
                 <div class="form-group">
                     <label for="priority">Priority</label>
                     <select id="priority" name="priority" required>
@@ -1088,77 +1109,39 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
         
         function createYearlyChart() {
             const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
-            const rentData = <?= json_encode($monthly_rent_data) ?>;
-            const utilityData = <?= json_encode($monthly_utility_data) ?>;
-            
             yearlyChart = new Chart(yearlyCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    labels: ['Current Month'],
                     datasets: [{
                         label: 'Rent Collected',
-                        data: rentData,
-                        backgroundColor: '#10b981',
-                        borderRadius: 4
+                        data: [<?= $monthly_collected ?>],
+                        backgroundColor: '#10b981'
                     }, {
                         label: 'Utilities',
-                        data: utilityData,
-                        backgroundColor: '#f59e0b',
-                        borderRadius: 4
+                        data: [<?= $monthly_utilities ?>],
+                        backgroundColor: '#f59e0b'
+                    }, {
+                        label: 'Maintenance',
+                        data: [<?= $monthly_maintenance ?>],
+                        backgroundColor: '#ef4444'
+                    }, {
+                        label: 'Net Income',
+                        data: [<?= $monthly_net ?>],
+                        backgroundColor: '#1666ba'
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'top',
-                            labels: {
-                                boxWidth: 12,
-                                padding: 20,
-                                usePointStyle: true,
-                                pointStyle: 'circle'
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                afterBody: function(context) {
-                                    const datasetIndex = context[0].datasetIndex;
-                                    const dataIndex = context[0].dataIndex;
-                                    let netIncome = 0;
-                                    
-                                    if (datasetIndex === 0) {
-                                        const rent = context[0].raw;
-                                        const utilities = yearlyChart.data.datasets[1].data[dataIndex] || 0;
-                                        netIncome = rent - utilities;
-                                    }
-                                    
-                                    return datasetIndex === 0 ? ['------------------', `Net Income: ₱${netIncome.toLocaleString()}`] : [];
-                                }
-                            }
+                            position: 'bottom'
                         }
                     },
                     scales: {
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        },
                         y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '₱' + value.toLocaleString();
-                                }
-                            },
-                            grid: {
-                                color: '#e2e8f0'
-                            }
+                            beginAtZero: true
                         }
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
                     }
                 }
             });
