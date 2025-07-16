@@ -92,7 +92,7 @@ function sendRejectionEmail($applicant_name, $applicant_email, $property_title) 
     }
 }
 
-function sendLeaseActivationEmail($applicant_name, $applicant_email, $property_title, $start_date, $monthly_rent) {
+function sendLeaseActivationEmail($applicant_name, $applicant_email, $property_title, $start_date, $end_date, $monthly_rent) {
     $mail = new PHPMailer\PHPMailer\PHPMailer(true);
   
     try {
@@ -120,7 +120,7 @@ function sendLeaseActivationEmail($applicant_name, $applicant_email, $property_t
             <h3>Lease Details:</h3>
             <ul>
                 <li><strong>Start Date:</strong> " . date('F j, Y', strtotime($start_date)) . "</li>
-                <li><strong>End Date:</strong> Ongoing (will be set when lease is terminated)</li>
+                <li><strong>End Date:</strong> " . date('F j, Y', strtotime($end_date)) . "</li>
                 <li><strong>Monthly Rent:</strong> ₱" . number_format($monthly_rent, 2) . "</li>
             </ul>
             
@@ -153,7 +153,7 @@ if ($_SESSION['role'] != 'landlord') {
 $applications = [];
 
 // Get all applications for landlord's properties
-$stmt = $conn->prepare("SELECT a.*, p.title, p.address, u.name as applicant_name, u.email, u.phone, p.monthly_rent
+$stmt = $conn->prepare("SELECT a.*, p.title, p.address, u.name as applicant_name, u.email, u.phone 
                        FROM APPLICATIONS a 
                        JOIN PROPERTY p ON a.property_id = p.property_id 
                        JOIN USERS u ON a.applicant_id = u.user_id 
@@ -210,12 +210,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
         } elseif ($status == 'deposit_paid') {
             // Deposit paid - create lease and activate tenant
             
-            // Create lease with NULL end date
+            // Create lease (1 year by default)
             $start_date = date('Y-m-d');
+            $end_date = date('Y-m-d', strtotime('+1 year'));
             
             $leaseStmt = $conn->prepare("INSERT INTO LEASE (tenant_id, property_id, start_date, end_date, active) 
-                                        VALUES (?, ?, ?, NULL, 1)");
-            $leaseStmt->bind_param("iis", $application['applicant_id'], $application['property_id'], $start_date);
+                                        VALUES (?, ?, ?, ?, 1)");
+            $leaseStmt->bind_param("iiss", $application['applicant_id'], $application['property_id'], $start_date, $end_date);
             $leaseStmt->execute();
             $lease_id = $leaseStmt->insert_id;
             $leaseStmt->close();
@@ -268,6 +269,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
                 $application['email'],
                 $application['title'],
                 $start_date,
+                $end_date,
                 $application['monthly_rent']
             );
         } elseif ($status == 'rejected') {
@@ -435,7 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
 <body>
 <?php include ('../includes/navbar/landlord-sidebar.php'); ?>
     
-    <div class="container">
+<div class="container">
         <h1>Rental Applications</h1>
         
         <?php if (isset($error)): ?>
