@@ -69,7 +69,11 @@ if ($_POST['action'] ?? '' === 'add_announcement') {
                             Posted on: ' . date('F j, Y') . '
                         </p>
                     </div>
+<<<<<<< HEAD
                     <p>Please <a href=\"http://localhost/vela/index.php\">log in to your account</a> for more details.</p>
+=======
+                    <p>Please log in to your VELA account for more details.</p>
+>>>>>>> 2606f227865f0e6ae1098d921134acd996218791
                     <p>Best regards,<br>VELA Cinco Rentals</p>
                 ';
                 
