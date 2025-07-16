@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once "../connection.php";
+require_once "../includes/auth/tenant_auth.php";
 
 $userName = $_SESSION['name'] ?? 'Tenant';
 $userId = $_SESSION['user_id'];

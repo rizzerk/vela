@@ -1,13 +1,9 @@
 <?php
 session_start();
 require_once '../connection.php';
-<<<<<<< HEAD
-require_once '../vendor/autoload.php'; // Make sure PHPMailer is installed via Composer
-=======
 require_once "../includes/auth/tenant_auth.php";
 require_once '../vendor/autoload.php'; // Make sure PHPMailer is installed via Composer
 
->>>>>>> 2606f227865f0e6ae1098d921134acd996218791
 
 $landlord_id = $_SESSION['user_id'] ?? 1;
 
@@ -74,11 +70,7 @@ if ($_POST['action'] ?? '' === 'add_announcement') {
                             Posted on: ' . date('F j, Y') . '
                         </p>
                     </div>
-<<<<<<< HEAD
-                    <p>Please <a href=\"http://localhost/vela/index.php\">log in to your account</a> for more details.</p>
-=======
                     <p>Please log in to your VELA account for more details.</p>
->>>>>>> 2606f227865f0e6ae1098d921134acd996218791
                     <p>Best regards,<br>VELA Cinco Rentals</p>
                 ';
                 
