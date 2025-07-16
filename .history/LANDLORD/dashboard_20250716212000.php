@@ -369,19 +369,25 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
 
         .header {
             text-align: left;
-            margin-bottom: 3rem;
+            margin-bottom: 2.5rem;
+            padding: 1.5rem 0;
         }
 
         .header h1 {
-            font-size: 3rem;
+            font-size: 2.5rem;
             color: #1666ba;
             font-weight: 800;
             margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #1666ba, #368ce7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .header p {
-            font-size: 1.2rem;
-            color: #475569;
+            font-size: 1.1rem;
+            color: #64748b;
+            font-weight: 500;
         }
 
         .dashboard-grid {
@@ -417,7 +423,7 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
         }
         
         .quick-actions-card {
-            background: linear-gradient(135deg, #368ce7, #1666ba);
+            background: linear-gradient(135deg, #bedaf7, #7ab3ef);
             color: white;
         }
         
@@ -451,12 +457,6 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             margin-bottom: 1.5rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-        }
-        
-        .properties-status-card .card-title,
-        .quick-actions-card .card-title,
-        .announcements-card .card-title {
-            color: white;
         }
 
         .properties-status-card {
@@ -687,7 +687,41 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             text-align: center;
         }
         
-
+        @media (max-width: 768px) {
+            .financial-cards {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .filter-section {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .filter-group {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            
+            .filter-group select {
+                width: 100%;
+            }
+            
+            .financial-section {
+                margin-bottom: 2rem;
+            }
+            
+            .section-title {
+                font-size: 1.3rem;
+            }
+            
+            .modal-content {
+                margin: 10% auto;
+                padding: 1.5rem;
+                width: 95%;
+            }
+        }
 
         /* Modal styles */
         .modal {
@@ -777,34 +811,6 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
         
         .btn-secondary:hover {
             background: #475569;
-        }
-        
-        @media (max-width: 768px) {
-            .financial-cards {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-            
-            .filter-section {
-                flex-direction: column;
-                gap: 1rem;
-            }
-            
-            .filter-group {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
-            }
-            
-            .filter-group select {
-                width: 100%;
-            }
-            
-            .modal-content {
-                margin: 10% auto;
-                padding: 1.5rem;
-                width: 95%;
-            }
         }
     </style>
 </head>
@@ -1005,6 +1011,7 @@ $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
             </div>
             
             <div class="chart-container">
+                <h3>Monthly Financial Overview</h3>
                 <canvas id="yearlyChart" height="300"></canvas>
             </div>
         </div>
