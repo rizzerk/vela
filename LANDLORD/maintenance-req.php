@@ -1,10 +1,102 @@
 <?php
 session_start();
 require_once "../connection.php";
+require_once "../vendor/autoload.php"; // Path to autoload.php from Composer
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
+// Load email configuration
+$emailConfig = [
+    'host' => 'smtp.gmail.com',  // e.g., smtp.gmail.com
+    'username' => 'velacinco5@gmail.com',
+    'password' => 'aycm atee woxl lmvj',
+    'port' => 465,  // Typically 587 for TLS, 465 for SSL
+    'encryption' => 'ssl',  // 'tls' or 'ssl'
+    'from_email' => 'velacinco5@gmail.com',
+    'from_name' => 'VELA Cinco Rentals'
+];
+
+// Function to send email notification
+function sendStatusEmail($conn, $requestId, $status, $emailConfig) {
+    // Get request details and tenant email
+    $stmt = $conn->prepare("
+        SELECT u.email, u.name, mr.request_id, mr.status, mr.issue_type, p.title AS property_title
+        FROM MAINTENANCE_REQUEST mr
+        JOIN LEASE l ON mr.lease_id = l.lease_id
+        JOIN USERS u ON l.tenant_id = u.user_id
+        JOIN PROPERTY p ON l.property_id = p.property_id
+        WHERE mr.request_id = ?
+    ");
+    $stmt->bind_param("i", $requestId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $request = $result->fetch_assoc();
+    $stmt->close();
+
+    if (!$request) return false;
+
+    // Create PHPMailer instance
+    $mail = new PHPMailer(true);
+    try {
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host = $emailConfig['host'];
+        $mail->SMTPAuth = true;
+        $mail->Username = $emailConfig['username'];
+        $mail->Password = $emailConfig['password'];
+        $mail->SMTPSecure = $emailConfig['encryption'];
+        $mail->Port = $emailConfig['port'];
+
+        // Recipients
+        $mail->setFrom($emailConfig['from_email'], $emailConfig['from_name']);
+        $mail->addAddress($request['email'], $request['name']);
+
+        // Content
+        $mail->isHTML(true);
+        
+        // Status mapping for display
+        $statusDisplay = [
+            'pending' => 'Pending',
+            'in_progress' => 'In Progress',
+            'resolved' => 'Resolved',
+            'rejected' => 'Rejected'
+        ];
+        
+        $mail->Subject = 'Maintenance Request #' . $requestId . ' Status Update';
+        $mail->Body = '
+            <h2>Maintenance Request Status Update</h2>
+            <p>Hello ' . htmlspecialchars($request['name']) . ',</p>
+            <p>The status of your maintenance request has been updated:</p>
+            <ul>
+                <li><strong>Request ID:</strong> #' . $requestId . '</li>
+                <li><strong>Property:</strong> ' . htmlspecialchars($request['property_title']) . '</li>
+                <li><strong>Issue:</strong> ' . htmlspecialchars($request['issue_type']) . '</li>
+                <li><strong>New Status:</strong> ' . $statusDisplay[$status] . '</li>
+            </ul>';
+        
+        if ($status === 'in_progress') {
+            $mail->Body .= '<p>Your request has been accepted and is now being processed.</p>';
+        } elseif ($status === 'rejected') {
+            $mail->Body .= '<p>Your request has been reviewed but cannot be processed at this time.</p>';
+        } elseif ($status === 'resolved') {
+            $mail->Body .= '<p>Your maintenance request has been completed.</p>';
+        }
+        
+        $mail->Body .= '<p>Thank you for using our services.</p>';
+        
+        $mail->AltBody = strip_tags($mail->Body);
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+        return false;
+    }
+}
+
+// Handle issue type update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_id'], $_POST['issue_type'])) {
     header('Content-Type: application/json');
-
     $requestId = intval($_POST['request_id']);
     $issueType = trim($_POST['issue_type']);
 
@@ -21,9 +113,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_id'], $_POST[
     exit;
 }
 
+// Handle status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_id'], $_POST['status'])) {
     header('Content-Type: application/json');
-
     $requestId = intval($_POST['request_id']);
     $status = $_POST['status'];
     $allowed = ['pending', 'in_progress', 'resolved', 'rejected'];
@@ -37,6 +129,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_id'], $_POST[
     $stmt->bind_param("si", $status, $requestId);
 
     if ($stmt->execute()) {
+        // Send email notification for status changes (except pending)
+        if ($status !== 'pending') {
+            sendStatusEmail($conn, $requestId, $status, $emailConfig);
+        }
         echo json_encode(['success' => true]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Database error']);
@@ -46,6 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_id'], $_POST[
     exit;
 }
 
+// Handle GET requests for displaying maintenance requests
 date_default_timezone_set('Asia/Manila');
 
 $month = isset($_GET['month']) ? intval($_GET['month']) : date('n');
@@ -61,7 +158,6 @@ if (!empty(trim($statusFilter))) {
     $whereClauses[] = "mr.status = '" . mysqli_real_escape_string($conn, $statusFilter) . "'";
 }
 
-
 $whereSQL = "";
 if (!empty($whereClauses)) {
     $whereSQL = "WHERE " . implode(" AND ", $whereClauses);
@@ -69,23 +165,22 @@ if (!empty($whereClauses)) {
 
 $query = "
     SELECT 
-    mr.request_id, 
-    mr.status, 
-    mr.issue_type, 
-    mr.description, 
-    mr.requested_at, 
-    mr.image_path,
-    u.name AS tenant_name,
-    p.title AS property_title
-FROM MAINTENANCE_REQUEST mr
-JOIN LEASE l ON mr.lease_id = l.lease_id
-JOIN USERS u ON l.tenant_id = u.user_id
-JOIN PROPERTY p ON l.property_id = p.property_id
-
-
+        mr.request_id, 
+        mr.status, 
+        mr.issue_type, 
+        mr.description, 
+        mr.requested_at, 
+        mr.image_path,
+        u.name AS tenant_name,
+        p.title AS property_title
+    FROM MAINTENANCE_REQUEST mr
+    JOIN LEASE l ON mr.lease_id = l.lease_id
+    JOIN USERS u ON l.tenant_id = u.user_id
+    JOIN PROPERTY p ON l.property_id = p.property_id
     $whereSQL
     ORDER BY mr.requested_at DESC
 ";
+
 $result = mysqli_query($conn, $query);
 $requests = [];
 while ($row = mysqli_fetch_assoc($result)) {
