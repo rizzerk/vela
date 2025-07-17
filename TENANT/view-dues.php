@@ -55,7 +55,7 @@ if ($lease) {
         if ($row['balance'] > 0 || $row['status'] == 'unpaid') {
             // Use bill_type from database if available, otherwise categorize by description
             $category = 'OTHER';
-            
+
             if (!empty($row['bill_type'])) {
                 switch (strtolower($row['bill_type'])) {
                     case 'rent':
@@ -133,12 +133,14 @@ $statsResult = $stmt->get_result();
 $stats = $statsResult->fetch_assoc();
 
 // Format currency
-function formatCurrency($amount) {
+function formatCurrency($amount)
+{
     return '₱' . number_format($amount, 2);
 }
 
 // Get status badge
-function getStatusBadge($status) {
+function getStatusBadge($status)
+{
     switch ($status) {
         case 'paid':
             return '<span class="status-badge status-paid">Paid</span>';
@@ -173,12 +175,14 @@ function getStatusBadge($status) {
             background-color: #f8f9fa;
             position: relative;
             min-height: 100vh;
+
         }
 
         .page-title-container {
             background: white;
             padding: 20px 10%;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            margin-top: 70px;
         }
 
         .page-title {
@@ -208,7 +212,8 @@ function getStatusBadge($status) {
             display: flex;
             justify-content: center;
             min-height: calc(100vh - 180px);
-            padding: 30px 10% 40px;
+            padding: 30px 10% 120px;
+            /* Changed from 40px to 120px bottom padding */
             background-color: white;
         }
 
@@ -480,14 +485,18 @@ function getStatusBadge($status) {
         /* Navigation Arrows */
         .navigation-arrows {
             position: fixed;
-            bottom: 20px;
+            bottom: 0;
             left: 0;
             right: 0;
             display: flex;
             justify-content: flex-end;
-            padding: 0 20px;
+            /* Changed from space-between to flex-end */
+            padding: 15px 20px;
             z-index: 100;
+            background-color: #1666ba;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
         }
+
 
         .nav-group {
             display: flex;
@@ -496,7 +505,8 @@ function getStatusBadge($status) {
         }
 
         .nav-text {
-            color: #1666ba;
+            color: white;
+            /* Changed from blue to white */
             font-weight: 500;
             text-decoration: none;
             transition: color 0.3s;
@@ -508,21 +518,26 @@ function getStatusBadge($status) {
             justify-content: center;
             width: 50px;
             height: 50px;
-            background: linear-gradient(to right, #1666ba, #0d4a8a);
+            background: white;
+            /* Changed from gradient to solid white */
             border-radius: 50%;
-            color: white;
+            color: #1666ba;
+            /* Blue color for the icon */
             font-size: 22px;
             text-decoration: none;
             transition: all 0.3s;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
         .arrow:hover {
             transform: translateY(-2px) scale(1.05);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            background: #f0f0f0;
+            /* Slightly darker on hover */
         }
 
         @media (max-width: 992px) {
+
             .page-title-container,
             .main-container {
                 padding-left: 5%;
@@ -535,6 +550,11 @@ function getStatusBadge($status) {
 
             .payment-summary {
                 grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+
+            .main-container {
+                padding: 30px 5% 120px;
+                /* Maintain 120px bottom padding */
             }
         }
 
@@ -599,6 +619,8 @@ function getStatusBadge($status) {
                 position: fixed;
                 bottom: 10px;
                 padding: 0 10px;
+                justify-content: flex-end;
+                /* Changed from space-between to flex-end */
             }
 
             .arrow {
@@ -622,9 +644,16 @@ function getStatusBadge($status) {
             .grand-total-amount {
                 font-size: 1.4rem;
             }
+
+            
+
+            .grand-total {
+        margin-bottom: 90px; /* Reduce margin for mobile */
+    }
         }
 
         @media (max-width: 480px) {
+    
             .table-title {
                 font-size: 1.1rem;
             }
@@ -649,6 +678,7 @@ function getStatusBadge($status) {
                 flex-direction: column;
                 gap: 10px;
                 align-items: flex-start;
+                margin-bottom: 80px;
             }
 
             .grand-total-label {
@@ -663,7 +693,8 @@ function getStatusBadge($status) {
                 position: fixed;
                 bottom: 10px;
                 padding: 0 10px;
-                justify-content: space-between;
+                justify-content: flex-end;
+                /* Changed from space-between to flex-end */
             }
 
             .nav-text {
@@ -686,7 +717,7 @@ function getStatusBadge($status) {
         </h1>
     </div>
 
-    <?php include '../includes/navbar/tenant-navbar.php'?>
+    <?php include '../includes/navbar/tenant-navbar.php' ?>
 
     <div class="main-container">
         <div class="dues-container">
