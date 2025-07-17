@@ -1,7 +1,6 @@
 <?php
 session_start();
 require_once '../connection.php';
-require_once "../includes/auth/landlord_auth.php";
 require_once '../vendor/autoload.php'; // Make sure PHPMailer is installed via Composer
 
 // Check if user is logged in and has admin privileges
