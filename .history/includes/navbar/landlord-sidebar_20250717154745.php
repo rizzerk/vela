@@ -55,12 +55,12 @@
         <div class="nav-divider"></div>
         
         <!-- Account -->
-        <li class="nav-item">
+        <!-- <li class="nav-item">
             <a href="profile.php" class="nav-link">
                 <i class="fas fa-user"></i>
                 Profile
             </a>
-        </li> 
+        </li> -->
     </ul>
 </div>
 
@@ -70,7 +70,7 @@
     left: 0;
     top: 0;
     width: 250px;
-    height: 100vh;
+    height: 100%;
     background: #1666ba;
     padding: 2rem 0;
     z-index: 1000;
