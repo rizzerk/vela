@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
         $updateStmt = $conn->prepare("UPDATE USERS SET name = ?, email = ?, phone = ? WHERE user_id = ?");
         $updateStmt->bind_param("sssi", $newName, $newEmail, $newPhone, $userId);
 
-        if ($updateStmt->execute()) {
+        if ($updateStmt->execute())) {
             $successMsg = "Profile updated successfully!";
             $_SESSION['name'] = $newName;
         } else {
@@ -65,12 +65,12 @@ $landlordStmt = $conn->prepare("
     LIMIT 1
 ");
 $landlordName = $landlordEmail = $landlordPhone = null;
-if ($lease) {
+if ($lease)) {
     $landlordStmt->bind_param("ii", $lease['property_id'], $userId);
     $landlordStmt->execute();
     $landlordResult = $landlordStmt->get_result();
     $landlord = $landlordResult->fetch_assoc();
-    if ($landlord) {
+    if ($landlord)) {
         $landlordName = $landlord['name'];
         $landlordEmail = $landlord['email'];
         $landlordPhone = $landlord['phone'];
@@ -530,7 +530,7 @@ if ($lease) {
         <h2 class="panel-title"><i class="fas fa-file-contract"></i> LEASE AGREEMENT</h2>
         
         <div class="contact-info">
-          <?php if ($lease): ?>
+          <?php if ($lease)): ?>
             <div class="contact-item">
               <div class="contact-icon">
                 <i class="fas fa-home"></i>
@@ -560,7 +560,7 @@ if ($lease) {
         <div class="documents-section">
           <h2 class="panel-title"><i class="fas fa-address-book"></i> LANDLORD CONTACT</h2>
           <div class="contact-info">
-            <?php if ($landlordName): ?>
+            <?php if ($landlordName)): ?>
               <div class="contact-item">
                 <div class="contact-icon">
                   <i class="fas fa-user-tie"></i>
@@ -597,12 +597,12 @@ if ($lease) {
       </div>
       
       <form method="POST" action="" id="profileForm">
-        <?php if ($successMsg): ?>
+        <?php if ($successMsg)): ?>
           <div class="message success-msg">
             <i class="fas fa-check-circle"></i> <?= htmlspecialchars($successMsg) ?>
           </div>
         <?php endif; ?>
-        <?php if ($errorMsg): ?>
+        <?php if ($errorMsg)): ?>
           <div class="message error-msg">
             <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($errorMsg) ?>
           </div>
