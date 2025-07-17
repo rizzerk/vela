@@ -50,22 +50,6 @@ $stmt->close();
             max-width: 1200px;
             margin: 0 auto;
             padding: 2rem;
-            position: relative;
-        }
-        
-        .back-arrow {
-            position: absolute;
-            top: 2rem;
-            left: 2rem;
-            color: #1666ba;
-            font-size: 1.5rem;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-        
-        .back-arrow:hover {
-            color: #368ce7;
-            transform: translateX(-5px);
         }
         
         h1 {
@@ -190,7 +174,6 @@ $stmt->close();
 <body>
     
     <div class="container">
-        <a href="index.php" class="back-arrow"><i class="fas fa-arrow-left"></i></a>
         <h1>My Applications</h1>
         
         <?php if (empty($applications)): ?>

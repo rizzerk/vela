@@ -2,10 +2,10 @@
 session_start();
 require_once 'connection.php';
 
-if (!isset($_SESSION['loggedin'])) {
-    header("Location: not-login.php");
-    exit();
-}
+// if (!isset($_SESSION['loggedin'])) {
+//     header("Location: not-login.php");
+//     exit();
+// }
 
 $applications = [];
 
@@ -43,29 +43,12 @@ $stmt->close();
             background-color: #f8fafc;
             color: #333;
             line-height: 1.6;
-            padding-top: 80px;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 2rem;
-            position: relative;
-        }
-        
-        .back-arrow {
-            position: absolute;
-            top: 2rem;
-            left: 2rem;
-            color: #1666ba;
-            font-size: 1.5rem;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-        
-        .back-arrow:hover {
-            color: #368ce7;
-            transform: translateX(-5px);
         }
         
         h1 {
@@ -188,9 +171,9 @@ $stmt->close();
     </style>
 </head>
 <body>
+    <?php include "includes/navbar/navbarOUT.html" ?>
     
     <div class="container">
-        <a href="index.php" class="back-arrow"><i class="fas fa-arrow-left"></i></a>
         <h1>My Applications</h1>
         
         <?php if (empty($applications)): ?>
@@ -233,20 +216,5 @@ $stmt->close();
             </div>
         <?php endif; ?>
     </div>
-<script>
-// Override navbar script to allow regular links
-document.addEventListener('DOMContentLoaded', function() {
-    // Remove existing event listeners and add new ones
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth' });
-            }
-        });
-    });
-});
-</script>
 </body>
 </html>
