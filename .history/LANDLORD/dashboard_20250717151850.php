@@ -816,16 +816,16 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
         
-        .income-card .card-header h3 {
-            color: #10b981;
+        .income-card {
+            border-top: 4px solid #10b981;
         }
         
-        .expenses-card .card-header h3 {
-            color: #f59e0b;
+        .expenses-card {
+            border-top: 4px solid #f59e0b;
         }
         
-        .net-income-card .card-header h3 {
-            color: #1666ba;
+        .net-income-card {
+            border-top: 4px solid #1666ba;
         }
         
         .card-header {
@@ -1158,6 +1158,7 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
                 <!-- Income Card -->
                 <div class="financial-card income-card">
                     <div class="card-header">
+                        <i class="fas fa-money-bill-wave"></i>
                         <h3>Income</h3>
                     </div>
                     <div class="card-body">
@@ -1179,6 +1180,7 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
                 <!-- Expenses Card -->
                 <div class="financial-card expenses-card">
                     <div class="card-header">
+                        <i class="fas fa-receipt"></i>
                         <h3>Expenses</h3>
                     </div>
                     <div class="card-body">
@@ -1205,6 +1207,7 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
                 <!-- Net Income Card -->
                 <div class="financial-card net-income-card">
                     <div class="card-header">
+                        <i class="fas fa-chart-line"></i>
                         <h3>Net Income</h3>
                     </div>
                     <div class="card-body">
