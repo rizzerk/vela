@@ -40,6 +40,7 @@ try {
     error_log("Notifications error: " . $e->getMessage());
 }
 
+// Fetch notifications for navbar dropdown
 $notifications = [];
 try {
     $navQuery = "SELECT 'bill' as type, 

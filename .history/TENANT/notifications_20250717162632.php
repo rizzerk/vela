@@ -40,6 +40,7 @@ try {
     error_log("Notifications error: " . $e->getMessage());
 }
 
+// Fetch notifications for navbar dropdown
 $notifications = [];
 try {
     $navQuery = "SELECT 'bill' as type, 
@@ -104,24 +105,6 @@ $fullName = $_SESSION['name'] ?? 'User';
         .header {
             text-align: center;
             margin-bottom: 3rem;
-            position: relative;
-        }
-
-        .back-arrow {
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #1666ba;
-            font-size: 1.5rem;
-            text-decoration: none;
-            padding: 0.5rem;
-            border-radius: 8px;
-            transition: background 0.2s ease;
-        }
-
-        .back-arrow:hover {
-            background: #deecfb;
         }
 
         .header h1 {
@@ -285,9 +268,6 @@ $fullName = $_SESSION['name'] ?? 'User';
     
     <div class="main-content">
         <div class="header">
-            <a href="dashboard.php" class="back-arrow">
-                <i class="fas fa-arrow-left"></i>
-            </a>
             <h1>Notifications</h1>
         </div>
 

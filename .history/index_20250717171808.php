@@ -5,9 +5,7 @@ require_once 'connection.php';
 $error = '';
 
 $properties = [];
-$landlord_info = [];
 if ($conn) {
-    // Fetch properties
     $stmt = $conn->prepare("SELECT p.property_id, p.title, p.address, p.monthly_rent, p.description, pp.file_path 
     FROM PROPERTY p 
     LEFT JOIN PROPERTY_PHOTO pp ON p.property_id = pp.property_id 
@@ -21,17 +19,6 @@ if ($conn) {
             $properties[] = $row;
         }
         $stmt->close();
-    }
-    
-    // Fetch landlord information
-    $landlord_stmt = $conn->prepare("SELECT name, email, phone FROM USERS WHERE role = 'landlord' LIMIT 1");
-    if ($landlord_stmt) {
-        $landlord_stmt->execute();
-        $landlord_result = $landlord_stmt->get_result();
-        if ($landlord_result->num_rows > 0) {
-            $landlord_info = $landlord_result->fetch_assoc();
-        }
-        $landlord_stmt->close();
     }
 }
 
@@ -799,16 +786,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
     <!-- Contact Section -->
     <section class="contact" id="contact">
         <h2 class="section-title">Contact Information</h2>
-        <p class="section-subtitle">Get in touch with your landlord</p>
-        <?php if (!empty($landlord_info)): ?>
-            <h3 style="text-align: center; color: #1666ba; margin: 2rem 0;"><?= htmlspecialchars($landlord_info['name']) ?> - Landlord</h3>
-            <p style="text-align: center; margin: 1rem 0;"><i class="fas fa-phone" style="color: #1666ba; margin-right: 0.5rem;"></i><?= htmlspecialchars($landlord_info['phone']) ?></p>
-            <p style="text-align: center; margin: 1rem 0;"><i class="fas fa-envelope" style="color: #1666ba; margin-right: 0.5rem;"></i><?= htmlspecialchars($landlord_info['email']) ?></p>
-        <?php else: ?>
-            <h3 style="text-align: center; color: #1666ba; margin: 2rem 0;">Contact Information</h3>
-            <p style="text-align: center; margin: 1rem 0;">Contact details will be available soon.</p>
-        <?php endif; ?>
-        <p style="text-align: center; margin: 1rem 0;"><i class="fas fa-map-marker-alt" style="color: #1666ba; margin-right: 0.5rem;"></i>Cebu City, Philippines</p>
+        <p class="section-subtitle">Get in touch with our property management team</p>
+        <h3 style="text-align: center; color: #1666ba; margin: 2rem 0;">Maria Rose Cinco - Landlord</h3>
+        <p style="text-align: center; margin: 1rem 0;"><i class="fas fa-phone" style="color: #1666ba; margin-right: 0.5rem;"></i>+63 912 345 6789</p>
+        <p style="text-align: center; margin: 1rem 0;"><i class="fas fa-envelope" style="color: #1666ba; margin-right: 0.5rem;"></i>maria.cinco@vela.com</p>
+        <p style="text-align: center; margin: 1rem 0;"><i class="fas fa-map-marker-alt" style="color: #1666ba; margin-right: 0.5rem;"></i>Manila, Philippines</p>
     </section>
 
 </html>

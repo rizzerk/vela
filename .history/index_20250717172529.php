@@ -799,7 +799,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
     <!-- Contact Section -->
     <section class="contact" id="contact">
         <h2 class="section-title">Contact Information</h2>
-        <p class="section-subtitle">Get in touch with your landlord</p>
+        <p class="section-subtitle">Get in touch with our property management team</p>
         <?php if (!empty($landlord_info)): ?>
             <h3 style="text-align: center; color: #1666ba; margin: 2rem 0;"><?= htmlspecialchars($landlord_info['name']) ?> - Landlord</h3>
             <p style="text-align: center; margin: 1rem 0;"><i class="fas fa-phone" style="color: #1666ba; margin-right: 0.5rem;"></i><?= htmlspecialchars($landlord_info['phone']) ?></p>
