@@ -87,130 +87,40 @@ $bills = $billsResult->fetch_all(MYSQLI_ASSOC);
 <html>
 <head>
     <title>Manage Bills</title>
-    <link rel="stylesheet" href="../LANDLORD/styles.css">    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
       /* bills.php specific styles */
-      .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        
-        h1 {
-            font-size: 2.5rem;
-            color: #1666ba;
-            margin-bottom: 2rem;
-        }
-        
-        
-        .filter-bar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .filter-btn {
-            padding: 8px 15px;
-            border: 1px solid #ddd;
-            background: white;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-        
-        .filter-btn.active {
-            background: #1666ba;
-            color: white;
-            border-color: #1666ba;
-        }
-        
-        .bill-card {
-            border: 1px solid #ddd;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            position: relative;
-            background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        
-        .bill-type {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            background: #f0f0f0;
-        }
-        
-        .paid {
-            background-color: #e6ffe6;
-        }
-        
-        .unpaid {
-            background-color: #ffe6e6;
-        }
-        
-        .overdue {
-            background-color: #ffcccc;
-        }
+.bill-type {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    background: #f0f0f0;
+}
 
-        .action-btn { 
-            flex: 1; 
-            padding: 0.5rem; 
-            border-radius: 6px; 
-            border: none; 
-            font-weight: 600; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 0.5rem; 
-            transition: background-color 0.3s ease; 
-        }
-        
-        .edit-btn { 
-            background-color: #e0f2fe; 
-            color: #0369a1; 
-        }
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .action-buttons button {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            background: #1666ba;
-            color: white;
-            transition: all 0.2s;
-        }
-        
-        .action-buttons button:hover {
-            background: #135a9e;
-        }
-        
-        .success-message {
-            background: #e6ffe6;
-            color: #2e7d32;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            border-left: 4px solid #2e7d32;
-        }
-        
-        .error-message {
-            background: #ffe6e6;
-            color: #c62828;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            border-left: 4px solid #c62828;
-        }
+.bill-card {
+    position: relative;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.bill-card.paid {
+    background-color: #e8f5e9;
+    border-left: 4px solid #2e7d32;
+}
+
+.bill-card.unpaid {
+    background-color: #ffebee;
+    border-left: 4px solid #c62828;
+}
+
+.bill-card.overdue {
+    background-color: #ffcccc;
+    border-left: 4px solid #b71c1c;
+}
     </style>
 </head>
 <body>
@@ -274,13 +184,13 @@ $bills = $billsResult->fetch_all(MYSQLI_ASSOC);
                 
                 <p>Status: <strong><?php echo ucfirst($bill['status']); ?></strong></p>
                 
-                <!-- <?php if ($bill['status'] == 'unpaid' || $bill['status'] == 'overdue'): ?>
+                <?php if ($bill['status'] == 'unpaid' || $bill['status'] == 'overdue'): ?>
                     <button onclick="markAsPaid(<?php echo $bill['bill_id']; ?>)">
                         Mark as Paid
                     </button>
-                <?php endif; ?> -->
+                <?php endif; ?>
                 
-                <button class="action-btn edit-btn"    onclick="window.location.href='edit-bill.php?id=<?php echo $bill['bill_id']; ?>'">
+                <button onclick="window.location.href='edit-bill.php?id=<?php echo $bill['bill_id']; ?>'">
     Edit Bill
 </button>
             </div>
@@ -289,7 +199,7 @@ $bills = $billsResult->fetch_all(MYSQLI_ASSOC);
 
 </div>
 
-    <!-- <script>
+    <script>
         function markAsPaid(billId) {
             if (confirm('Mark this bill as paid?')) {
                 fetch('mark_paid.php?id=' + billId)
@@ -304,6 +214,6 @@ $bills = $billsResult->fetch_all(MYSQLI_ASSOC);
             }
         }
 
-    </script> -->
+    </script>
 </body>
 </html>

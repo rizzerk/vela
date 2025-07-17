@@ -1205,6 +1205,7 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
                 <!-- Net Income Card -->
                 <div class="financial-card net-income-card">
                     <div class="card-header">
+                        <i class="fas fa-chart-line"></i>
                         <h3>Net Income</h3>
                     </div>
                     <div class="card-body">

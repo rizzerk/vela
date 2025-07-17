@@ -1,6 +1,7 @@
 <?php  
 session_start();
 require_once "../connection.php";
+require_once "../vendor/autoload.php";
 
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION['role'] !== 'tenant') {
     header('Location: ../index.php');
@@ -82,6 +83,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $leaseStmt->close();
 }
 
+
+
 ?>
 
 <!DOCTYPE html>
@@ -161,7 +164,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             border-style: dashed;
             border-color: #999;
         }
-        .sbutton {
+        button {
             margin-top: 1.5rem;
             background: #1666ba;
             color: #fff;
@@ -172,7 +175,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             font-weight: 600;
             transition: background 0.3s ease;
         }
-        .sbutton:hover {
+        button:hover {
             background: #104e91;
         }
         table {
@@ -262,7 +265,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     <textarea id="description" name="description" rows="5" placeholder="Describe the issue in detail..." required></textarea>
                     <label for="imageUpload">Upload Image</label>
                     <input type="file" id="imageUpload" name="imageUpload" accept="image/*" required />
-                    <button type="submit" class="sbutton">Submit</button>
+                    <button type="submit">Submit</button>
                 </form>
             </section>
 

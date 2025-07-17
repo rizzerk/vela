@@ -1,7 +1,7 @@
 <?php
 // Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// error_reporting(E_ALL);
+// ini_set('display_errors', 1);
 
 session_start();
 require_once '../connection.php';
@@ -405,8 +405,11 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
 
         .page-title-container {
             background: white;
-            padding: 20px 10%;
+            padding: 90px 10% 20px;
+            /* Increased top padding to 90px */
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            margin-top: 0;
+            /* Ensure no additional margin */
         }
 
         .page-title {
@@ -423,6 +426,8 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
             min-height: calc(100vh - 180px);
             padding: 0 10% 80px;
             background-color: white;
+            margin-top: 0;
+            /* Ensure no additional margin */
         }
 
         .payment-container {
@@ -463,14 +468,19 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
 
         .navigation-arrows {
             position: fixed;
-            bottom: 20px;
+            bottom: 0;
             left: 0;
             right: 0;
             display: flex;
             justify-content: space-between;
-            padding: 0 20px;
+            padding: 15px 20px;
             z-index: 100;
+            background-color: #1666ba;
+            /* Blue background matching your theme */
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            /* Subtle shadow for depth */
         }
+
 
         .nav-group {
             display: flex;
@@ -479,7 +489,8 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
         }
 
         .nav-text {
-            color: #1666ba;
+            color: white;
+            /* Changed from blue to white */
             font-weight: 500;
             text-decoration: none;
             transition: color 0.3s;
@@ -491,18 +502,22 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
             justify-content: center;
             width: 50px;
             height: 50px;
-            background: linear-gradient(to right, #1666ba, #0d4a8a);
+            background: white;
+            /* Changed from gradient to solid white */
             border-radius: 50%;
-            color: white;
+            color: #1666ba;
+            /* Blue color for the icon */
             font-size: 22px;
             text-decoration: none;
             transition: all 0.3s;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
         .arrow:hover {
             transform: translateY(-2px) scale(1.05);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            background: #f0f0f0;
+            /* Slightly darker on hover */
         }
 
         h2 {
@@ -801,9 +816,7 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
             }
 
             .navigation-arrows {
-                position: fixed;
-                bottom: 10px;
-                padding: 0 10px;
+                padding: 10px 10px;
             }
 
             .arrow {
@@ -812,13 +825,14 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
                 font-size: 18px;
             }
 
+            .nav-text {
+                font-size: 14px;
+            }
+
             .nav-group {
                 gap: 8px;
             }
 
-            .nav-text {
-                font-size: 14px;
-            }
         }
 
         .modal {
@@ -848,13 +862,22 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
             color: #4CAF50;
             margin-bottom: 20px;
         }
+
+        @media (max-width: 768px) {
+            .page-title-container {
+                padding: 70px 5% 15px;
+                /* Slightly less padding on mobile */
+            }
+        }
     </style>
 </head>
 
 <body>
 
+    <?php include '../includes/navbar/tenant-navbar.php' ?>
+
     <div class="page-title-container">
-        <h1 class="page-title">PAY DUES</h1>
+        <h1 class="page-title">Pay Dues</h1>
     </div>
 
     <div class="main-container">
@@ -870,7 +893,6 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
                     <p><strong>GCash:</strong> 09123456789</p>
                     <p><strong>BDO:</strong> 01384320182</p>
                     <p><strong>BPI:</strong> 29034390248</p>
-                    <p><strong>Cash:</strong> Visit our office</p>
                 </div>
             </div>
 
@@ -985,100 +1007,100 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
     </div>
 
     <script>
-    // Enhanced file upload functionality with preview (image only)
-    function setupFileUpload() {
-        const fileInput = document.getElementById('proof');
-        const uploadBox = document.querySelector('.file-upload-box');
-        const uploadIcon = uploadBox.querySelector('i');
-        const uploadText = uploadBox.querySelector('p');
-        const submitBtn = document.querySelector('.submit-btn');
+        // Enhanced file upload functionality with preview (image only)
+        function setupFileUpload() {
+            const fileInput = document.getElementById('proof');
+            const uploadBox = document.querySelector('.file-upload-box');
+            const uploadIcon = uploadBox.querySelector('i');
+            const uploadText = uploadBox.querySelector('p');
+            const submitBtn = document.querySelector('.submit-btn');
 
-        // Create preview container
-        const previewContainer = document.createElement('div');
-        previewContainer.className = 'file-preview-container';
-        previewContainer.style.display = 'none';
-        uploadBox.parentNode.insertBefore(previewContainer, uploadBox.nextSibling);
-
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-
-            if (file) {
-                // Validate file type
-                const allowedTypes = ['image/jpeg', 'image/png'];
-                if (!allowedTypes.includes(file.type)) {
-                    showError('Only JPG and PNG files are allowed');
-                    resetUpload();
-                    return;
-                }
-
-                // Validate file size (5MB = 5000000 bytes)
-                if (file.size > 5000000) {
-                    showError('File is too large. Maximum size is 5MB');
-                    resetUpload();
-                    return;
-                }
-
-                // Show success state
-                showSuccess();
-
-                // Show preview
-                showPreview(file);
-            } else {
-                resetUpload();
-            }
-        });
-
-        // Drag and drop functionality
-        uploadBox.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            uploadBox.classList.add('drag-over');
-        });
-
-        uploadBox.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            uploadBox.classList.remove('drag-over');
-        });
-
-        uploadBox.addEventListener('drop', function(e) {
-            e.preventDefault();
-            uploadBox.classList.remove('drag-over');
-
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                fileInput.files = files;
-                fileInput.dispatchEvent(new Event('change'));
-            }
-        });
-
-        function showSuccess() {
-            uploadBox.classList.add('upload-success');
-            uploadIcon.className = 'fas fa-check-circle';
-            uploadText.textContent = 'File uploaded successfully!';
-        }
-
-        function showError(message) {
-            uploadBox.classList.add('upload-error');
-            uploadIcon.className = 'fas fa-exclamation-triangle';
-            uploadText.innerHTML = `<strong>Error:</strong> ${message}`;
-
-            // Reset after 3 seconds
-            setTimeout(resetUpload, 3000);
-        }
-
-        function resetUpload() {
-            uploadBox.classList.remove('upload-success', 'upload-error', 'drag-over');
-            uploadIcon.className = 'fas fa-cloud-upload-alt';
-            uploadText.innerHTML = 'Drag & drop your file here or click to browse';
+            // Create preview container
+            const previewContainer = document.createElement('div');
+            previewContainer.className = 'file-preview-container';
             previewContainer.style.display = 'none';
-            previewContainer.innerHTML = '';
-            fileInput.value = '';
-        }
+            uploadBox.parentNode.insertBefore(previewContainer, uploadBox.nextSibling);
 
-        function showPreview(file) {
-            const reader = new FileReader();
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
 
-            reader.onload = function(e) {
-                previewContainer.innerHTML = `
+                if (file) {
+                    // Validate file type
+                    const allowedTypes = ['image/jpeg', 'image/png'];
+                    if (!allowedTypes.includes(file.type)) {
+                        showError('Only JPG and PNG files are allowed');
+                        resetUpload();
+                        return;
+                    }
+
+                    // Validate file size (5MB = 5000000 bytes)
+                    if (file.size > 5000000) {
+                        showError('File is too large. Maximum size is 5MB');
+                        resetUpload();
+                        return;
+                    }
+
+                    // Show success state
+                    showSuccess();
+
+                    // Show preview
+                    showPreview(file);
+                } else {
+                    resetUpload();
+                }
+            });
+
+            // Drag and drop functionality
+            uploadBox.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadBox.classList.add('drag-over');
+            });
+
+            uploadBox.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadBox.classList.remove('drag-over');
+            });
+
+            uploadBox.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadBox.classList.remove('drag-over');
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    fileInput.dispatchEvent(new Event('change'));
+                }
+            });
+
+            function showSuccess() {
+                uploadBox.classList.add('upload-success');
+                uploadIcon.className = 'fas fa-check-circle';
+                uploadText.textContent = 'File uploaded successfully!';
+            }
+
+            function showError(message) {
+                uploadBox.classList.add('upload-error');
+                uploadIcon.className = 'fas fa-exclamation-triangle';
+                uploadText.innerHTML = `<strong>Error:</strong> ${message}`;
+
+                // Reset after 3 seconds
+                setTimeout(resetUpload, 3000);
+            }
+
+            function resetUpload() {
+                uploadBox.classList.remove('upload-success', 'upload-error', 'drag-over');
+                uploadIcon.className = 'fas fa-cloud-upload-alt';
+                uploadText.innerHTML = 'Drag & drop your file here or click to browse';
+                previewContainer.style.display = 'none';
+                previewContainer.innerHTML = '';
+                fileInput.value = '';
+            }
+
+            function showPreview(file) {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    previewContainer.innerHTML = `
                     <div class="preview-content">
                         <div class="preview-header">
                             <h4><i class="fas fa-image"></i> Image Preview</h4>
@@ -1091,139 +1113,139 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
                         </div>
                     </div>
                 `;
-                previewContainer.style.display = 'block';
-            };
+                    previewContainer.style.display = 'block';
+                };
 
-            reader.readAsDataURL(file);
-        }
-
-        // Global function to remove file
-        window.removeFile = function() {
-            resetUpload();
-        };
-    }
-
-    // Update bill information when selected
-    function updateBillInfo() {
-        const billSelect = document.getElementById('bill-id');
-        const billInfo = document.getElementById('bill-info');
-        const amountInput = document.getElementById('amount');
-        const rejectedWarning = document.getElementById('rejected-warning');
-        const rejectedCount = document.getElementById('rejected-count');
-
-        if (billSelect.value) {
-            const selectedOption = billSelect.options[billSelect.selectedIndex];
-
-            // Show bill info
-            billInfo.style.display = 'block';
-
-            // Update bill details
-            document.getElementById('selected-bill-id').textContent = selectedOption.value;
-            document.getElementById('selected-bill-type').textContent = selectedOption.dataset.type;
-            document.getElementById('selected-bill-description').textContent = selectedOption.dataset.description || 'No description';
-            document.getElementById('selected-bill-amount').textContent = '₱' + parseFloat(selectedOption.dataset.amount).toLocaleString('en-US', {
-                minimumFractionDigits: 2
-            });
-            document.getElementById('selected-bill-due-date').textContent = selectedOption.dataset.dueDate;
-
-            const statusSpan = document.getElementById('selected-bill-status');
-            statusSpan.textContent = selectedOption.dataset.status.toUpperCase();
-            statusSpan.className = selectedOption.dataset.status === 'overdue' ? 'overdue' : '';
-
-            // Show rejected warning if applicable
-            const rejectedCountValue = parseInt(selectedOption.dataset.rejectedCount);
-            if (rejectedCountValue > 0) {
-                rejectedWarning.style.display = 'block';
-                rejectedCount.textContent = rejectedCountValue;
-            } else {
-                rejectedWarning.style.display = 'none';
+                reader.readAsDataURL(file);
             }
 
-            // Pre-fill amount
-            amountInput.value = selectedOption.dataset.amount;
-        } else {
-            billInfo.style.display = 'none';
-            amountInput.value = '';
-            rejectedWarning.style.display = 'none';
+            // Global function to remove file
+            window.removeFile = function() {
+                resetUpload();
+            };
         }
-    }
 
-    // Initialize when DOM is loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        setupFileUpload();
-        
-        // Handle form submission with AJAX
-        const form = document.getElementById('payment-form');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Basic validation
-                const fileInput = document.getElementById('proof');
-                if (!fileInput.files || fileInput.files.length === 0) {
-                    alert('Please select a file to upload as proof of payment.');
-                    return false;
+        // Update bill information when selected
+        function updateBillInfo() {
+            const billSelect = document.getElementById('bill-id');
+            const billInfo = document.getElementById('bill-info');
+            const amountInput = document.getElementById('amount');
+            const rejectedWarning = document.getElementById('rejected-warning');
+            const rejectedCount = document.getElementById('rejected-count');
+
+            if (billSelect.value) {
+                const selectedOption = billSelect.options[billSelect.selectedIndex];
+
+                // Show bill info
+                billInfo.style.display = 'block';
+
+                // Update bill details
+                document.getElementById('selected-bill-id').textContent = selectedOption.value;
+                document.getElementById('selected-bill-type').textContent = selectedOption.dataset.type;
+                document.getElementById('selected-bill-description').textContent = selectedOption.dataset.description || 'No description';
+                document.getElementById('selected-bill-amount').textContent = '₱' + parseFloat(selectedOption.dataset.amount).toLocaleString('en-US', {
+                    minimumFractionDigits: 2
+                });
+                document.getElementById('selected-bill-due-date').textContent = selectedOption.dataset.dueDate;
+
+                const statusSpan = document.getElementById('selected-bill-status');
+                statusSpan.textContent = selectedOption.dataset.status.toUpperCase();
+                statusSpan.className = selectedOption.dataset.status === 'overdue' ? 'overdue' : '';
+
+                // Show rejected warning if applicable
+                const rejectedCountValue = parseInt(selectedOption.dataset.rejectedCount);
+                if (rejectedCountValue > 0) {
+                    rejectedWarning.style.display = 'block';
+                    rejectedCount.textContent = rejectedCountValue;
+                } else {
+                    rejectedWarning.style.display = 'none';
                 }
 
-                const submitBtn = form.querySelector('.submit-btn');
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-                submitBtn.disabled = true;
-                
-                const formData = new FormData(form);
-                
-                fetch(form.action, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        // Show success modal
-                        const modal = document.getElementById('successModal');
-                        modal.style.display = 'flex';
-                        
-                        // If email failed to send, update modal message
-                        if (data.email_sent === false) {
-                            const modalContent = modal.querySelector('div');
-                            const paragraphs = modalContent.querySelectorAll('p');
-                            if (paragraphs.length > 1) {
-                                paragraphs[1].textContent = 
-                                    'Note: The confirmation email could not be sent, but your payment was submitted successfully.';
-                            }
-                        }
-                        
-                        // Handle continue button click
-                        document.getElementById('continueBtn').addEventListener('click', function() {
-                            window.location.href = 'dashboard.php';
-                        });
-
-                        // Auto-redirect after 10 seconds if user doesn't click
-                        setTimeout(() => {
-                            if (modal.style.display === 'flex') {
-                                window.location.href = 'dashboard.php';
-                            }
-                        }, 10000);
-                    } else {
-                        throw new Error('Payment submission failed');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred. Please try again.');
-                    submitBtn.innerHTML = 'SUBMIT';
-                    submitBtn.disabled = false;
-                });
-            });
+                // Pre-fill amount
+                amountInput.value = selectedOption.dataset.amount;
+            } else {
+                billInfo.style.display = 'none';
+                amountInput.value = '';
+                rejectedWarning.style.display = 'none';
+            }
         }
-    });
-</script>
 
-    
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFileUpload();
+
+            // Handle form submission with AJAX
+            const form = document.getElementById('payment-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    // Basic validation
+                    const fileInput = document.getElementById('proof');
+                    if (!fileInput.files || fileInput.files.length === 0) {
+                        alert('Please select a file to upload as proof of payment.');
+                        return false;
+                    }
+
+                    const submitBtn = form.querySelector('.submit-btn');
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+                    submitBtn.disabled = true;
+
+                    const formData = new FormData(form);
+
+                    fetch(form.action, {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                // Show success modal
+                                const modal = document.getElementById('successModal');
+                                modal.style.display = 'flex';
+
+                                // If email failed to send, update modal message
+                                if (data.email_sent === false) {
+                                    const modalContent = modal.querySelector('div');
+                                    const paragraphs = modalContent.querySelectorAll('p');
+                                    if (paragraphs.length > 1) {
+                                        paragraphs[1].textContent =
+                                            'Note: The confirmation email could not be sent, but your payment was submitted successfully.';
+                                    }
+                                }
+
+                                // Handle continue button click
+                                document.getElementById('continueBtn').addEventListener('click', function() {
+                                    window.location.href = 'dashboard.php';
+                                });
+
+                                // Auto-redirect after 10 seconds if user doesn't click
+                                setTimeout(() => {
+                                    if (modal.style.display === 'flex') {
+                                        window.location.href = 'dashboard.php';
+                                    }
+                                }, 10000);
+                            } else {
+                                throw new Error('Payment submission failed');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred. Please try again.');
+                            submitBtn.innerHTML = 'SUBMIT';
+                            submitBtn.disabled = false;
+                        });
+                });
+            }
+        });
+    </script>
+
+
 
 </body>
 

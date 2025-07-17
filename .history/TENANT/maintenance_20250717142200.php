@@ -1,6 +1,7 @@
 <?php  
 session_start();
 require_once "../connection.php";
+require_once "../vendor/autoload.php"; // Load PHPMailer
 
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION['role'] !== 'tenant') {
     header('Location: ../index.php');
@@ -78,6 +79,176 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     } else {
         $message = "<span class='error-message'>No active lease found.</span>";
+    }
+    $leaseStmt->close();
+}
+
+require_once "../vendor/autoload.php"; // Load PHPMailer
+
+
+
+// Function to send maintenance request emails
+function sendMaintenanceEmails($tenantEmail, $tenantName, $landlordEmail, $landlordName, $issueType, $description) {
+    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    
+    try {
+        // SMTP Configuration (same as your other emails)
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'velacinco5@gmail.com'; // Your Gmail
+        $mail->Password   = 'aycm atee woxl lmvj';  // App Password
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port       = 465;
+
+        // Common email settings
+        $mail->setFrom('velacinco5@gmail.com', 'VELA Cinco Rentals');
+        $mail->isHTML(true);
+        
+        // Send to tenant
+        $mail->clearAddresses();
+        $mail->addAddress($tenantEmail, $tenantName);
+        $mail->Subject = 'Maintenance Request Confirmation';
+        $mail->Body = "
+            <h2>Maintenance Request Submitted</h2>
+            <p>Hello $tenantName,</p>
+            <p>Your maintenance request has been successfully submitted with the following details:</p>
+            <div style='background:#f8fafc; padding:1rem; border-radius:8px; margin:1rem 0;'>
+                <p><strong>Issue Type:</strong> $issueType</p>
+                <p><strong>Description:</strong> $description</p>
+                <p><strong>Status:</strong> Pending</p>
+            </div>
+            <p>We'll notify you once your request has been reviewed.</p>
+            <p>Thank you,<br>VELA Cinco Rentals Team</p>
+        ";
+        $mail->send();
+        
+        // Send to landlord
+        $mail->clearAddresses();
+        $mail->addAddress($landlordEmail, $landlordName);
+        $mail->Subject = 'New Maintenance Request: ' . $issueType;
+        $mail->Body = "
+            <h2>New Maintenance Request</h2>
+            <p>Hello $landlordName,</p>
+            <p>Tenant $tenantName has submitted a new maintenance request:</p>
+            <div style='background:#f8fafc; padding:1rem; border-radius:8px; margin:1rem 0;'>
+                <p><strong>Issue Type:</strong> $issueType</p>
+                <p><strong>Description:</strong> $description</p>
+                <p><strong>Status:</strong> Pending</p>
+            </div>
+            <p>Please review this request in your landlord dashboard.</p>
+            <p>Thank you,<br>VELA Cinco Rentals Team</p>
+        ";
+        $mail->send();
+        
+        return true;
+    } catch (Exception $e) {
+        error_log("Maintenance email error: " . $e->getMessage());
+        return false;
+    }
+}
+
+if (isset($_GET['check_updates']) && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    // Existing update check code...
+}
+
+$userName = $_SESSION['name'] ?? 'Tenant';
+$userId = $_SESSION['user_id'] ?? 0;
+$userEmail = $_SESSION['email'] ?? '';
+$message = ''; 
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $issueType = trim($_POST["issueType"]);
+    $description = trim($_POST["description"]);
+    $imagePath = null;
+    
+    $leaseStmt = $conn->prepare("SELECT lease_id, property_id FROM LEASE WHERE tenant_id = ? AND active = 1 LIMIT 1");
+    $leaseStmt->bind_param("i", $userId);
+    $leaseStmt->execute();
+    $leaseResult = $leaseStmt->get_result();
+
+    if ($leaseResult && $leaseRow = $leaseResult->fetch_assoc()) {
+        $leaseId = $leaseRow['lease_id'];
+        $propertyId = $leaseRow['property_id'];
+        
+        if (!isset($_FILES['imageUpload']) || $_FILES['imageUpload']['error'] === UPLOAD_ERR_NO_FILE) {
+            $message = "<div class='message-box error-message'>
+                            <strong>Image Required:</strong> Please upload an image to proceed with your request.
+                            <button class='close-btn' onclick='this.parentElement.remove()'>&times;</button>
+                        </div>";
+        } else {
+            $uploadDir = "../uploads/maintenance/";
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+
+            $fileTmp = $_FILES['imageUpload']['tmp_name'];
+            $fileName = basename($_FILES['imageUpload']['name']);
+            $targetFilePath = $uploadDir . time() . "_" . $fileName;
+
+            if (move_uploaded_file($fileTmp, $targetFilePath)) {
+                $imagePath = $targetFilePath;
+
+                $insertStmt = $conn->prepare("
+                    INSERT INTO MAINTENANCE_REQUEST (lease_id, issue_type, description, status, requested_at, updated_at, image_path)
+                    VALUES (?, ?, ?, 'pending', NOW(), NOW(), ?)
+                ");
+                $insertStmt->bind_param("isss", $leaseId, $issueType, $description, $imagePath);
+
+                if ($insertStmt->execute()) {
+                    // Get landlord email for the property
+                    $landlordStmt = $conn->prepare("
+                        SELECT U.email, U.name 
+                        FROM PROPERTY P
+                        JOIN USERS U ON P.landlord_id = U.user_id
+                        WHERE P.property_id = ?
+                    ");
+                    $landlordStmt->bind_param("i", $propertyId);
+                    $landlordStmt->execute();
+                    $landlordResult = $landlordStmt->get_result();
+                    
+                    if ($landlordRow = $landlordResult->fetch_assoc()) {
+                        $landlordEmail = $landlordRow['email'];
+                        $landlordName = $landlordRow['name'];
+                        
+                        // Send emails to both tenant and landlord
+                        $emailSent = sendMaintenanceEmails(
+                            $userEmail, 
+                            $userName, 
+                            $landlordEmail, 
+                            $landlordName,
+                            $issueType,
+                            $description
+                        );
+                        
+                        if (!$emailSent) {
+                            error_log("Failed to send maintenance request emails");
+                        }
+                    }
+                    
+                    $message = "<div class='message-box success-message'>
+                                    <strong>Success:</strong> Request submitted successfully.
+                                    <button class='close-btn' onclick='this.parentElement.remove()'>&times;</button>
+                                </div>";
+                } else {
+                    $message = "<div class='message-box error-message'>
+                                    <strong>Error:</strong> Failed to submit request.
+                                    <button class='close-btn' onclick='this.parentElement.remove()'>&times;</button>
+                                </div>";
+                }
+                $insertStmt->close();
+            } else {
+                $message = "<div class='message-box error-message'>
+                                <strong>Error:</strong> Failed to upload image.
+                                <button class='close-btn' onclick='this.parentElement.remove()'>&times;</button>
+                            </div>";
+            }
+        }
+    } else {
+        $message = "<div class='message-box error-message'>
+                        <strong>Error:</strong> No active lease found.
+                        <button class='close-btn' onclick='this.parentElement.remove()'>&times;</button>
+                    </div>";
     }
     $leaseStmt->close();
 }
@@ -161,7 +332,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             border-style: dashed;
             border-color: #999;
         }
-        .sbutton {
+        button {
             margin-top: 1.5rem;
             background: #1666ba;
             color: #fff;
@@ -172,7 +343,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             font-weight: 600;
             transition: background 0.3s ease;
         }
-        .sbutton:hover {
+        button:hover {
             background: #104e91;
         }
         table {
@@ -262,7 +433,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     <textarea id="description" name="description" rows="5" placeholder="Describe the issue in detail..." required></textarea>
                     <label for="imageUpload">Upload Image</label>
                     <input type="file" id="imageUpload" name="imageUpload" accept="image/*" required />
-                    <button type="submit" class="sbutton">Submit</button>
+                    <button type="submit">Submit</button>
                 </form>
             </section>
 
