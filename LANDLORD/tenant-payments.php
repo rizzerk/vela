@@ -396,6 +396,134 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
             color: black;
         }
 
+        /* Mobile navbar styles */
+        .mobile-navbar {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mobile-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1666ba;
+            text-decoration: none;
+        }
+
+        .mobile-menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #1666ba;
+            cursor: pointer;
+        }
+
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+        }
+
+        .mobile-overlay.active {
+            display: block;
+        }
+
+        .mobile-sidebar {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 300px;
+            height: 100vh;
+            background: white;
+            z-index: 1002;
+            transition: left 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .mobile-sidebar.active {
+            left: 0;
+        }
+
+        .mobile-sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mobile-sidebar-header h2 {
+            color: #1666ba;
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .mobile-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #64748b;
+            cursor: pointer;
+        }
+
+        .mobile-nav-menu {
+            list-style: none;
+            padding: 0;
+        }
+
+        .mobile-nav-item {
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .mobile-nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-nav-link:hover,
+        .mobile-nav-link.active {
+            background: #f8fafc;
+            color: #1666ba;
+        }
+
+        .mobile-nav-link i {
+            margin-right: 0.75rem;
+            width: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-navbar {
+                display: flex;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+                padding-top: 80px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+
         /* Responsive table */
         @media (max-width: 1200px) {
             .main-content {
@@ -446,6 +574,62 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 </head>
 
 <body>
+    <div class="mobile-navbar">
+        <a href="dashboard.php" class="mobile-logo">VELA</a>
+        <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+
+    <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileSidebar()"></div>
+
+    <div class="mobile-sidebar" id="mobileSidebar">
+        <div class="mobile-sidebar-header">
+            <h2>VELA</h2>
+            <button class="mobile-close-btn" onclick="closeMobileSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <ul class="mobile-nav-menu">
+            <li class="mobile-nav-item">
+                <a href="dashboard.php" class="mobile-nav-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+            </li>
+            <li class="mobile-nav-item">
+                <a href="properties.php" class="mobile-nav-link">
+                    <i class="fas fa-building"></i>
+                    Properties
+                </a>
+            </li>
+            <li class="mobile-nav-item">
+                <a href="#" class="mobile-nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    Financial Reports
+                </a>
+            </li>
+            <li class="mobile-nav-item">
+                <a href="maintenance-req.php" class="mobile-nav-link">
+                    <i class="fas fa-tools"></i>
+                    Maintenance Requests
+                </a>
+            </li>
+            <li class="mobile-nav-item">
+                <a href="#" class="mobile-nav-link">
+                    <i class="fas fa-file-alt"></i>
+                    Tenant Applications
+                </a>
+            </li>
+            <li class="mobile-nav-item">
+                <a href="tenant-payments.php" class="mobile-nav-link active">
+                    <i class="fas fa-receipt"></i>
+                    Tenant Payments
+                </a>
+            </li>
+        </ul>
+    </div>
+
     <?php include('../includes/navbar/landlord-sidebar.php'); ?>
 
     <div class="main-content">
@@ -680,6 +864,20 @@ $payments = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
             }
         `;
         document.head.appendChild(style);
+
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('mobileSidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.add('active');
+            overlay.classList.add('active');
+        }
+
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('mobileSidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        }
     </script>
 </body>
 
