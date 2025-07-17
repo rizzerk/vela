@@ -19,7 +19,7 @@ $leaseQuery = "SELECT l.lease_id, l.start_date, l.end_date, l.active,
                JOIN PROPERTY p ON l.property_id = p.property_id 
                JOIN USERS u ON u.role = 'landlord'
                LEFT JOIN APPLICATIONS a ON a.property_id = p.property_id AND a.applicant_id = l.tenant_id
-               WHERE l.tenant_id = ? AND l.active = 1
+               WHERE l.z4,iyuhjntenant_id = ? AND l.active = 1
                LIMIT 1";
 $stmt = $conn->prepare($leaseQuery);
 $stmt->bind_param("i", $user_id);
