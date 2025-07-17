@@ -310,123 +310,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Applications - VELA Rental</title>
-    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-       .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        
-        h1 {
-            font-size: 2.5rem;
-            color: #1666ba;
-            margin-bottom: 2rem;
-        }
-        
-        .applications-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        .applications-table th, 
-        .applications-table td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .applications-table th {
-            background-color: #1666ba;
-            color: white;
-            font-weight: 600;
-        }
-        
-        .applications-table tr:hover {
-            background-color: #f5f9ff;
-        }
-        
-        .status-pending {
-            color: #e65100;
-            font-weight: 600;
-        }
-        
-        .status-approved {
-            color: #2e7d32;
-            font-weight: 600;
-        }
-        
-        .status-rejected {
-            color: #c62828;
-            font-weight: 600;
-        }
-        
-        .action-form {
-            display: flex;
-            gap: 0.5rem;
-        }
-        
-        .action-btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        
-        .approve-btn {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-        }
-        
-        .approve-btn:hover {
-            background-color: #c8e6c9;
-        }
-        
-        .reject-btn {
-            background-color: #ffebee;
-            color: #c62828;
-        }
-        
-        .reject-btn:hover {
-            background-color: #ffcdd2;
-        }
-        
-        .view-btn {
-            background-color: #e3f2fd;
-            color: #1565c0;
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            font-weight: 600;
-            display: inline-block;
-        }
-        
-        .view-btn:hover {
-            background-color: #bbdefb;
-        }
-        
-        .error-message {
-            background: #ffebee;
-            color: #c62828;
-            padding: 1rem;
-            border-radius: 6px;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid #c62828;
-        }
-        
-        @media (max-width: 768px) {
-            .applications-table {
-                display: block;
-                overflow-x: auto;
-            }
-        }
+        /* applications.php specific styles */
+.document-link {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.document-link:hover {
+    background-color: #bbdefb;
+}
+
+.action-form {
+    display: flex;
+    gap: 0.5rem;
+}
     </style>
 </head>
 <body>

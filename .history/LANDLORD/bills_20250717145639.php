@@ -155,25 +155,7 @@ $bills = $billsResult->fetch_all(MYSQLI_ASSOC);
         .overdue {
             background-color: #ffcccc;
         }
-
-        .action-btn { 
-            flex: 1; 
-            padding: 0.5rem; 
-            border-radius: 6px; 
-            border: none; 
-            font-weight: 600; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 0.5rem; 
-            transition: background-color 0.3s ease; 
-        }
         
-        .edit-btn { 
-            background-color: #e0f2fe; 
-            color: #0369a1; 
-        }
         .action-buttons {
             display: flex;
             gap: 10px;
@@ -280,7 +262,7 @@ $bills = $billsResult->fetch_all(MYSQLI_ASSOC);
                     </button>
                 <?php endif; ?> -->
                 
-                <button class="action-btn edit-btn"    onclick="window.location.href='edit-bill.php?id=<?php echo $bill['bill_id']; ?>'">
+                <button class="button"    onclick="window.location.href='edit-bill.php?id=<?php echo $bill['bill_id']; ?>'">
     Edit Bill
 </button>
             </div>

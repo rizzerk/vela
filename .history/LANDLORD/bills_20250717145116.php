@@ -90,32 +90,38 @@ $bills = $billsResult->fetch_all(MYSQLI_ASSOC);
     <link rel="stylesheet" href="../LANDLORD/styles.css">    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
       /* bills.php specific styles */
-      .container {
+       .bills-container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 2rem;
         }
         
-        h1 {
-            font-size: 2.5rem;
-            color: #1666ba;
+        .page-header {
             margin-bottom: 2rem;
         }
         
+        .page-header h1 {
+            font-size: 2.5rem;
+            color: #1666ba;
+            margin-bottom: 0.5rem;
+        }
         
         .filter-bar {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
         }
         
         .filter-btn {
-            padding: 8px 15px;
-            border: 1px solid #ddd;
-            background: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
             cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.2s;
+            font-weight: 600;
+            transition: all 0.3s;
+            background: white;
+            color: #1666ba;
+            border: 1px solid #bedaf7;
         }
         
         .filter-btn.active {
@@ -124,92 +130,159 @@ $bills = $billsResult->fetch_all(MYSQLI_ASSOC);
             border-color: #1666ba;
         }
         
-        .bill-card {
-            border: 1px solid #ddd;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            position: relative;
+        .filter-btn:hover:not(.active) {
+            background: #f5f9ff;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .action-buttons button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+        }
+        
+        .action-buttons button:first-child {
+            background: #1666ba;
+            color: white;
+        }
+        
+        .action-buttons button:last-child {
             background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            color: #1666ba;
+            border: 1px solid #bedaf7;
+        }
+        
+        .action-buttons button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(22, 102, 186, 0.1);
+        }
+        
+        .bill-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 32px rgba(22, 102, 186, 0.1);
+            border: 1px solid rgba(190, 218, 247, 0.3);
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .bill-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(22, 102, 186, 0.15);
         }
         
         .bill-type {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 3px 8px;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.25rem 0.75rem;
             border-radius: 12px;
-            font-size: 12px;
-            background: #f0f0f0;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            background: #deecfb;
+            color: #1666ba;
+        }
+        
+        .bill-card h3 {
+            font-size: 1.25rem;
+            color: #1666ba;
+            margin-bottom: 0.5rem;
+            padding-right: 80px;
+        }
+        
+        .bill-card p {
+            margin-bottom: 0.5rem;
+            color: #475569;
+        }
+        
+        .bill-card strong {
+            color: #1e293b;
+        }
+        
+        .bill-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        
+        .bill-actions button {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            font-size: 0.85rem;
+        }
+        
+        .paid-btn {
+            background: #22c55e;
+            color: white;
+        }
+        
+        .edit-btn {
+            background: #3b82f6;
+            color: white;
         }
         
         .paid {
-            background-color: #e6ffe6;
+            border-left: 4px solid #22c55e;
         }
         
         .unpaid {
-            background-color: #ffe6e6;
+            border-left: 4px solid #ef4444;
         }
         
         .overdue {
-            background-color: #ffcccc;
-        }
-
-        .action-btn { 
-            flex: 1; 
-            padding: 0.5rem; 
-            border-radius: 6px; 
-            border: none; 
-            font-weight: 600; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 0.5rem; 
-            transition: background-color 0.3s ease; 
+            border-left: 4px solid #f97316;
         }
         
-        .edit-btn { 
-            background-color: #e0f2fe; 
-            color: #0369a1; 
-        }
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .action-buttons button {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            background: #1666ba;
-            color: white;
-            transition: all 0.2s;
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #64748b;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(22, 102, 186, 0.1);
         }
         
-        .action-buttons button:hover {
-            background: #135a9e;
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #bedaf7;
         }
         
-        .success-message {
-            background: #e6ffe6;
-            color: #2e7d32;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            border-left: 4px solid #2e7d32;
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #1e293b;
         }
         
-        .error-message {
-            background: #ffe6e6;
-            color: #c62828;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            border-left: 4px solid #c62828;
+        @media (max-width: 768px) {
+            .bills-container {
+                padding: 1rem;
+            }
+            
+            .filter-bar, .action-buttons {
+                gap: 0.75rem;
+            }
+            
+            .filter-btn, .action-buttons button {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
         }
     </style>
 </head>
@@ -274,13 +347,13 @@ $bills = $billsResult->fetch_all(MYSQLI_ASSOC);
                 
                 <p>Status: <strong><?php echo ucfirst($bill['status']); ?></strong></p>
                 
-                <!-- <?php if ($bill['status'] == 'unpaid' || $bill['status'] == 'overdue'): ?>
+                <?php if ($bill['status'] == 'unpaid' || $bill['status'] == 'overdue'): ?>
                     <button onclick="markAsPaid(<?php echo $bill['bill_id']; ?>)">
                         Mark as Paid
                     </button>
-                <?php endif; ?> -->
+                <?php endif; ?>
                 
-                <button class="action-btn edit-btn"    onclick="window.location.href='edit-bill.php?id=<?php echo $bill['bill_id']; ?>'">
+                <button onclick="window.location.href='edit-bill.php?id=<?php echo $bill['bill_id']; ?>'">
     Edit Bill
 </button>
             </div>
@@ -289,7 +362,7 @@ $bills = $billsResult->fetch_all(MYSQLI_ASSOC);
 
 </div>
 
-    <!-- <script>
+    <script>
         function markAsPaid(billId) {
             if (confirm('Mark this bill as paid?')) {
                 fetch('mark_paid.php?id=' + billId)
@@ -304,6 +377,6 @@ $bills = $billsResult->fetch_all(MYSQLI_ASSOC);
             }
         }
 
-    </script> -->
+    </script>
 </body>
 </html>
