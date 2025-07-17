@@ -56,9 +56,9 @@
         
         <!-- Account -->
         <li class="nav-item">
-            <a href="profile.php" class="nav-link">
+            <a href="users.php" class="nav-link">
                 <i class="fas fa-user"></i>
-                Profile
+                Manage Users
             </a>
         </li> 
     </ul>
