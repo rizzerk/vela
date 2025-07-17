@@ -877,7 +877,7 @@ $unpaid_bills = $bills_result->fetch_all(MYSQLI_ASSOC);
     <?php include '../includes/navbar/tenant-navbar.php' ?>
 
     <div class="page-title-container">
-        <h1 class="page-title">PAY DUES</h1>
+        <h1 class="page-title">Pay Dues</h1>
     </div>
 
     <div class="main-container">
