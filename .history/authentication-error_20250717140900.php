@@ -1,20 +1,5 @@
 <?php
 session_start();
-
-$redirectUrl = 'index.php'; 
-
-if (isset($_SESSION['role'])) {
-    switch ($_SESSION['role']) {
-        case 'tenant':
-            $redirectUrl = 'TENANT/dashboard.php';
-            break;
-        case 'landlord':
-            $redirectUrl = 'LANDLORD/dashboard.php';
-            break;
-        default:
-            $redirectUrl = 'index.php';
-    }
-}
 ?>
 
 <!DOCTYPE html>
@@ -97,7 +82,7 @@ if (isset($_SESSION['role'])) {
         <p class="error-message">
             You don't have permission to access this page.
         </p>
-        <a href="<?= $redirectUrl ?>" class="btn btn-primary">Go to Dashboard</a>
+        <a href="dashboard.php" class="btn btn-primary">Go to Dashboard</a>
     </div>
 </body>
 </html>
