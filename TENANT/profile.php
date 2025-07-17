@@ -16,35 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     $newEmail = trim($_POST['email']);
     $newPhone = trim($_POST['phone']);
 
-    // File upload handling
-    $profilePicName = null;
-    if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] !== UPLOAD_ERR_NO_FILE) {
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-        $fileTmpPath = $_FILES['profile_pic']['tmp_name'];
-        $fileName = $_FILES['profile_pic']['name'];
-        $fileSize = $_FILES['profile_pic']['size'];
-        $fileType = mime_content_type($fileTmpPath);
-        
-        if (!in_array($fileType, $allowedTypes)) {
-            $errorMsg = "Only JPG, PNG, and GIF images are allowed.";
-        } elseif ($fileSize > 2 * 1024 * 1024) { // 2MB limit
-            $errorMsg = "Image size should not exceed 2MB.";
-        } else {
-            $ext = pathinfo($fileName, PATHINFO_EXTENSION);
-            $newFileName = "profile_" . $userId . "_" . time() . "." . $ext;
-            $uploadDir = "../uploads/";
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-            $destPath = $uploadDir . $newFileName;
-            
-            if (move_uploaded_file($fileTmpPath, $destPath)) {
-                $profilePicName = $newFileName;
-            } else {
-                $errorMsg = "Failed to upload image.";
-            }
-        }
-    }
+
 
     if (empty($errorMsg)) {
         if ($profilePicName) {
