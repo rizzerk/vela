@@ -6,177 +6,90 @@ require_once '../vendor/autoload.php';
 
 $landlord_id = $_SESSION['user_id'] ?? 1;
 
-// Handle AJAX requests for financial data
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'financial_data') {
-    $time_period = $_GET['time_period'] ?? 'monthly';
+    $selected_year = $_GET['selected_year'] ?? date('Y');
     $property_id = $_GET['property_id'] ?? 'all';
     
-    // Build date conditions
-    $date_condition_payment = "";
-    $date_condition_bill = "";
+    $date_condition_payment = "AND YEAR(p.submitted_at) = " . intval($selected_year);
+    $date_condition_bill = "AND YEAR(b.generated_at) = " . intval($selected_year);
     
-    switch ($time_period) {
-        case 'monthly':
-            $date_condition_payment = "AND MONTH(p.submitted_at) = MONTH(NOW()) AND YEAR(p.submitted_at) = YEAR(NOW())";
-            $date_condition_bill = "AND MONTH(generated_at) = MONTH(NOW()) AND YEAR(generated_at) = YEAR(NOW())";
-            break;
-        case 'quarterly':
-            $date_condition_payment = "AND QUARTER(p.submitted_at) = QUARTER(NOW()) AND YEAR(p.submitted_at) = YEAR(NOW())";
-            $date_condition_bill = "AND QUARTER(generated_at) = QUARTER(NOW()) AND YEAR(generated_at) = YEAR(NOW())";
-            break;
-        case 'yearly':
-            $date_condition_payment = "AND YEAR(p.submitted_at) = YEAR(NOW())";
-            $date_condition_bill = "AND YEAR(generated_at) = YEAR(NOW())";
-            break;
-    }
-    
-    // Property filter
     $property_condition = "";
     if ($property_id !== 'all') {
         $property_condition = "AND l.property_id = " . intval($property_id);
     }
     
-    // Get rent collected
-    $rent_query = "SELECT COALESCE(SUM(p.amount_paid), 0) as collected FROM PAYMENT p JOIN BILL b ON p.bill_id = b.bill_id JOIN LEASE l ON b.lease_id = l.lease_id WHERE p.status = 'verified' AND b.bill_type = 'rent' $date_condition_payment $property_condition";
+    $expected_rent_query = "SELECT 
+        COALESCE(SUM(p.monthly_rent * 12), 0) as total_rent,
+        COUNT(*) as property_count,
+        SUM(CASE WHEN p.monthly_rent > 0 THEN 1 ELSE 0 END) as properties_with_rent
+    FROM PROPERTY p
+    JOIN LEASE l ON p.property_id = l.property_id
+    WHERE l.active = 1";
+    if ($property_id !== 'all') {
+        $expected_rent_query .= " AND p.property_id = " . intval($property_id);
+    }
+    $expected_rent_result = $conn->query($expected_rent_query);
+    $debug_data = $expected_rent_result ? $expected_rent_result->fetch_assoc() : [];
+    $expected_rent = $debug_data['total_rent'] ?? 0;
+
+    // the actual rent collected
+    $rent_query = "SELECT COALESCE(SUM(b.amount), 0) as collected FROM BILL b JOIN LEASE l ON b.lease_id = l.lease_id WHERE b.status = 'paid' AND b.bill_type = 'rent' $date_condition_bill $property_condition";
     $rent_result = $conn->query($rent_query);
     $rent_collected = $rent_result ? $rent_result->fetch_assoc()['collected'] : 0;
     
-    // Get utilities
-    $utilities_query = "SELECT COALESCE(SUM(p.amount_paid), 0) as utilities FROM PAYMENT p JOIN BILL b ON p.bill_id = b.bill_id JOIN LEASE l ON b.lease_id = l.lease_id WHERE p.status = 'verified' AND b.bill_type = 'utility' $date_condition_payment $property_condition";
+    // for the utility payments
+    $utilities_query = "SELECT COALESCE(SUM(b.amount), 0) as utilities FROM BILL b JOIN LEASE l ON b.lease_id = l.lease_id WHERE b.status = 'paid' AND b.bill_type = 'utility' $date_condition_bill $property_condition";
     $utilities_result = $conn->query($utilities_query);
     $utilities = $utilities_result ? $utilities_result->fetch_assoc()['utilities'] : 0;
     
-    // Get penalties
+    // for penalty payments
     $penalties_query = "SELECT COALESCE(SUM(amount), 0) as penalties FROM BILL b JOIN LEASE l ON b.lease_id = l.lease_id WHERE b.status = 'paid' AND b.bill_type = 'penalty' $date_condition_bill $property_condition";
     $penalties_result = $conn->query($penalties_query);
     $penalties = $penalties_result ? $penalties_result->fetch_assoc()['penalties'] : 0;
     
-    // Get other expenses
+    // for other payments
     $other_query = "SELECT COALESCE(SUM(amount), 0) as other FROM BILL b JOIN LEASE l ON b.lease_id = l.lease_id WHERE b.status = 'paid' AND b.bill_type = 'other' $date_condition_bill $property_condition";
     $other_result = $conn->query($other_query);
     $other = $other_result ? $other_result->fetch_assoc()['other'] : 0;
+
+    $chart_labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    $chart_data = ['rent' => array_fill(0, 12, 0), 'utility' => array_fill(0, 12, 0), 'penalty' => array_fill(0, 12, 0), 'other' => array_fill(0, 12, 0)];
     
-    // Get expected rent
-    $expected_rent_query = "SELECT COALESCE(SUM(monthly_rent), 0) as total_rent FROM PROPERTY WHERE status = 'occupied'";
-    if ($property_id !== 'all') {
-        $expected_rent_query .= " AND property_id = " . intval($property_id);
-    }
-    $expected_rent_result = $conn->query($expected_rent_query);
-    $expected_rent = $expected_rent_result ? $expected_rent_result->fetch_assoc()['total_rent'] : 0;
-    
-    // Get chart data based on time period
-    $chart_data = ['rent' => [], 'utility' => [], 'penalty' => [], 'other' => []];
-    $chart_labels = [];
-    
-    if ($time_period === 'monthly') {
-        // Show days of current month
-        $days_in_month = date('t');
-        for ($i = 1; $i <= $days_in_month; $i++) {
-            $chart_labels[] = $i;
-            $chart_data['rent'][] = 0;
-            $chart_data['utility'][] = 0;
-            $chart_data['penalty'][] = 0;
-            $chart_data['other'][] = 0;
-        }
-        
-        // Get daily data for payments
-        $chart_payment_query = "SELECT DAY(p.submitted_at) as day, b.bill_type, SUM(p.amount_paid) as total FROM PAYMENT p JOIN BILL b ON p.bill_id = b.bill_id JOIN LEASE l ON b.lease_id = l.lease_id WHERE p.status = 'verified' AND b.bill_type IN ('rent', 'utility') AND MONTH(p.submitted_at) = MONTH(NOW()) AND YEAR(p.submitted_at) = YEAR(NOW()) $property_condition GROUP BY DAY(p.submitted_at), b.bill_type";
-        $chart_payment_result = $conn->query($chart_payment_query);
-        if ($chart_payment_result) {
-            while ($row = $chart_payment_result->fetch_assoc()) {
-                $day_index = $row['day'] - 1;
-                $chart_data[$row['bill_type']][$day_index] = (float)$row['total'];
-            }
-        }
-        
-        // Get daily data for bills
-        $chart_bill_query = "SELECT DAY(b.generated_at) as day, b.bill_type, SUM(b.amount) as total FROM BILL b JOIN LEASE l ON b.lease_id = l.lease_id WHERE b.status = 'paid' AND b.bill_type IN ('penalty', 'other') AND MONTH(b.generated_at) = MONTH(NOW()) AND YEAR(b.generated_at) = YEAR(NOW()) $property_condition GROUP BY DAY(b.generated_at), b.bill_type";
-        $chart_bill_result = $conn->query($chart_bill_query);
-        if ($chart_bill_result) {
-            while ($row = $chart_bill_result->fetch_assoc()) {
-                $day_index = $row['day'] - 1;
-                $chart_data[$row['bill_type']][$day_index] = (float)$row['total'];
-            }
-        }
-    } elseif ($time_period === 'quarterly') {
-        // Show 3 months of current quarter
-        $current_quarter = ceil(date('n') / 3);
-        $start_month = ($current_quarter - 1) * 3 + 1;
-        for ($i = 0; $i < 3; $i++) {
-            $month_num = $start_month + $i;
-            $chart_labels[] = date('M', mktime(0, 0, 0, $month_num, 1));
-            $chart_data['rent'][] = 0;
-            $chart_data['utility'][] = 0;
-            $chart_data['penalty'][] = 0;
-            $chart_data['other'][] = 0;
-        }
-        
-        // Get quarterly data for payments
-        $chart_payment_query = "SELECT MONTH(p.submitted_at) as month, b.bill_type, SUM(p.amount_paid) as total FROM PAYMENT p JOIN BILL b ON p.bill_id = b.bill_id JOIN LEASE l ON b.lease_id = l.lease_id WHERE p.status = 'verified' AND b.bill_type IN ('rent', 'utility') AND QUARTER(p.submitted_at) = QUARTER(NOW()) AND YEAR(p.submitted_at) = YEAR(NOW()) $property_condition GROUP BY MONTH(p.submitted_at), b.bill_type";
-        $chart_payment_result = $conn->query($chart_payment_query);
-        if ($chart_payment_result) {
-            while ($row = $chart_payment_result->fetch_assoc()) {
-                $month_index = $row['month'] - $start_month;
-                if ($month_index >= 0 && $month_index < 3) {
-                    $chart_data[$row['bill_type']][$month_index] = (float)$row['total'];
-                }
-            }
-        }
-        
-        // Get quarterly data for bills
-        $chart_bill_query = "SELECT MONTH(b.generated_at) as month, b.bill_type, SUM(b.amount) as total FROM BILL b JOIN LEASE l ON b.lease_id = l.lease_id WHERE b.status = 'paid' AND b.bill_type IN ('penalty', 'other') AND QUARTER(b.generated_at) = QUARTER(NOW()) AND YEAR(b.generated_at) = YEAR(NOW()) $property_condition GROUP BY MONTH(b.generated_at), b.bill_type";
-        $chart_bill_result = $conn->query($chart_bill_query);
-        if ($chart_bill_result) {
-            while ($row = $chart_bill_result->fetch_assoc()) {
-                $month_index = $row['month'] - $start_month;
-                if ($month_index >= 0 && $month_index < 3) {
-                    $chart_data[$row['bill_type']][$month_index] = (float)$row['total'];
-                }
-            }
-        }
-    } else {
-        // Show 12 months for yearly
-        $chart_labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        $chart_data = ['rent' => array_fill(0, 12, 0), 'utility' => array_fill(0, 12, 0), 'penalty' => array_fill(0, 12, 0), 'other' => array_fill(0, 12, 0)];
-        
-        // Get yearly data for payments
-        $chart_payment_query = "SELECT MONTH(p.submitted_at) as month, b.bill_type, SUM(p.amount_paid) as total FROM PAYMENT p JOIN BILL b ON p.bill_id = b.bill_id JOIN LEASE l ON b.lease_id = l.lease_id WHERE p.status = 'verified' AND b.bill_type IN ('rent', 'utility') AND YEAR(p.submitted_at) = YEAR(NOW()) $property_condition GROUP BY MONTH(p.submitted_at), b.bill_type";
-        $chart_payment_result = $conn->query($chart_payment_query);
-        if ($chart_payment_result) {
-            while ($row = $chart_payment_result->fetch_assoc()) {
-                $month_index = $row['month'] - 1;
-                $chart_data[$row['bill_type']][$month_index] = (float)$row['total'];
-            }
-        }
-        
-        // Get yearly data for bills
-        $chart_bill_query = "SELECT MONTH(b.generated_at) as month, b.bill_type, SUM(b.amount) as total FROM BILL b JOIN LEASE l ON b.lease_id = l.lease_id WHERE b.status = 'paid' AND b.bill_type IN ('penalty', 'other') AND YEAR(b.generated_at) = YEAR(NOW()) $property_condition GROUP BY MONTH(b.generated_at), b.bill_type";
-        $chart_bill_result = $conn->query($chart_bill_query);
-        if ($chart_bill_result) {
-            while ($row = $chart_bill_result->fetch_assoc()) {
-                $month_index = $row['month'] - 1;
-                $chart_data[$row['bill_type']][$month_index] = (float)$row['total'];
-            }
+    // yearly data for all bill types
+    $chart_bill_query = "SELECT MONTH(b.generated_at) as month, b.bill_type, SUM(b.amount) as total FROM BILL b JOIN LEASE l ON b.lease_id = l.lease_id WHERE b.status = 'paid' $date_condition_bill $property_condition GROUP BY MONTH(b.generated_at), b.bill_type";
+    $chart_bill_result = $conn->query($chart_bill_query);
+    if ($chart_bill_result) {
+        while ($row = $chart_bill_result->fetch_assoc()) {
+            $month_index = $row['month'] - 1;
+            $chart_data[$row['bill_type']][$month_index] = (float)$row['total'];
         }
     }
-    
+
+    $total_income = $rent_collected;
     $total_expenses = $utilities + $penalties + $other;
     $collection_rate = $expected_rent > 0 ? ($rent_collected / $expected_rent) * 100 : 0;
-    $net_profit = $rent_collected - $total_expenses;
-    
-    header('Content-Type: application/json');
-    echo json_encode([
-        'rent_collected' => $rent_collected,
-        'expected_rent' => $expected_rent,
-        'collection_rate' => $collection_rate,
-        'utilities' => $utilities,
-        'penalties' => $penalties,
-        'other' => $other,
-        'total_expenses' => $total_expenses,
-        'net_profit' => $net_profit,
-        'chart_data' => $chart_data,
-        'chart_labels' => $chart_labels
-    ]);
+    $net_profit = $total_income - $total_expenses;
+
+
+header('Content-Type: application/json');
+echo json_encode([
+    'rent_collected' => $rent_collected,
+    'expected_rent' => $expected_rent,
+    'collection_rate' => $collection_rate,
+    'utilities' => $utilities,
+    'penalties' => $penalties,
+    'other' => $other,
+    'total_income' => $total_income,
+    'total_expenses' => $total_expenses,
+    'net_profit' => $net_profit,
+    'chart_data' => $chart_data,
+    'chart_labels' => $chart_labels,
+    'debug' => [
+        'property_count' => $debug_data['property_count'] ?? 0,
+        'properties_with_rent' => $debug_data['properties_with_rent'] ?? 0,
+        'query' => $expected_rent_query
+    ]
+]);
     exit;
 }
 
@@ -253,7 +166,7 @@ if ($_POST['action'] ?? '' === 'add_announcement') {
     }
 }
 
-// Get property data
+
 $properties = [];
 $total_properties = 0;
 $total_vacant = 0;
@@ -289,64 +202,67 @@ if (!empty($properties)) {
     $total_occupied = array_sum(array_column($properties, 'occupied'));
 }
 
-// Get financial data
-$monthly_rent_query = "SELECT COALESCE(SUM(monthly_rent), 0) as total_rent FROM PROPERTY WHERE status = 'occupied'";
-$rent_result = $conn->query($monthly_rent_query);
-$monthly_rent = $rent_result ? $rent_result->fetch_assoc()['total_rent'] : 0;
 
-// Get actual rent collected this month
-$monthly_collected_query = "
-    SELECT COALESCE(SUM(p.amount_paid), 0) as collected
-    FROM PAYMENT p 
-    JOIN BILL b ON p.bill_id = b.bill_id
-    WHERE p.status = 'verified' 
+// Expected yearly rent from properties with active leases
+$yearly_rent_query = "SELECT 
+    COALESCE(SUM(p.monthly_rent * 12), 0) as total_rent,
+    COUNT(*) as property_count,
+    SUM(CASE WHEN p.monthly_rent > 0 THEN 1 ELSE 0 END) as properties_with_rent
+FROM PROPERTY p
+JOIN LEASE l ON p.property_id = l.property_id
+WHERE l.active = 1";
+$rent_result = $conn->query($yearly_rent_query);
+$rent_debug = $rent_result->fetch_assoc();
+error_log("Expected rent calculation: " . print_r($rent_debug, true));
+$yearly_expected_rent = $rent_debug['total_rent'] ?? 0;
+
+// rent
+$yearly_collected_query = "
+    SELECT COALESCE(SUM(b.amount), 0) as collected
+    FROM BILL b 
+    WHERE b.status = 'paid' 
     AND b.bill_type = 'rent'
-    AND MONTH(p.submitted_at) = MONTH(NOW()) 
-    AND YEAR(p.submitted_at) = YEAR(NOW())
+    AND YEAR(b.generated_at) = YEAR(NOW())
 ";
-$collected_result = $conn->query($monthly_collected_query);
-$monthly_collected = $collected_result ? $collected_result->fetch_assoc()['collected'] : 0;
+$collected_result = $conn->query($yearly_collected_query);
+$yearly_collected = $collected_result ? $collected_result->fetch_assoc()['collected'] : 0;
 
-// Get utility payments this month
-$monthly_utilities_query = "
-    SELECT COALESCE(SUM(p.amount_paid), 0) as utilities
-    FROM PAYMENT p 
-    JOIN BILL b ON p.bill_id = b.bill_id
-    WHERE p.status = 'verified' 
+// utility payments 
+$yearly_utilities_query = "
+    SELECT COALESCE(SUM(b.amount), 0) as utilities
+    FROM BILL b 
+    WHERE b.status = 'paid' 
     AND b.bill_type = 'utility'
-    AND MONTH(p.submitted_at) = MONTH(NOW()) 
-    AND YEAR(p.submitted_at) = YEAR(NOW())
+    AND YEAR(b.generated_at) = YEAR(NOW())
 ";
-$utilities_result = $conn->query($monthly_utilities_query);
-$monthly_utilities = $utilities_result ? $utilities_result->fetch_assoc()['utilities'] : 0;
+$utilities_result = $conn->query($yearly_utilities_query);
+$yearly_utilities = $utilities_result ? $utilities_result->fetch_assoc()['utilities'] : 0;
 
-// Get penalty expenses
+// grt penalty expenses
 $penalty_expenses_query = "
     SELECT COALESCE(SUM(amount), 0) as penalty_expenses
     FROM BILL 
     WHERE status = 'paid' 
     AND bill_type = 'penalty'
-    AND MONTH(generated_at) = MONTH(NOW()) 
     AND YEAR(generated_at) = YEAR(NOW())
 ";
 $penalty_result = $conn->query($penalty_expenses_query);
-$monthly_penalties = $penalty_result ? $penalty_result->fetch_assoc()['penalty_expenses'] : 0;
+$yearly_penalties = $penalty_result ? $penalty_result->fetch_assoc()['penalty_expenses'] : 0;
 
-// Get other expenses
+// get other expenses
 $other_expenses_query = "
     SELECT COALESCE(SUM(amount), 0) as other_expenses
     FROM BILL 
     WHERE status = 'paid' 
     AND bill_type = 'other'
-    AND MONTH(generated_at) = MONTH(NOW()) 
     AND YEAR(generated_at) = YEAR(NOW())
 ";
 $other_result = $conn->query($other_expenses_query);
-$monthly_other = $other_result ? $other_result->fetch_assoc()['other_expenses'] : 0;
+$yearly_other = $other_result ? $other_result->fetch_assoc()['other_expenses'] : 0;
 
-$other_expenses = $monthly_penalties + $monthly_other;
+$other_expenses = $yearly_penalties + $yearly_other;
 
-// Get yearly data for chart (rent and utilities from payments)
+// yearly data for chart (rent and utilities from payments)
 $yearly_payment_query = "
     SELECT 
         MONTH(p.submitted_at) as month,
@@ -363,7 +279,7 @@ $yearly_payment_query = "
 $yearly_payment_result = $conn->query($yearly_payment_query);
 $yearly_payment_data = $yearly_payment_result ? $yearly_payment_result->fetch_all(MYSQLI_ASSOC) : [];
 
-// Get yearly data for penalties and other bills
+// yearly data for penalties and other bills
 $yearly_bill_query = "
     SELECT 
         MONTH(generated_at) as month,
@@ -401,7 +317,10 @@ foreach ($yearly_data as $row) {
     }
 }
 
-$total_expenses = $monthly_utilities + $monthly_penalties + $monthly_other;
+
+$total_income = $yearly_collected;
+$total_expenses = $yearly_utilities + $yearly_penalties + $yearly_other;
+$net_profit = $total_income - $total_expenses;
 
 $property_list_query = "SELECT property_id, title FROM PROPERTY ORDER BY title";
 $property_list = $conn->query($property_list_query)->fetch_all(MYSQLI_ASSOC);
@@ -412,7 +331,6 @@ $announcement_query = "SELECT title, content, created_at
                       LIMIT 1";
 $latest_announcement = $conn->query($announcement_query)->fetch_assoc();
 
-// Get bill types
 $bill_types_query = "SELECT DISTINCT bill_type FROM BILL ORDER BY bill_type";
 $bill_types_result = $conn->query($bill_types_query);
 $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) : [];
@@ -1145,11 +1063,13 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label for="timeFilter">Time Period:</label>
-                    <select id="timeFilter" onchange="updateCharts()">
-                        <option value="monthly">This Month</option>
-                        <option value="quarterly">This Quarter</option>
-                        <option value="yearly">This Year</option>
+                    <label for="yearFilter">Year:</label>
+                    <select id="yearFilter" onchange="updateCharts()">
+                        <?php 
+                        $current_year = date('Y');
+                        for ($year = $current_year; $year >= $current_year - 5; $year--): ?>
+                            <option value="<?= $year ?>" <?= $year == $current_year ? 'selected' : '' ?>><?= $year ?></option>
+                        <?php endfor; ?>
                     </select>
                 </div>
             </div>
@@ -1162,16 +1082,16 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
                     </div>
                     <div class="card-body">
                         <div class="financial-metric">
-                            <span class="metric-label">Rent Collected</span>
-                            <span class="metric-value">₱<?= number_format($monthly_collected, 2) ?></span>
+                            <span class="metric-label">Expected Rent</span>
+                            <span class="metric-value">₱<?= number_format($yearly_expected_rent, 2) ?></span>
                         </div>
                         <div class="financial-metric">
-                            <span class="metric-label">Expected Rent</span>
-                            <span class="metric-value">₱<?= number_format($monthly_rent, 2) ?></span>
+                            <span class="metric-label">Rent Collected</span>
+                            <span class="metric-value">₱<?= number_format($yearly_collected, 2) ?></span>
                         </div>
                         <div class="financial-metric total">
                             <span class="metric-label">Collection Rate</span>
-                            <span class="metric-value"><?= $monthly_rent > 0 ? number_format(($monthly_collected/$monthly_rent)*100, 2) : '0' ?>%</span>
+                            <span class="metric-value"><?= $yearly_expected_rent > 0 ? number_format(($yearly_collected/$yearly_expected_rent)*100, 2) : '0' ?>%</span>
                         </div>
                     </div>
                 </div>
@@ -1184,20 +1104,19 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
                     <div class="card-body">
                         <div class="financial-metric">
                             <span class="metric-label">Utilities</span>
-                            <span class="metric-value">₱<?= number_format($monthly_utilities, 2) ?></span>
-                        </div>
-
-                        <div class="financial-metric">
-                            <span class="metric-label">Penalties</span>
-                            <span class="metric-value">₱<?= number_format($monthly_penalties, 2) ?></span>
+                            <span class="metric-value">₱<?= number_format($yearly_utilities, 2) ?></span>
                         </div>
                         <div class="financial-metric">
-                            <span class="metric-label">Other</span>
-                            <span class="metric-value">₱<?= number_format($monthly_other, 2) ?></span>
+                            <span class="metric-label">Penalties/Damages</span>
+                            <span class="metric-value">₱<?= number_format($yearly_penalties, 2) ?></span>
+                        </div>
+                        <div class="financial-metric">
+                            <span class="metric-label">Property Maintenance</span>
+                            <span class="metric-value">₱<?= number_format($yearly_other, 2) ?></span>
                         </div>
                         <div class="financial-metric total">
                             <span class="metric-label">Total Expenses</span>
-                            <span class="metric-value">₱<?= number_format($monthly_utilities + $monthly_penalties + $monthly_other, 2) ?></span>
+                            <span class="metric-value">₱<?= number_format($total_expenses, 2) ?></span>
                         </div>
                     </div>
                 </div>
@@ -1209,8 +1128,8 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
                     </div>
                     <div class="card-body">
                         <div class="financial-metric">
-                            <span class="metric-label">Gross Income</span>
-                            <span class="metric-value">₱<?= number_format($monthly_collected, 2) ?></span>
+                            <span class="metric-label">Total Income</span>
+                            <span class="metric-value">₱<?= number_format($total_income, 2) ?></span>
                         </div>
                         <div class="financial-metric">
                             <span class="metric-label">Total Expenses</span>
@@ -1218,7 +1137,7 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
                         </div>
                         <div class="financial-metric total">
                             <span class="metric-label">Net Profit</span>
-                            <span class="metric-value">₱<?= number_format($monthly_collected - $total_expenses, 2) ?></span>
+                            <span class="metric-value">₱<?= number_format($net_profit, 2) ?></span>
                         </div>
                     </div>
                 </div>
@@ -1298,13 +1217,13 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
         
         function updateCharts() {
             const propertyFilter = document.getElementById('propertyFilter').value;
-            const timeFilter = document.getElementById('timeFilter').value;
+            const yearFilter = document.getElementById('yearFilter').value;
             
             // Show loading state
             document.querySelector('.financial-cards').style.opacity = '0.5';
             
             // Fetch updated data
-            fetch(`dashboard.php?ajax=financial_data&time_period=${timeFilter}&property_id=${propertyFilter}`)
+            fetch(`dashboard.php?ajax=financial_data&selected_year=${yearFilter}&property_id=${propertyFilter}`)
                 .then(response => response.json())
                 .then(data => {
                     updateFinancialCards(data);
@@ -1318,33 +1237,36 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
         }
         
         function updateFinancialCards(data) {
-            // Update income card
-            document.querySelector('.income-card .card-body .financial-metric:nth-child(1) .metric-value').textContent = 
-                '₱' + parseFloat(data.rent_collected).toLocaleString('en-US', {minimumFractionDigits: 2});
-            document.querySelector('.income-card .card-body .financial-metric:nth-child(2) .metric-value').textContent = 
-                '₱' + parseFloat(data.expected_rent).toLocaleString('en-US', {minimumFractionDigits: 2});
-            document.querySelector('.income-card .card-body .financial-metric.total .metric-value').textContent = 
-                parseFloat(data.collection_rate).toFixed(2) + '%';
-            
-            // Update expenses card
-            document.querySelector('.expenses-card .card-body .financial-metric:nth-child(1) .metric-value').textContent = 
-                '₱' + parseFloat(data.utilities).toLocaleString('en-US', {minimumFractionDigits: 2});
-            document.querySelector('.expenses-card .card-body .financial-metric:nth-child(2) .metric-value').textContent = 
-                '₱' + parseFloat(data.penalties).toLocaleString('en-US', {minimumFractionDigits: 2});
-            document.querySelector('.expenses-card .card-body .financial-metric:nth-child(3) .metric-value').textContent = 
-                '₱' + parseFloat(data.other).toLocaleString('en-US', {minimumFractionDigits: 2});
-            document.querySelector('.expenses-card .card-body .financial-metric.total .metric-value').textContent = 
-                '₱' + parseFloat(data.total_expenses).toLocaleString('en-US', {minimumFractionDigits: 2});
-            
-            // Update net income card
-            document.querySelector('.net-income-card .card-body .financial-metric:nth-child(1) .metric-value').textContent = 
-                '₱' + parseFloat(data.rent_collected).toLocaleString('en-US', {minimumFractionDigits: 2});
-            document.querySelector('.net-income-card .card-body .financial-metric:nth-child(2) .metric-value').textContent = 
-                '₱' + parseFloat(data.total_expenses).toLocaleString('en-US', {minimumFractionDigits: 2});
-            document.querySelector('.net-income-card .card-body .financial-metric.total .metric-value').textContent = 
-                '₱' + parseFloat(data.net_profit).toLocaleString('en-US', {minimumFractionDigits: 2});
-        }
-        
+    const formatCurrency = (amount) => {
+        return '₱' + parseFloat(amount).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    };
+
+    document.querySelector('.income-card .card-body .financial-metric:nth-child(1) .metric-value').textContent = 
+        formatCurrency(data.expected_rent);
+    document.querySelector('.income-card .card-body .financial-metric:nth-child(2) .metric-value').textContent = 
+        formatCurrency(data.rent_collected);
+    document.querySelector('.income-card .card-body .financial-metric.total .metric-value').textContent = 
+        parseFloat(data.collection_rate).toFixed(2) + '%';
+    
+    document.querySelector('.expenses-card .card-body .financial-metric:nth-child(1) .metric-value').textContent = 
+        formatCurrency(data.utilities);
+    document.querySelector('.expenses-card .card-body .financial-metric:nth-child(2) .metric-value').textContent = 
+        formatCurrency(data.penalties);
+    document.querySelector('.expenses-card .card-body .financial-metric:nth-child(3) .metric-value').textContent = 
+        formatCurrency(data.other);
+    document.querySelector('.expenses-card .card-body .financial-metric.total .metric-value').textContent = 
+        formatCurrency(data.total_expenses);
+    
+    document.querySelector('.net-income-card .card-body .financial-metric:nth-child(1) .metric-value').textContent = 
+        formatCurrency(data.total_income);
+    document.querySelector('.net-income-card .card-body .financial-metric:nth-child(2) .metric-value').textContent = 
+        formatCurrency(data.total_expenses);
+    document.querySelector('.net-income-card .card-body .financial-metric.total .metric-value').textContent = 
+        formatCurrency(data.net_profit);
+}
         function updateChart(chartData, chartLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']) {
             if (yearlyChart) {
                 yearlyChart.destroy();

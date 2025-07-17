@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once '../connection.php';
-require_once "../includes/auth/tenant_auth.php";
+require_once "../includes/auth/landlord_auth.php";
 
 
 $landlord_id = $_SESSION['user_id'] ?? 1;
@@ -11,14 +11,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (($_POST['action'] ?? '') === 'add_announcement') {
         $title = $_POST['title'] ?? '';
         $content = $_POST['content'] ?? '';
-        $visible_to = $_POST['visible_to'] ?? 'all';
         $priority = $_POST['priority'] ?? 'low';
         
         $insert_query = "INSERT INTO ANNOUNCEMENT (title, content, visible_to, priority, created_by, created_at) 
-                         VALUES (?, ?, ?, ?, ?, NOW())";
+                         VALUES (?, ?, 'tenant', ?, ?, NOW())";
         $stmt = $conn->prepare($insert_query);
         if ($stmt) {
-            $stmt->bind_param("ssssi", $title, $content, $visible_to, $priority, $landlord_id);
+            $stmt->bind_param("sssi", $title, $content, $priority, $landlord_id);
             $stmt->execute();
             $stmt->close();
         }
@@ -30,14 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = $_POST['announcement_id'] ?? 0;
         $title = $_POST['title'] ?? '';
         $content = $_POST['content'] ?? '';
-        $visible_to = $_POST['visible_to'] ?? 'all';
         $priority = $_POST['priority'] ?? 'low';
         
         if ($id > 0) {
-            $update_query = "UPDATE ANNOUNCEMENT SET title = ?, content = ?, visible_to = ?, priority = ? WHERE announcement_id = ?";
+            $update_query = "UPDATE ANNOUNCEMENT SET title = ?, content = ?, priority = ? WHERE announcement_id = ?";
             $stmt = $conn->prepare($update_query);
             if ($stmt) {
-                $stmt->bind_param("ssssi", $title, $content, $visible_to, $priority, $id);
+                $stmt->bind_param("sssi", $title, $content, $priority, $id);
                 $stmt->execute();
                 $stmt->close();
             }
@@ -46,23 +44,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    if (($_POST['action'] ?? '') === 'delete_announcement') {
+    if (($_POST['action'] ?? '') === 'toggle_announcement') {
         $id = $_POST['announcement_id'] ?? 0;
         if ($id > 0) {
-            $delete_query = "DELETE FROM ANNOUNCEMENT WHERE announcement_id = ?";
-            $stmt = $conn->prepare($delete_query);
+            $toggle_query = "UPDATE ANNOUNCEMENT SET active = NOT active WHERE announcement_id = ?";
+            $stmt = $conn->prepare($toggle_query);
             if ($stmt) {
                 $stmt->bind_param("i", $id);
                 $stmt->execute();
                 $stmt->close();
             }
         }
-        header("Location: announcements.php?success=deleted");
+        header("Location: announcements.php?success=toggled");
         exit();
     }
 }
 
-$announcement_query = "SELECT announcement_id, title, content, visible_to, priority, created_at 
+$announcement_query = "SELECT announcement_id, title, content, visible_to, priority, active, created_at 
                       FROM ANNOUNCEMENT 
                       ORDER BY created_at DESC";
 $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
@@ -169,15 +167,7 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             font-weight: 500;
         }
 
-        .badge-visible-all {
-            background: #e0f2fe;
-            color: #0277bd;
-        }
 
-        .badge-visible-tenant {
-            background: #f3e5f5;
-            color: #7b1fa2;
-        }
 
         .badge-priority-high {
             background: #ffebee;
@@ -194,12 +184,22 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             color: #2e7d32;
         }
 
+        .badge-active {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge-inactive {
+            background: #fafafa;
+            color: #757575;
+        }
+
         .announcement-actions {
             display: flex;
             gap: 0.5rem;
         }
 
-        .btn-edit, .btn-delete {
+        .btn-edit, .btn-unpublish, .btn-publish {
             color: white;
             border: none;
             padding: 0.4rem 0.8rem;
@@ -212,8 +212,12 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             background: #1666ba;
         }
 
-        .btn-delete {
-            background: #ef4444;
+        .btn-unpublish {
+            background: #f59e0b;
+        }
+
+        .btn-publish {
+            background: #10b981;
         }
 
         .announcement-title {
@@ -371,20 +375,20 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
                                     <?= date('F j, Y \a\t g:i A', strtotime($announcement['created_at'])) ?>
                                 </div>
                                 <div class="announcement-badges">
-                                    <span class="badge badge-visible-<?= $announcement['visible_to'] ?>">
-                                        <?= ucfirst($announcement['visible_to']) ?>
-                                    </span>
                                     <span class="badge badge-priority-<?= $announcement['priority'] ?>">
                                         <?= ucfirst($announcement['priority']) ?> Priority
+                                    </span>
+                                    <span class="badge <?= $announcement['active'] ? 'badge-active' : 'badge-inactive' ?>">
+                                        <?= $announcement['active'] ? 'Published' : 'Unpublished' ?>
                                     </span>
                                 </div>
                             </div>
                             <div class="announcement-actions">
-                                <button class="btn-edit" onclick="editAnnouncement(<?= $announcement['announcement_id'] ?>, <?= htmlspecialchars(json_encode($announcement['title']), ENT_QUOTES) ?>, <?= htmlspecialchars(json_encode($announcement['content']), ENT_QUOTES) ?>, '<?= $announcement['visible_to'] ?>', '<?= $announcement['priority'] ?>')">
+                                <button class="btn-edit" onclick="editAnnouncement(<?= $announcement['announcement_id'] ?>, <?= htmlspecialchars(json_encode($announcement['title']), ENT_QUOTES) ?>, <?= htmlspecialchars(json_encode($announcement['content']), ENT_QUOTES) ?>, '<?= $announcement['priority'] ?>')">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <button class="btn-delete" onclick="deleteAnnouncement(<?= $announcement['announcement_id'] ?>)">
-                                    <i class="fas fa-trash"></i> Delete
+                                <button class="<?= $announcement['active'] ? 'btn-unpublish' : 'btn-publish' ?>" onclick="toggleAnnouncement(<?= $announcement['announcement_id'] ?>)">
+                                    <i class="fas <?= $announcement['active'] ? 'fa-eye-slash' : 'fa-eye' ?>"></i> <?= $announcement['active'] ? 'Unpublish' : 'Publish' ?>
                                 </button>
                             </div>
                         </div>
@@ -414,13 +418,7 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
                     <textarea name="content" id="announcementContent" required></textarea>
                 </div>
                 
-                <div class="form-group">
-                    <label>Visible To</label>
-                    <select name="visible_to" id="announcementVisibleTo" required>
-                        <option value="all">Everyone</option>
-                        <option value="tenant">Tenants Only</option>
-                    </select>
-                </div>
+
                 
                 <div class="form-group">
                     <label>Priority</label>
@@ -437,16 +435,16 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" class="modal">
+    <!-- Toggle Confirmation Modal -->
+    <div id="toggleModal" class="modal">
         <div class="modal-content">
-            <h3 style="color: #ef4444; margin-bottom: 1.5rem;">Delete Announcement</h3>
-            <p style="margin-bottom: 1.5rem;">Are you sure you want to delete this announcement? This action cannot be undone.</p>
-            <form method="POST" id="deleteForm">
-                <input type="hidden" name="action" value="delete_announcement">
-                <input type="hidden" name="announcement_id" id="deleteAnnouncementId">
-                <button type="submit" style="background: #ef4444;" class="btn-primary">Delete</button>
-                <button type="button" class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+            <h3 id="toggleTitle" style="color: #f59e0b; margin-bottom: 1.5rem;">Toggle Announcement</h3>
+            <p id="toggleMessage" style="margin-bottom: 1.5rem;">Are you sure you want to change the status of this announcement?</p>
+            <form method="POST" id="toggleForm">
+                <input type="hidden" name="action" value="toggle_announcement">
+                <input type="hidden" name="announcement_id" id="toggleAnnouncementId">
+                <button type="submit" id="toggleBtn" class="btn-primary">Confirm</button>
+                <button type="button" class="btn-secondary" onclick="closeToggleModal()">Cancel</button>
             </form>
         </div>
     </div>
@@ -462,7 +460,7 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             document.getElementById('announcementId').value = '';
             document.getElementById('announcementTitle').value = '';
             document.getElementById('announcementContent').value = '';
-            document.getElementById('announcementVisibleTo').value = 'all';
+
             document.getElementById('announcementPriority').value = 'low';
             document.getElementById('announcementModal').style.display = 'block';
         }
@@ -471,25 +469,24 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             document.getElementById('announcementModal').style.display = 'none';
         }
         
-        function editAnnouncement(id, title, content, visibleTo, priority) {
+        function editAnnouncement(id, title, content, priority) {
             document.getElementById('modalTitle').textContent = 'Edit Announcement';
             document.getElementById('formAction').value = 'edit_announcement';
             document.getElementById('submitBtn').textContent = 'Update Announcement';
             document.getElementById('announcementId').value = id;
             document.getElementById('announcementTitle').value = title;
             document.getElementById('announcementContent').value = content;
-            document.getElementById('announcementVisibleTo').value = visibleTo;
             document.getElementById('announcementPriority').value = priority;
             document.getElementById('announcementModal').style.display = 'block';
         }
         
-        function deleteAnnouncement(id) {
-            document.getElementById('deleteAnnouncementId').value = id;
-            document.getElementById('deleteModal').style.display = 'block';
+        function toggleAnnouncement(id) {
+            document.getElementById('toggleAnnouncementId').value = id;
+            document.getElementById('toggleModal').style.display = 'block';
         }
         
-        function closeDeleteModal() {
-            document.getElementById('deleteModal').style.display = 'none';
+        function closeToggleModal() {
+            document.getElementById('toggleModal').style.display = 'none';
         }
         
         function showToast(message, type = 'success') {
@@ -504,12 +501,12 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
 
         window.onclick = function(event) {
             const modal = document.getElementById('announcementModal');
-            const deleteModal = document.getElementById('deleteModal');
+            const toggleModal = document.getElementById('toggleModal');
             if (event.target === modal) {
                 closeModal();
             }
-            if (event.target === deleteModal) {
-                closeDeleteModal();
+            if (event.target === toggleModal) {
+                closeToggleModal();
             }
         }
 
@@ -518,8 +515,8 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
             showToast('Announcement created successfully!');
         } else if (urlParams.get('success') === 'updated') {
             showToast('Announcement updated successfully!');
-        } else if (urlParams.get('success') === 'deleted') {
-            showToast('Announcement deleted successfully!');
+        } else if (urlParams.get('success') === 'toggled') {
+            showToast('Announcement status updated successfully!');
         }
     </script>
 </body>
