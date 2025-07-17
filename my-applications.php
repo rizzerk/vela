@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'connection.php';
+require_once 'includes/auth/general_auth.php';
 
 if (!isset($_SESSION['loggedin'])) {
     header("Location: not-login.php");
