@@ -57,9 +57,10 @@ $todayMonth = date('n');
 $todayYear = date('Y');
 
 $whereClauses = [];
-if ($statusFilter) {
+if (!empty(trim($statusFilter))) {
     $whereClauses[] = "mr.status = '" . mysqli_real_escape_string($conn, $statusFilter) . "'";
 }
+
 
 $whereSQL = "";
 if (!empty($whereClauses)) {
@@ -497,8 +498,10 @@ button[style*="background: #dc3545"]:hover {
     <div class="calendar-header">
       <h2><?= date("F Y", $start) ?></h2>
       <div>
-        <a href="?month=<?= $prevMonth ?>&year=<?= $prevYear ?>&status=<?= htmlspecialchars($statusFilter) ?>"><button>&lt;</button></a>
-        <a href="?month=<?= $nextMonth ?>&year=<?= $nextYear ?>&status=<?= htmlspecialchars($statusFilter) ?>"><button>&gt;</button></a>
+        <a href="?month=<?= $prevMonth ?>&year=<?= $prevYear ?><?= $statusFilter !== '' ? '&status=' . htmlspecialchars($statusFilter) : '' ?>">
+<button>&lt;</button></a>
+        <a href="?month=<?= $prevMonth ?>&year=<?= $prevYear ?><?= $statusFilter !== '' ? '&status=' . htmlspecialchars($statusFilter) : '' ?>">
+<button>&gt;</button></a>
       </div>
     </div>
     <div class="calendar-grid">
