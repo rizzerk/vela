@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_lease'])) {
     
     if ($lease_id && $active !== null) {
         try {
-            // check for existing active lease on same property
+            // If activating, check for existing active lease on same property
             if ($active == 1) {
                 $check_stmt = $conn->prepare("SELECT COUNT(*) as count FROM LEASE WHERE property_id = (SELECT property_id FROM LEASE WHERE lease_id = ?) AND active = 1");
                 $check_stmt->bind_param("i", $lease_id);
@@ -186,10 +186,11 @@ if ($result && $result->num_rows > 0) {
 
         .search-controls {
             background: white;
-            border-radius: 8px;
+            border-radius: 16px;
             padding: 1.5rem;
             margin-bottom: 2rem;
-            border: 1px solid #ddd;
+            box-shadow: 0 8px 32px rgba(22, 102, 186, 0.1);
+            border: 1px solid rgba(190, 218, 247, 0.3);
         }
 
         .search-form {
@@ -214,8 +215,8 @@ if ($result && $result->num_rows > 0) {
         .form-group input,
         .form-group select {
             padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            border: 1px solid #bedaf7;
+            border-radius: 8px;
             font-size: 0.95rem;
         }
 
@@ -224,7 +225,7 @@ if ($result && $result->num_rows > 0) {
             color: white;
             border: none;
             padding: 0.75rem 1.5rem;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 0.95rem;
             height: fit-content;
@@ -235,7 +236,7 @@ if ($result && $result->num_rows > 0) {
             color: white;
             border: none;
             padding: 0.75rem 1rem;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 0.95rem;
             margin-left: 0.5rem;
@@ -243,16 +244,17 @@ if ($result && $result->num_rows > 0) {
 
         .property-section {
             background: white;
-            border-radius: 8px;
+            border-radius: 16px;
             margin-bottom: 2rem;
-            border: 1px solid #ddd;
+            box-shadow: 0 8px 32px rgba(22, 102, 186, 0.1);
+            border: 1px solid rgba(190, 218, 247, 0.3);
             overflow: hidden;
         }
 
         .property-header {
-            background: #1666ba;
+            background: linear-gradient(135deg, #368ce7, #1666ba);
             color: white;
-            padding: 1rem 1.5rem;
+            padding: 1.5rem 2rem;
         }
 
         .property-title {
@@ -274,8 +276,8 @@ if ($result && $result->num_rows > 0) {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
             gap: 1rem;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #eee;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #f1f5f9;
             align-items: center;
         }
 
@@ -284,19 +286,20 @@ if ($result && $result->num_rows > 0) {
         }
 
         .tenant-item:hover {
-            background-color: #f9f9f9;
+            background-color: #f8fafc;
         }
 
         .tenant-header {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
             gap: 1rem;
-            padding: 1rem 1.5rem;
-            background: #f8f9fa;
+            padding: 1rem 2rem;
+            background: #deecfb;
             font-weight: 600;
-            color: #333;
+            color: #1666ba;
             font-size: 0.9rem;
-            border-bottom: 1px solid #ddd;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .tenant-name {
@@ -310,7 +313,7 @@ if ($result && $result->num_rows > 0) {
             margin-top: 0.25rem;
         }
 
-        .modal {
+        .error-modal {
             display: none;
             position: fixed;
             z-index: 1000;
@@ -318,72 +321,46 @@ if ($result && $result->num_rows > 0) {
             top: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.4);
+            background-color: rgba(0,0,0,0.5);
         }
 
-        .modal-content {
-            background: white;
-            margin: 20% auto;
+        .error-modal-content {
+            background-color: white;
+            margin: 15% auto;
             padding: 2rem;
-            border-radius: 12px;
+            border-radius: 16px;
             width: 90%;
             max-width: 400px;
             text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
 
-        .modal-title {
-            font-size: 1.2rem;
-            font-weight: 600;
+        .error-icon {
+            font-size: 3rem;
+            color: #ef4444;
             margin-bottom: 1rem;
-            color: #1e293b;
         }
 
-        .modal-message {
+        .error-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .error-message {
             color: #64748b;
             margin-bottom: 1.5rem;
         }
 
-        .modal-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-        }
-
-        .modal-btn {
-            padding: 0.75rem 1.5rem;
+        .error-close-btn {
+            background: #1666ba;
+            color: white;
             border: none;
+            padding: 0.75rem 2rem;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
-        }
-
-        .modal-btn.confirm {
-            background: #1666ba;
-            color: white;
-        }
-
-        .modal-btn.cancel {
-            background: #e2e8f0;
-            color: #64748b;
-        }
-
-        .error-toast {
-            display: none;
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            color: #c62828;
-            background-color: #ffebee;
-            padding: 15px;
-            border-radius: 8px;
-            max-width: 350px;
-            z-index: 1001;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .error-toast .error-message {
-            color: #c62828;
-            font-size: 0.9rem;
         }
 
         .contact-info {
@@ -399,7 +376,7 @@ if ($result && $result->num_rows > 0) {
         .status-badge {
             display: inline-block;
             padding: 0.25rem 0.75rem;
-            border-radius: 4px;
+            border-radius: 12px;
             font-size: 0.8rem;
             font-weight: 600;
             text-transform: uppercase;
@@ -447,10 +424,11 @@ if ($result && $result->num_rows > 0) {
         .action-btn {
             padding: 0.5rem 1rem;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 0.8rem;
             font-weight: 600;
+            transition: all 0.3s;
         }
 
         .action-btn.activate {
@@ -464,7 +442,8 @@ if ($result && $result->num_rows > 0) {
         }
 
         .action-btn:hover {
-            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
         @media (max-width: 1024px) {
@@ -606,74 +585,52 @@ if ($result && $result->num_rows > 0) {
         <?php endif; ?>
     </div>
 
-    <!-- Confirmation Modal -->
-    <div id="confirmModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-title" id="confirmTitle"></div>
-            <div class="modal-message" id="confirmMessage"></div>
-            <div class="modal-buttons">
-                <button class="modal-btn confirm" id="confirmBtn">Yes</button>
-                <button class="modal-btn cancel" onclick="closeConfirmModal()">Cancel</button>
+    <!-- Error Modal -->
+    <div id="errorModal" class="error-modal">
+        <div class="error-modal-content">
+            <div class="error-icon">
+                <i class="fas fa-exclamation-triangle"></i>
             </div>
+            <div class="error-title">Cannot Activate Lease</div>
+            <div class="error-message" id="errorMessage"></div>
+            <button class="error-close-btn" onclick="closeErrorModal()">Got it</button>
         </div>
     </div>
 
-    <!-- Error Toast -->
-    <div id="errorToast" class="error-toast">
-        <div class="error-message" id="errorMessage"></div>
-    </div>
-
     <script>
-    let currentLeaseId, currentStatus;
-
     function toggleLease(leaseId, newStatus) {
-        currentLeaseId = leaseId;
-        currentStatus = newStatus;
-        
-        const action = newStatus ? 'activate' : 'deactivate';
-        document.getElementById('confirmTitle').textContent = `${action.charAt(0).toUpperCase() + action.slice(1)} Lease`;
-        document.getElementById('confirmMessage').textContent = `Are you sure you want to ${action} this lease?`;
-        document.getElementById('confirmModal').style.display = 'block';
+        if (confirm('Are you sure you want to ' + (newStatus ? 'activate' : 'deactivate') + ' this lease?')) {
+            const formData = new FormData();
+            formData.append('toggle_lease', '1');
+            formData.append('lease_id', leaseId);
+            formData.append('active', newStatus);
+            
+            fetch('', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    showErrorModal(data.message || 'Unknown error');
+                }
+            })
+            .catch(error => {
+                showErrorModal('Error updating lease status');
+            });
+        }
     }
 
-    function confirmAction() {
-        const formData = new FormData();
-        formData.append('toggle_lease', '1');
-        formData.append('lease_id', currentLeaseId);
-        formData.append('active', currentStatus);
-        
-        fetch('', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                showErrorToast(data.message || 'Unknown error');
-            }
-        })
-        .catch(error => {
-            showErrorToast('Error updating lease status');
-        });
-        
-        closeConfirmModal();
-    }
-
-    function closeConfirmModal() {
-        document.getElementById('confirmModal').style.display = 'none';
-    }
-
-    function showErrorToast(message) {
+    function showErrorModal(message) {
         document.getElementById('errorMessage').textContent = message;
-        document.getElementById('errorToast').style.display = 'block';
-        setTimeout(() => {
-            document.getElementById('errorToast').style.display = 'none';
-        }, 4000);
+        document.getElementById('errorModal').style.display = 'block';
     }
 
-    document.getElementById('confirmBtn').onclick = confirmAction;
+    function closeErrorModal() {
+        document.getElementById('errorModal').style.display = 'none';
+    }
     </script>
 </body>
 </html>

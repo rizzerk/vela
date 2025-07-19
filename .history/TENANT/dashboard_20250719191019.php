@@ -23,7 +23,11 @@ $announcements = [];
 $events = [];
 $debug_info = "User ID: $userId, ";
 
-
+// Handle hiding notifications for session
+if (isset($_POST['hide_notifications'])) {
+    $_SESSION['notifications_clicked'] = true;
+    exit;
+}
 
 
 
@@ -405,8 +409,6 @@ if ($lease) {
             padding: 1.25rem;
             color: #ffffff;
             box-shadow: 0 4px 6px -1px rgba(22, 102, 186, 0.1), 0 2px 4px -1px rgba(22, 102, 186, 0.05);
-            max-height: 250px;
-            overflow-y: auto;
         }
 
         .notice-title {
@@ -821,9 +823,11 @@ if ($lease) {
                 <div class="bills-section">
                     <div class="section-header">
                         <h2 class="section-title">Notices</h2>
-                        <span onclick="viewAllNotices()" style="color: #1666ba; cursor: pointer; font-weight: 500;">
-                            View All
-                        </span>
+                        <form method="POST" style="display: inline;">
+                            <button type="submit" name="mark_read" style="background: none; border: none; color: #1666ba; cursor: pointer; font-weight: 500;">
+                                Mark as Read
+                            </button>
+                        </form>
                     </div>
                     
                     <div class="notice-section">

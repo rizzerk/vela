@@ -185,7 +185,11 @@ $query = "
 $result = mysqli_query($conn, $query);
 $requests = [];
 while ($row = mysqli_fetch_assoc($result)) {
-    $requests[] = $row;
+    $reqMonth = intval(date('n', strtotime($row['requested_at'])));
+    $reqYear = intval(date('Y', strtotime($row['requested_at'])));
+    if ($reqMonth === $month && $reqYear === $year) {
+        $requests[] = $row;
+    }
 }
 
 $requestsByDay = [];

@@ -13,8 +13,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $content = $_POST['content'] ?? '';
         $priority = $_POST['priority'] ?? 'low';
         
-        $insert_query = "INSERT INTO ANNOUNCEMENT (title, content, visible_to, priority, created_by, created_at, active) 
-                         VALUES (?, ?, 'tenant', ?, ?, NOW(), 1)";
+        $insert_query = "INSERT INTO ANNOUNCEMENT (title, content, visible_to, priority, created_by, created_at) 
+                         VALUES (?, ?, 'tenant', ?, ?, NOW())";
         $stmt = $conn->prepare($insert_query);
         if ($stmt) {
             $stmt->bind_param("sssi", $title, $content, $priority, $landlord_id);

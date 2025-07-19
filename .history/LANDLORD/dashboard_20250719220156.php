@@ -24,10 +24,19 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'financial_data') {
         $property_condition = "AND l.property_id = " . intval($property_id);
     }
     
-    // Calculate expected rent based on actual bills generated (both paid and unpaid)
-    $expected_rent_query = "SELECT COALESCE(SUM(b.amount), 0) as total_rent FROM BILL b JOIN LEASE l ON b.lease_id = l.lease_id WHERE b.bill_type = 'rent' $date_condition_bill $property_condition";
+    $expected_rent_query = "SELECT 
+        COALESCE(SUM(p.monthly_rent * 12), 0) as total_rent,
+        COUNT(*) as property_count,
+        SUM(CASE WHEN p.monthly_rent > 0 THEN 1 ELSE 0 END) as properties_with_rent
+    FROM PROPERTY p
+    JOIN LEASE l ON p.property_id = l.property_id
+    WHERE l.active = 1";
+    if ($property_id !== 'all') {
+        $expected_rent_query .= " AND p.property_id = " . intval($property_id);
+    }
     $expected_rent_result = $conn->query($expected_rent_query);
-    $expected_rent = $expected_rent_result ? $expected_rent_result->fetch_assoc()['total_rent'] : 0;
+    $debug_data = $expected_rent_result ? $expected_rent_result->fetch_assoc() : [];
+    $expected_rent = $debug_data['total_rent'] ?? 0;
 
     // the actual rent collected
     $rent_query = "SELECT COALESCE(SUM(b.amount), 0) as collected FROM BILL b JOIN LEASE l ON b.lease_id = l.lease_id WHERE b.status = 'paid' AND b.bill_type = 'rent' $date_condition_bill $property_condition";

@@ -185,7 +185,11 @@ $query = "
 $result = mysqli_query($conn, $query);
 $requests = [];
 while ($row = mysqli_fetch_assoc($result)) {
-    $requests[] = $row;
+    $reqMonth = intval(date('n', strtotime($row['requested_at'])));
+    $reqYear = intval(date('Y', strtotime($row['requested_at'])));
+    if ($reqMonth === $month && $reqYear === $year) {
+        $requests[] = $row;
+    }
 }
 
 $requestsByDay = [];
@@ -560,7 +564,6 @@ button[style*="background: #dc3545"]:hover {
         <option value="pending" <?= $statusFilter === 'pending' ? 'selected' : '' ?>>Pending</option>
         <option value="in_progress" <?= $statusFilter === 'in_progress' ? 'selected' : '' ?>>In Progress</option>
         <option value="resolved" <?= $statusFilter === 'resolved' ? 'selected' : '' ?>>Done</option>
-        <option value="rejected" <?= $statusFilter === 'rejected' ? 'selected' : '' ?>>Rejected</option>
       </select>
     </form>
   </div>
@@ -675,7 +678,6 @@ button[style*="background: #dc3545"]:hover {
         <option value="pending" <?= $req['status'] === 'pending' ? 'selected' : '' ?>>Pending</option>
         <option value="in_progress" <?= $req['status'] === 'in_progress' ? 'selected' : '' ?>>In Progress</option>
         <option value="resolved" <?= $req['status'] === 'resolved' ? 'selected' : '' ?>>Done</option>
-        <option value="rejected" <?= $req['status'] === 'rejected' ? 'selected' : '' ?>>Rejected</option>
       </select>
     </td>
     <td style="min-width: 250px;">

@@ -186,10 +186,11 @@ if ($result && $result->num_rows > 0) {
 
         .search-controls {
             background: white;
-            border-radius: 8px;
+            border-radius: 16px;
             padding: 1.5rem;
             margin-bottom: 2rem;
-            border: 1px solid #ddd;
+            box-shadow: 0 8px 32px rgba(22, 102, 186, 0.1);
+            border: 1px solid rgba(190, 218, 247, 0.3);
         }
 
         .search-form {
@@ -214,8 +215,8 @@ if ($result && $result->num_rows > 0) {
         .form-group input,
         .form-group select {
             padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            border: 1px solid #bedaf7;
+            border-radius: 8px;
             font-size: 0.95rem;
         }
 
@@ -224,7 +225,7 @@ if ($result && $result->num_rows > 0) {
             color: white;
             border: none;
             padding: 0.75rem 1.5rem;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 0.95rem;
             height: fit-content;
@@ -235,7 +236,7 @@ if ($result && $result->num_rows > 0) {
             color: white;
             border: none;
             padding: 0.75rem 1rem;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 0.95rem;
             margin-left: 0.5rem;
@@ -243,16 +244,17 @@ if ($result && $result->num_rows > 0) {
 
         .property-section {
             background: white;
-            border-radius: 8px;
+            border-radius: 16px;
             margin-bottom: 2rem;
-            border: 1px solid #ddd;
+            box-shadow: 0 8px 32px rgba(22, 102, 186, 0.1);
+            border: 1px solid rgba(190, 218, 247, 0.3);
             overflow: hidden;
         }
 
         .property-header {
-            background: #1666ba;
+            background: linear-gradient(135deg, #368ce7, #1666ba);
             color: white;
-            padding: 1rem 1.5rem;
+            padding: 1.5rem 2rem;
         }
 
         .property-title {
@@ -274,8 +276,8 @@ if ($result && $result->num_rows > 0) {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
             gap: 1rem;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #eee;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #f1f5f9;
             align-items: center;
         }
 
@@ -284,19 +286,20 @@ if ($result && $result->num_rows > 0) {
         }
 
         .tenant-item:hover {
-            background-color: #f9f9f9;
+            background-color: #f8fafc;
         }
 
         .tenant-header {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
             gap: 1rem;
-            padding: 1rem 1.5rem;
-            background: #f8f9fa;
+            padding: 1rem 2rem;
+            background: #deecfb;
             font-weight: 600;
-            color: #333;
+            color: #1666ba;
             font-size: 0.9rem;
-            border-bottom: 1px solid #ddd;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .tenant-name {
@@ -372,17 +375,25 @@ if ($result && $result->num_rows > 0) {
             position: fixed;
             top: 20px;
             right: 20px;
-            color: #c62828;
-            background-color: #ffebee;
-            padding: 15px;
+            background: white;
+            border: 1px solid #ddd;
             border-radius: 8px;
+            padding: 1rem 1.5rem;
             max-width: 350px;
             z-index: 1001;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .error-toast .error-icon {
+            color: #e74c3c;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            display: block;
         }
 
         .error-toast .error-message {
-            color: #c62828;
+            color: #333;
             font-size: 0.9rem;
         }
 
@@ -399,7 +410,7 @@ if ($result && $result->num_rows > 0) {
         .status-badge {
             display: inline-block;
             padding: 0.25rem 0.75rem;
-            border-radius: 4px;
+            border-radius: 12px;
             font-size: 0.8rem;
             font-weight: 600;
             text-transform: uppercase;
@@ -447,10 +458,11 @@ if ($result && $result->num_rows > 0) {
         .action-btn {
             padding: 0.5rem 1rem;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 0.8rem;
             font-weight: 600;
+            transition: all 0.3s;
         }
 
         .action-btn.activate {
@@ -464,7 +476,8 @@ if ($result && $result->num_rows > 0) {
         }
 
         .action-btn:hover {
-            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
         @media (max-width: 1024px) {
@@ -620,7 +633,8 @@ if ($result && $result->num_rows > 0) {
 
     <!-- Error Toast -->
     <div id="errorToast" class="error-toast">
-        <div class="error-message" id="errorMessage"></div>
+        <i class="fas fa-exclamation-circle error-icon"></i>
+        <span class="error-message" id="errorMessage"></span>
     </div>
 
     <script>

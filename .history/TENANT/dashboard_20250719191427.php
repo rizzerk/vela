@@ -405,8 +405,6 @@ if ($lease) {
             padding: 1.25rem;
             color: #ffffff;
             box-shadow: 0 4px 6px -1px rgba(22, 102, 186, 0.1), 0 2px 4px -1px rgba(22, 102, 186, 0.05);
-            max-height: 250px;
-            overflow-y: auto;
         }
 
         .notice-title {
