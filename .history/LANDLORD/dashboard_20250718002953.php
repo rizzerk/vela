@@ -8,26 +8,29 @@ $landlord_id = $_SESSION['user_id'] ?? 1;
 
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'financial_data') {
     $selected_year = $_GET['selected_year'] ?? date('Y');
-    $selected_month = $_GET['selected_month'] ?? 'all';
     $property_id = $_GET['property_id'] ?? 'all';
     
     $date_condition_payment = "AND YEAR(p.submitted_at) = " . intval($selected_year);
     $date_condition_bill = "AND YEAR(b.generated_at) = " . intval($selected_year);
-    
-    if ($selected_month !== 'all') {
-        $date_condition_payment .= " AND MONTH(p.submitted_at) = " . intval($selected_month);
-        $date_condition_bill .= " AND MONTH(b.generated_at) = " . intval($selected_month);
-    }
     
     $property_condition = "";
     if ($property_id !== 'all') {
         $property_condition = "AND l.property_id = " . intval($property_id);
     }
     
-    // Calculate expected rent based on actual bills generated (both paid and unpaid)
-    $expected_rent_query = "SELECT COALESCE(SUM(b.amount), 0) as total_rent FROM BILL b JOIN LEASE l ON b.lease_id = l.lease_id WHERE b.bill_type = 'rent' $date_condition_bill $property_condition";
+    $expected_rent_query = "SELECT 
+        COALESCE(SUM(p.monthly_rent * 12), 0) as total_rent,
+        COUNT(*) as property_count,
+        SUM(CASE WHEN p.monthly_rent > 0 THEN 1 ELSE 0 END) as properties_with_rent
+    FROM PROPERTY p
+    JOIN LEASE l ON p.property_id = l.property_id
+    WHERE l.active = 1";
+    if ($property_id !== 'all') {
+        $expected_rent_query .= " AND p.property_id = " . intval($property_id);
+    }
     $expected_rent_result = $conn->query($expected_rent_query);
-    $expected_rent = $expected_rent_result ? $expected_rent_result->fetch_assoc()['total_rent'] : 0;
+    $debug_data = $expected_rent_result ? $expected_rent_result->fetch_assoc() : [];
+    $expected_rent = $debug_data['total_rent'] ?? 0;
 
     // the actual rent collected
     $rent_query = "SELECT COALESCE(SUM(b.amount), 0) as collected FROM BILL b JOIN LEASE l ON b.lease_id = l.lease_id WHERE b.status = 'paid' AND b.bill_type = 'rent' $date_condition_bill $property_condition";
@@ -81,7 +84,6 @@ echo json_encode([
     'net_profit' => $net_profit,
     'chart_data' => $chart_data,
     'chart_labels' => $chart_labels,
-    'selected_month' => $selected_month,
     'debug' => [
         'property_count' => $debug_data['property_count'] ?? 0,
         'properties_with_rent' => $debug_data['properties_with_rent'] ?? 0,
@@ -1070,24 +1072,6 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
                         <?php endfor; ?>
                     </select>
                 </div>
-                <div class="filter-group">
-                    <label for="monthFilter">Month:</label>
-                    <select id="monthFilter" onchange="updateCharts()">
-                        <option value="all">All Months</option>
-                        <option value="1">January</option>
-                        <option value="2">February</option>
-                        <option value="3">March</option>
-                        <option value="4">April</option>
-                        <option value="5">May</option>
-                        <option value="6">June</option>
-                        <option value="7">July</option>
-                        <option value="8">August</option>
-                        <option value="9">September</option>
-                        <option value="10">October</option>
-                        <option value="11">November</option>
-                        <option value="12">December</option>
-                    </select>
-                </div>
             </div>
             
             <div class="financial-cards">
@@ -1234,17 +1218,16 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
         function updateCharts() {
             const propertyFilter = document.getElementById('propertyFilter').value;
             const yearFilter = document.getElementById('yearFilter').value;
-            const monthFilter = document.getElementById('monthFilter').value;
             
             // Show loading state
             document.querySelector('.financial-cards').style.opacity = '0.5';
             
             // Fetch updated data
-            fetch(`dashboard.php?ajax=financial_data&selected_year=${yearFilter}&selected_month=${monthFilter}&property_id=${propertyFilter}`)
+            fetch(`dashboard.php?ajax=financial_data&selected_year=${yearFilter}&property_id=${propertyFilter}`)
                 .then(response => response.json())
                 .then(data => {
                     updateFinancialCards(data);
-                    updateChart(data.chart_data, data.chart_labels, data.selected_month);
+                    updateChart(data.chart_data, data.chart_labels);
                     document.querySelector('.financial-cards').style.opacity = '1';
                 })
                 .catch(error => {
@@ -1284,56 +1267,35 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
     document.querySelector('.net-income-card .card-body .financial-metric.total .metric-value').textContent = 
         formatCurrency(data.net_profit);
 }
-        function updateChart(chartData, chartLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], selectedMonth = 'all') {
+        function updateChart(chartData, chartLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']) {
             if (yearlyChart) {
                 yearlyChart.destroy();
             }
             
             const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
             
-            // If specific month is selected, show only that month's data
-            let displayLabels = chartLabels;
-            let displayData = {
-                rent: chartData.rent,
-                utility: chartData.utility,
-                penalty: chartData.penalty,
-                other: chartData.other
-            };
-            
-            if (selectedMonth !== 'all') {
-                const monthIndex = parseInt(selectedMonth) - 1;
-                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                displayLabels = [monthNames[monthIndex]];
-                displayData = {
-                    rent: [chartData.rent[monthIndex]],
-                    utility: [chartData.utility[monthIndex]],
-                    penalty: [chartData.penalty[monthIndex]],
-                    other: [chartData.other[monthIndex]]
-                };
-            }
-            
             yearlyChart = new Chart(yearlyCtx, {
                 type: 'bar',
                 data: {
-                    labels: displayLabels,
+                    labels: chartLabels,
                     datasets: [{
                         label: 'Rent Collected',
-                        data: displayData.rent,
+                        data: chartData.rent,
                         backgroundColor: '#10b981',
                         borderRadius: 4
                     }, {
                         label: 'Utilities',
-                        data: displayData.utility,
+                        data: chartData.utility,
                         backgroundColor: '#f59e0b',
                         borderRadius: 4
                     }, {
                         label: 'Penalties',
-                        data: displayData.penalty,
+                        data: chartData.penalty,
                         backgroundColor: '#ef4444',
                         borderRadius: 4
                     }, {
                         label: 'Other',
-                        data: displayData.other,
+                        data: chartData.other,
                         backgroundColor: '#8b5cf6',
                         borderRadius: 4
                     }]
