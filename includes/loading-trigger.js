@@ -1,5 +1,10 @@
 // Function to show loading screen
 function showLoadingScreen() {
+    // Prevent multiple loading screens
+    if (document.getElementById('loadingScreen')) {
+        return;
+    }
+    
     const loadingHTML = `
         <div id="loadingScreen" class="loading-screen">
             <div class="loading-content">
@@ -107,5 +112,40 @@ document.addEventListener('DOMContentLoaded', function() {
     const propLinks = document.querySelectorAll('a[href*="properties"]');
     propLinks.forEach(link => {
         link.addEventListener('click', showLoadingScreen);
+    });
+    
+    // ALL BUTTONS - Comprehensive coverage for landlord and tenant
+    const allButtons = document.querySelectorAll('button[type="submit"], input[type="submit"], .btn, .action-btn, .submit-btn, .add-property-btn, .signup-btn, .modal-btn, .publish-btn, .unpublish-btn');
+    allButtons.forEach(button => {
+        // Skip if already has loading handler
+        if (!button.hasAttribute('data-loading-added')) {
+            button.addEventListener('click', function(e) {
+                // Don't show loading for cancel/close buttons
+                if (this.textContent.toLowerCase().includes('cancel') || 
+                    this.textContent.toLowerCase().includes('close') ||
+                    this.classList.contains('cancel') ||
+                    this.classList.contains('close-btn')) {
+                    return;
+                }
+                showLoadingScreen();
+            });
+            button.setAttribute('data-loading-added', 'true');
+        }
+    });
+    
+    // ALL NAVIGATION LINKS - For page transitions
+    const navLinks = document.querySelectorAll('a[href]:not([href="#"]):not([href^="javascript"]):not([href^="mailto"]):not([href^="tel"])');
+    navLinks.forEach(link => {
+        if (!link.hasAttribute('data-loading-added')) {
+            link.addEventListener('click', function(e) {
+                // Skip external links and same-page anchors
+                if (this.hostname !== window.location.hostname || 
+                    this.getAttribute('href').startsWith('#')) {
+                    return;
+                }
+                showLoadingScreen();
+            });
+            link.setAttribute('data-loading-added', 'true');
+        }
     });
 });
