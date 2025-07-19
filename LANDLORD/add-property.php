@@ -447,6 +447,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body>
+<script src="../includes/loading-trigger.js"></script>
 <?php include ('../includes/navbar/landlord-sidebar.php'); ?>
 
 <div class="main-content">

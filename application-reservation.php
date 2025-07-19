@@ -83,6 +83,7 @@ if ($_POST && !$existing && $property) {
     </style>
 </head>
 <body>
+    <script src="includes/loading-trigger.js"></script>
     <div class="form">
         <h1>Property Application</h1>
         

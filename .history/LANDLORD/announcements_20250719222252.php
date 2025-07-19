@@ -347,7 +347,6 @@ $announcements = $conn->query($announcement_query)->fetch_all(MYSQLI_ASSOC);
     </style>
 </head>
 <body>
-    <script src="../includes/loading-trigger.js"></script>
     <?php include ('../includes/navbar/landlord-sidebar.php'); ?>
 
     <div class="main-content">
