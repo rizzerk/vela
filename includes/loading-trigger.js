@@ -53,15 +53,17 @@ function showLoadingScreen() {
 
 // Add loading to forms and links
 document.addEventListener('DOMContentLoaded', function() {
-    // Registration form
-    const regForm = document.querySelector('form[action*="registration"]');
-    if (regForm) {
+    // Registration form - check multiple selectors
+    const regForm = document.querySelector('form[action*="registration"]') || 
+                   document.querySelector('#signup-form') ||
+                   document.querySelector('form[method="POST"]');
+    if (regForm && (window.location.href.includes('registration') || regForm.id === 'signup-form')) {
         regForm.addEventListener('submit', showLoadingScreen);
     }
     
     // Application reservation form
     const appForm = document.querySelector('form[method="POST"][enctype="multipart/form-data"]');
-    if (appForm) {
+    if (appForm && !regForm) {
         appForm.addEventListener('submit', showLoadingScreen);
     }
     
@@ -72,8 +74,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Add property form
-    const propForm = document.querySelector('form[action*="add-property"], form[action*="properties"]');
-    if (propForm) {
+    const propForm = document.querySelector('form[action*="add-property"], form[action*="properties"], #property-form');
+    if (propForm && !regForm && !appForm) {
         propForm.addEventListener('submit', showLoadingScreen);
     }
     
@@ -84,8 +86,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Announcements form
-    const announceForm = document.querySelector('form[action*="announcement"]');
-    if (announceForm) {
+    const announceForm = document.querySelector('form[action*="announcement"], form[method="POST"]:not(#signup-form):not(#property-form)');
+    if (announceForm && !regForm && !appForm && !propForm) {
         announceForm.addEventListener('submit', showLoadingScreen);
     }
     
