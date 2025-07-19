@@ -341,9 +341,7 @@ $bill_types = $bill_types_result ? $bill_types_result->fetch_all(MYSQLI_ASSOC) :
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Landlord Dashboard - VELA</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="icon" type="image/png" href="https://vela5.dcism.org/vela.png" sizes="32x32">
-    <link rel="icon" type="image/png" href="https://vela5.dcism.org/vela.png" sizes="16x16">
-    <link rel="apple-touch-icon" type="image/png" href="https://vela5.dcism.org/vela.png">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
